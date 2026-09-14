@@ -776,9 +776,8 @@ Return only verified current opportunities.
       }
     ],
     generationConfig: {
-      temperature: 0.2,
-      responseMimeType: "application/json"
-    }
+  temperature: 0.2
+}
   };
 
   console.log("Searching Gemini + Google Search...");
