@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1"
+>
+
+<title>PhD Radar</title>
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  background: #f4f4f4;
+  color: #171717;
+}
+
+header {
+  background: #111;
+  color: white;
+
+  padding: 45px 24px;
+}
+
+header .inner {
+  max-width: 1100px;
+  margin: auto;
+}
+
+h1 {
+  margin: 0;
+  font-size: 38px;
+}
+
+.subtitle {
+  margin-top: 10px;
+  color: #aaa;
+  font-size: 16px;
+}
+
+main {
+  max-width: 1100px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+
+.stats {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(auto-fit, minmax(180px, 1fr));
+
+  gap: 15px;
+
+  margin-bottom: 30px;
+}
+
+.stat {
+
+  background: white;
+
+  border-radius: 12px;
+
+  padding: 20px;
+
+  box-shadow:
+    0 2px 10px rgba(0,0,0,.05);
+}
+
+.stat-number {
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.stat-label {
+  color: #666;
+  margin-top: 5px;
+}
+
+.position {
+
+  background: white;
+
+  border-radius: 14px;
+
+  padding: 25px;
+
+  margin-bottom: 18px;
+
+  box-shadow:
+    0 2px 10px rgba(0,0,0,.05);
+}
+
+.top {
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  gap: 20px;
+}
+
+.title {
+
+  font-size: 22px;
+
+  font-weight: 700;
+
+  line-height: 1.3;
+}
+
+.university {
+
+  margin-top: 8px;
+
+  color: #555;
+}
+
+.score {
+
+  min-width: 75px;
+  height: 75px;
+
+  border-radius: 50%;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  background: #111;
+
+  color: white;
+
+  font-size: 21px;
+
+  font-weight: 700;
+}
+
+.meta {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  margin: 18px 0;
+}
+
+.tag {
+
+  background: #eee;
+
+  padding: 6px 10px;
+
+  border-radius: 7px;
+
+  font-size: 13px;
+}
+
+.section {
+
+  margin-top: 17px;
+
+  line-height: 1.6;
+}
+
+.section strong {
+
+  display: block;
+
+  margin-bottom: 5px;
+}
+
+.button {
+
+  display: inline-block;
+
+  margin-top: 20px;
+
+  padding: 10px 16px;
+
+  border-radius: 8px;
+
+  background: #111;
+
+  color: white;
+
+  text-decoration: none;
+}
+
+.empty {
+
+  background: white;
+
+  padding: 50px;
+
+  text-align: center;
+
+  border-radius: 12px;
+}
+
+@media(max-width:700px) {
+
+  .top {
+    flex-direction: column;
+  }
+
+  .score {
+    width: 70px;
+    height: 70px;
+  }
+
+  h1 {
+    font-size: 30px;
+  }
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<header>
+
+<div class="inner">
+
+<h1>PhD Radar</h1>
+
+<div class="subtitle">
+Industrial Design · Sustainability · Consumption ·
+Social & Political Transformation
+</div>
+
+</div>
+
+</header>
+
+
+<main>
+
+<div class="stats">
+
+<div class="stat">
+
+<div
+  class="stat-number"
+  id="total"
+>
+—
+</div>
+
+<div class="stat-label">
+Active positions
+</div>
+
+</div>
+
+
+<div class="stat">
+
+<div
+  class="stat-number"
+  id="high"
+>
+—
+</div>
+
+<div class="stat-label">
+80+ score
+</div>
+
+</div>
+
+
+<div class="stat">
+
+<div
+  class="stat-number"
+  id="countries"
+>
+—
+</div>
+
+<div class="stat-label">
+Countries
+</div>
+
+</div>
+
+</div>
+
+
+<div id="results"></div>
+
+</main>
+
+
+<script>
+
+async function loadResults() {
+
+  try {
+
+    const response =
+      await fetch(
+        "results.json?" + Date.now()
+      );
+
+    const results =
+      await response.json();
+
+    render(results);
+
+  } catch(error) {
+
+    document.getElementById(
+      "results"
+    ).innerHTML = `
+
+      <div class="empty">
+
+        Could not load results.
+
+      </div>
+
+    `;
+
+    console.error(error);
+  }
+}
+
+
+function render(results) {
+
+  document.getElementById(
+    "total"
+  ).textContent =
+    results.length;
+
+
+  document.getElementById(
+    "high"
+  ).textContent =
+    results.filter(
+      x => Number(x.overall_score) >= 80
+    ).length;
+
+
+  document.getElementById(
+    "countries"
+  ).textContent =
+    new Set(
+      results.map(x => x.country)
+    ).size;
+
+
+  const container =
+    document.getElementById(
+      "results"
+    );
+
+
+  if (!results.length) {
+
+    container.innerHTML = `
+
+      <div class="empty">
+
+        No active PhD positions found.
+
+      </div>
+
+    `;
+
+    return;
+  }
+
+
+  results.sort(
+    (a,b) =>
+      Number(b.overall_score) -
+      Number(a.overall_score)
+  );
+
+
+  container.innerHTML =
+    results.map(item => `
+
+      <article class="position">
+
+        <div class="top">
+
+          <div>
+
+            <div class="title">
+
+              ${escapeHTML(
+                item.title
+              )}
+
+            </div>
+
+
+            <div class="university">
+
+              ${escapeHTML(
+                item.university
+              )}
+
+              ${
+                item.city
+                  ? " · " +
+                    escapeHTML(item.city)
+                  : ""
+              }
+
+            </div>
+
+          </div>
+
+
+          <div class="score">
+
+            ${item.overall_score}
+
+          </div>
+
+        </div>
+
+
+        <div class="meta">
+
+          <span class="tag">
+
+            Deadline:
+            ${escapeHTML(
+              item.deadline
+            )}
+
+          </span>
+
+
+          ${
+            item.classification
+              ? `
+                <span class="tag">
+                  ${escapeHTML(
+                    item.classification
+                  )}
+                </span>
+              `
+              : ""
+          }
+
+
+          ${
+            item.research_area
+              ? `
+                <span class="tag">
+                  ${escapeHTML(
+                    item.research_area
+                  )}
+                </span>
+              `
+              : ""
+          }
+
+
+          ${
+            item.funding
+              ? `
+                <span class="tag">
+                  ${escapeHTML(
+                    item.funding
+                  )}
+                </span>
+              `
+              : ""
+          }
+
+        </div>
+
+
+        <div class="section">
+
+          <strong>
+            Why it matches
+          </strong>
+
+          ${escapeHTML(
+            item.why_it_matches || ""
+          )}
+
+        </div>
+
+
+        ${
+          item.strategic_fit
+            ? `
+              <div class="section">
+
+                <strong>
+                  Strategic fit
+                </strong>
+
+                ${escapeHTML(
+                  item.strategic_fit
+                )}
+
+              </div>
+            `
+            : ""
+        }
+
+
+        ${
+          item.why_it_is_not_perfect
+            ? `
+              <div class="section">
+
+                <strong>
+                  Potential weakness
+                </strong>
+
+                ${escapeHTML(
+                  item.why_it_is_not_perfect
+                )}
+
+              </div>
+            `
+            : ""
+        }
+
+
+        ${
+          item.supervisor
+            ? `
+              <div class="section">
+
+                <strong>
+                  Supervisor
+                </strong>
+
+                ${escapeHTML(
+                  item.supervisor
+                )}
+
+              </div>
+            `
+            : ""
+        }
+
+
+        <a
+          class="button"
+          href="${escapeHTML(item.url)}"
+          target="_blank"
+          rel="noopener"
+        >
+
+          Open PhD position →
+
+        </a>
+
+      </article>
+
+    `).join("");
+}
+
+
+function escapeHTML(value) {
+
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+}
+
+
+loadResults();
+
+</script>
+
+</body>
+
+</html>
