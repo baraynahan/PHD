@@ -16,537 +16,133 @@ if (!GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY is not configured.");
 }
 
-/* ============================================================
-   CANDIDATE PROFILE
-   ============================================================ */
-
 const CANDIDATE_PROFILE = `
 The candidate is an Industrial Design graduate, university lecturer,
 sustainability educator, and design researcher.
 
-Academic/professional identity priority:
-1. Sustainability researcher/educator
-2. Industrial/product designer
-3. University lecturer
-4. Design researcher
+The candidate's trajectory is:
+PRODUCT DESIGN → SUSTAINABLE DESIGN → SUSTAINABLE CONSUMPTION →
+PRODUCT LONGEVITY → CONSUMPTION SYSTEMS → OWNERSHIP / ACCESS →
+POST-GROWTH / DEGROWTH → SOCIAL + POLITICAL TRANSFORMATION.
 
-The candidate is willing to move completely away from product design
-for a PhD. A theoretical PhD is acceptable, including projects with
-little or no making.
+Strong interests include degrowth, post-growth, political economy,
+sustainable consumption, alternative ownership/access, commons,
+sufficiency, social practices, ecological/social transformation,
+transition design, social design, design justice, participatory/co-design,
+governance, policy, sustainable lifestyles, consumption systems,
+service systems, transition studies, alternative futures and critical design.
 
-The candidate is particularly interested in the intersection of:
+The candidate is comfortable with qualitative, theoretical, policy,
+participatory and mixed-method research. A PhD does not need to be in
+design and may be housed in sociology, political science, sustainability,
+STS, environmental humanities or related fields.
 
-design
-+
-sustainability
-+
-consumption
-+
-systems
-+
-social transformation
-+
-post-growth / degrowth
-+
-alternative futures
-
-The candidate's intellectual trajectory is:
-
-PRODUCT DESIGN
-→ SUSTAINABLE DESIGN
-→ SUSTAINABLE CONSUMPTION
-→ PRODUCT LONGEVITY
-→ CONSUMPTION SYSTEMS
-→ OWNERSHIP / ACCESS
-→ POST-GROWTH / DEGROWTH
-→ SOCIAL + POLITICAL TRANSFORMATION
-
-The candidate is especially interested in research connecting design
-with wider social, economic, political and ecological systems.
+Avoid projects whose central work is materials science, chemistry,
+advanced engineering, manufacturing engineering, computational modelling,
+data science, AI, technical optimisation or pure technical LCA.
 `;
-
-/* ============================================================
-   RESEARCH PRIORITIES
-   ============================================================ */
-
-const RESEARCH_PRIORITIES = `
-Ranked research priorities:
-
-1. Degrowth / post-growth
-2. Political economy
-3. Social and ecological transformation
-4. Post-consumerism / consumer culture
-5. Alternative ownership / access / commons
-6. Governance / public policy
-7. Sustainable consumption
-8. Product longevity
-9. Repair / reuse
-
-Very strong themes:
-
-- degrowth
-- post-growth
-- post-consumerism
-- sustainable consumption
-- alternative consumption systems
-- alternative ownership
-- access over ownership
-- commons
-- sharing
-- sufficiency
-- social practices
-- political economy
-- ecological transformation
-- social transformation
-- transition design
-- social design
-- design justice
-- participatory design
-- co-design
-- public-sector design
-- governance
-- policy
-- sustainable lifestyles
-- consumption systems
-- service systems
-- systems change
-- transition studies
-- alternative futures
-- speculative futures
-- critical design
-`;
-
-/* ============================================================
-   DISCIPLINES
-   ============================================================ */
-
-const DISCIPLINES = `
-The candidate is comfortable applying to:
-
-- Design Research
-- Industrial Design
-- Product Design
-- Service Design
-- Design Studies
-- Design for Sustainability
-- Transition Design
-- Social Design
-- Design & Society
-- Sustainability Studies
-- Innovation Studies
-- STS
-- Political Science
-- Political Economy
-- Sociology
-- Environmental Humanities
-- Urban / Spatial Design
-- Social Practice Research
-- Transition Studies
-- Consumption Studies
-- Environmental Social Science
-
-A position does NOT need to contain "design" in its title.
-
-A sociology, political economy, sustainability, environmental humanities,
-STS, transition studies, or related PhD can be an excellent match if the
-research topic strongly fits the candidate.
-
-Do NOT reject a position simply because the academic department is not
-design.
-
-Conversely, a position with "sustainable design" in its title should be
-rejected if it is primarily materials science, engineering, chemistry,
-manufacturing, or technical LCA.
-`;
-
-/* ============================================================
-   METHODS
-   ============================================================ */
-
-const METHODS = `
-The candidate is comfortable with:
-
-- qualitative research
-- interviews
-- ethnography
-- participant observation
-- participatory research
-- participatory design
-- co-design
-- workshops
-- speculative design
-- design fiction
-- prototyping
-- service design
-- system mapping
-- behavioural research
-- policy analysis
-- discourse analysis
-- theoretical research
-- case studies
-- action research
-- living labs
-- community-based research
-- social practice research
-- mixed methods
-- quantitative methods when appropriate
-
-The candidate is particularly comfortable with qualitative research.
-
-LCA can be used as a supporting method.
-
-The candidate prefers to avoid projects where the central work is:
-
-- materials science
-- chemistry
-- advanced engineering
-- manufacturing engineering
-- computational modelling
-- data science
-- AI
-- technical optimisation
-`;
-
-/* ============================================================
-   EXCLUSIONS
-   ============================================================ */
-
-const EXCLUSIONS = `
-Reject or heavily penalize:
-
-1. Materials science as the main research topic
-2. Chemistry as the main research topic
-3. Engineering-heavy sustainability
-4. Manufacturing engineering
-5. Pure technical LCA
-6. Battery/material development
-7. Polymer/material chemistry
-8. Mechanical engineering
-9. Pure energy engineering
-10. AI/computational research as the main topic
-11. Purely technical optimisation
-12. Projects with no meaningful connection to the candidate's interests
-13. Projects requiring a highly specialised engineering degree
-14. Self-funded PhDs
-15. Tuition-only PhDs
-16. Funding that is unclear or cannot reasonably be verified
-17. Positions whose deadline has already passed
-18. Positions without a real, verifiable application page
-19. Positions that are merely generic PhD programmes with no specific
-    funded position currently open
-20. United States / USA positions
-
-The United States must be excluded regardless of research fit.
-`;
-
-/* ============================================================
-   GEOGRAPHY
-   ============================================================ */
 
 const GEOGRAPHY = `
-Geographic priorities:
-
-TIER 1:
-- Netherlands
-- Belgium
-- Sweden
-- Denmark
-- Norway
-- Finland
-- United Kingdom
-- Germany
-- Italy
-- Switzerland
-- Austria
-
-TIER 2:
-- France
-- Ireland
-- Spain
-- Portugal
-- Luxembourg
-- Iceland
-
-TIER 3:
-- all other countries worldwide
-
-Strong opportunities in Canada, Australia, New Zealand, Japan,
-South Korea, Singapore, Taiwan, Hong Kong, Eastern Europe and elsewhere
-should still be considered.
-
-Geography is a preference only.
-
-A weaker research fit must NOT receive a high score merely because
-the university is in a preferred country.
+Prioritise Netherlands, Belgium, Sweden, Denmark, Norway, Finland,
+United Kingdom, Germany, Italy, Switzerland and Austria.
+Then consider France, Ireland, Spain, Portugal, Luxembourg and Iceland,
+plus strong opportunities elsewhere. Geography is a preference, not a
+research-fit filter. Exclude the United States.
 `;
-
-/* ============================================================
-   FUNDING
-   ============================================================ */
-
-const FUNDING_RULES = `
-Funding is mandatory.
-
-Accept only positions where the PhD is:
-
-- fully funded
-- salaried
-- funded through a doctoral contract
-- funded through a scholarship that clearly covers the PhD
-
-Reject:
-
-- self-funded PhDs
-- tuition-only positions
-- positions where funding is unclear
-- generic programmes where the student must independently find funding
-
-Prefer positions where salary/stipend and funding are explicitly stated.
-`;
-
-/* ============================================================
-   VALIDITY
-   ============================================================ */
-
-const VALIDITY_RULES = `
-Every result MUST be a real, currently open PhD / doctoral position.
-
-The position must have:
-
-- a specific PhD/doctoral research topic
-- a university/research institution
-- a real application page
-- a verifiable future deadline
-- clear funding
-- enough information to judge research fit
-
-Do NOT include:
-
-- expired positions
-- positions with deadlines in the past
-- generic programme pages with no open project
-- old job advertisements
-- blog posts
-- funding databases without a specific open position
-- articles discussing PhD opportunities
-- speculative future positions
-- positions that cannot be verified
-
-The current date is the date on which the search runs.
-Use the actual current date when evaluating deadlines.
-`;
-
-/* ============================================================
-   SEARCH STRATEGY
-   ============================================================ */
 
 const SEARCH_STRATEGY = `
-Search broadly across many conceptual clusters.
+Search broadly rather than only for industrial design PhDs. Search
+combinations involving design, sustainability, sustainable consumption,
+degrowth, post-growth, post-consumerism, political economy, alternative
+ownership, access, commons, sharing, sufficiency, transition design,
+social design, design justice, governance, public policy, consumption
+systems, service systems, product longevity, repair/reuse, sustainable
+lifestyles, social practices, circular economy and societal/ecological
+transformation.
 
-Do NOT only search for "industrial design PhD".
-
-Search combinations around:
-
-1. design + sustainability
-2. design + degrowth
-3. design + post-growth
-4. design + sustainable consumption
-5. design + post-consumerism
-6. design + political economy
-7. design + alternative ownership
-8. design + commons
-9. design + sharing
-10. design + access instead of ownership
-11. design + social transformation
-12. design + ecological transformation
-13. transition design
-14. social design
-15. design justice
-16. design + governance
-17. design + public policy
-18. design + consumption systems
-19. service design + sustainability
-20. service systems + consumption
-21. product longevity
-22. repair and reuse
-23. sustainable lifestyles
-24. social practices + consumption
-25. environmental sociology + consumption
-26. political economy + sustainability
-27. degrowth + consumption
-28. post-growth + society
-29. post-growth + policy
-30. alternative economic systems
-31. sufficiency
-32. commons
-33. sharing economy
-34. access economy
-35. social innovation
-36. transition studies
-37. ecological transition
-38. societal transformation
-39. alternative futures
-40. speculative futures
-41. critical design
-42. design fiction
-43. sustainable consumption systems
-44. ownership models
-45. circular economy + society
-46. circular economy + consumption
-47. circular economy + policy
-
-Search official university career pages and official PhD vacancy pages
-whenever possible.
-
-Search across the candidate's priority countries first, then globally.
-
-Look beyond titles.
-
-For example, a PhD titled:
-
-"Changing Consumption Practices in Post-Growth Societies"
-
-may be an excellent result even if it does not contain the word design.
-
-Likewise:
-
-"Political Economy of Sustainable Lifestyles"
-
-could be an excellent result.
-
-However:
-
-"Advanced Sustainable Polymer Materials"
-
-should be rejected even though it contains sustainability.
+Prioritise official university career/vacancy pages and official doctoral
+position pages. The result must be a specific open PhD/doctoral vacancy,
+not a generic programme.
 `;
 
-/* ============================================================
-   SCORING
-   ============================================================ */
+const RULES = `
+Every result must be currently open, fully funded, have a specific PhD
+project, a real application/vacancy page, and a verifiable future deadline.
+Reject expired, self-funded, tuition-only, unclear-funding, generic,
+unverifiable or United States positions.
 
-const SCORING = `
-Score every position from 0 to 100.
+Score 0-100 using research-topic fit, degrowth/political/social fit,
+sustainability, design compatibility, consumption/ownership/systems,
+methods, candidate background and funding quality. Return only scores 60+.
 
-Use these weights:
-
-Research-topic fit:                  25
-Degrowth / political / social fit:   20
-Sustainability fit:                  15
-Design compatibility:                15
-Consumption / ownership / systems:   10
-Methods compatibility:                5
-Candidate background:                 5
-Funding quality:                      5
-
-Interpretation:
-
-90-100 = Exceptional match
-80-89  = Very strong match
-70-79  = Strong match
-60-69  = Wildcard / potentially relevant
-Below 60 = reject
-
-A high score requires genuine intellectual alignment.
-
-Do NOT inflate scores because of university prestige,
-country preference, or the presence of the word "sustainability".
-
-A position about sustainable materials should score poorly if the
-candidate's interests are not central to the project.
-
-A position about degrowth, sustainable consumption, alternative
-ownership, political economy, social transformation or transition
-design can score extremely highly even if the project is housed in
-sociology, political science, environmental studies, or another
-non-design department.
+IMPORTANT LANGUAGE AND IELTS RULES:
+1. Determine the actual language of the PhD position/application.
+2. Do NOT reject or filter a position because of its language.
+3. If the position is not in English, explicitly mark it as "Not English".
+4. If it is in English, mark it as "English".
+5. If the language cannot be verified, mark it as "Unknown".
+6. Search the university's official website for English-language / IELTS /
+   English proficiency requirements for applicants to this PhD or the
+   relevant doctoral programme.
+7. Only report an IELTS requirement when it is supported by an official
+   university source. Do not guess or infer a score.
+8. If an official university source does not specify IELTS, write
+   "Not specified on official university website".
+9. Include the official university page URL used for the IELTS information
+   when one was found.
+10. An IELTS requirement is informational only and must never affect the
+    score or eligibility filtering.
 `;
-
-/* ============================================================
-   OUTPUT
-   ============================================================ */
 
 const OUTPUT_RULES = `
-Return ONLY valid JSON.
-
-Return an array of objects.
-
-Each object MUST contain:
-
+Return ONLY a valid JSON array. Every object MUST contain:
 {
   "title": "...",
   "university": "...",
   "country": "...",
+  "city": "...",
   "deadline": "YYYY-MM-DD",
   "url": "...",
   "funding": "...",
   "overall_score": 0,
   "why_it_matches": "...",
-  "strategic_fit": "..."
+  "strategic_fit": "...",
+  "application_language": "English | Not English | Unknown",
+  "language_source_url": "...",
+  "ielts_requirement": "...",
+  "ielts_source_url": "..."
 }
 
-Rules:
-
-- deadline must be an actual future deadline
-- overall_score must be an integer from 0 to 100
-- URL must be the actual application/vacancy page
-- explain why the project fits the candidate specifically
-- strategic_fit should explain how the project fits the candidate's
-  long-term trajectory
-- do not invent information
-- if funding cannot be verified, reject the position
-- if deadline cannot be verified, reject the position
-- if the position is expired, reject it
-- only return positions scoring 60 or higher
-- prioritize quality over quantity
-- return as many genuinely strong matches as you can verify
+Use an empty string for source URLs when no official source was found.
+The application/vacancy URL must be the real position page. Do not invent
+information, dates, IELTS scores, language status or URLs.
 `;
-
-/* ============================================================
-   HELPERS
-   ============================================================ */
 
 function normalizeURL(url) {
   if (!url) return "";
-
   try {
-    const parsed = new URL(url.trim());
-
+    const parsed = new URL(String(url).trim());
     parsed.hash = "";
-
-    const trackingParams = [
-      "utm_source",
-      "utm_medium",
-      "utm_campaign",
-      "utm_term",
-      "utm_content",
-      "ref",
-      "source"
-    ];
-
-    for (const param of trackingParams) {
+    for (const param of [
+      "utm_source", "utm_medium", "utm_campaign", "utm_term",
+      "utm_content", "ref", "source"
+    ]) {
       parsed.searchParams.delete(param);
     }
-
     return parsed.toString().replace(/\/$/, "");
   } catch {
-    return url.trim().replace(/\/$/, "");
+    return String(url).trim().replace(/\/$/, "");
   }
 }
 
 function isFutureDeadline(deadline) {
-  if (!deadline) return false;
-
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(deadline || ""))) return false;
   const date = new Date(`${deadline}T23:59:59`);
-
-  if (Number.isNaN(date.getTime())) return false;
-
-  return date.getTime() > Date.now();
+  return Number.isFinite(date.getTime()) && date.getTime() > Date.now();
 }
 
 function cleanResults(results) {
   if (!Array.isArray(results)) return [];
-
   const seen = new Set();
   const cleaned = [];
 
@@ -556,53 +152,56 @@ function cleanResults(results) {
     const title = String(item.title || "").trim();
     const university = String(item.university || "").trim();
     const country = String(item.country || "").trim();
+    const city = String(item.city || "").trim();
     const deadline = String(item.deadline || "").trim();
     const url = normalizeURL(item.url);
-
     const score = Number(item.overall_score);
 
-    if (!title || !university || !url) continue;
-
+    if (!title || !university || !country || !url) continue;
     if (!isFutureDeadline(deadline)) continue;
-
-    if (!Number.isFinite(score)) continue;
-
-    if (score < 60) continue;
-
+    if (!Number.isFinite(score) || score < 60) continue;
     if (seen.has(url)) continue;
-
     seen.add(url);
+
+    const language = ["English", "Not English", "Unknown"].includes(
+      String(item.application_language || "")
+    ) ? String(item.application_language) : "Unknown";
 
     cleaned.push({
       title,
       university,
       country,
+      city,
       deadline,
       url,
       funding: String(item.funding || "").trim(),
       overall_score: Math.round(score),
-      why_it_matches: String(
-        item.why_it_matches || item.fit_reason || ""
+      why_it_matches: String(item.why_it_matches || item.fit_reason || "").trim(),
+      strategic_fit: String(item.strategic_fit || "").trim(),
+      why_it_is_not_perfect: String(item.why_it_is_not_perfect || "").trim(),
+      supervisor: String(item.supervisor || "").trim(),
+      classification: String(item.classification || "").trim(),
+      research_area: String(item.research_area || "").trim(),
+      application_language: language,
+      language_source_url: normalizeURL(item.language_source_url),
+      ielts_requirement: String(
+        item.ielts_requirement || "Not specified on official university website"
       ).trim(),
-      strategic_fit: String(
-        item.strategic_fit || ""
-      ).trim()
+      ielts_source_url: normalizeURL(item.ielts_source_url)
     });
   }
 
-  cleaned.sort(
-    (a, b) =>
-      b.overall_score - a.overall_score ||
-      new Date(a.deadline) - new Date(b.deadline)
+  cleaned.sort((a, b) =>
+    b.overall_score - a.overall_score ||
+    new Date(a.deadline) - new Date(b.deadline)
   );
 
   return cleaned;
 }
 
 function extractJSON(text) {
-  let cleaned = String(text || "").trim();
-
-  cleaned = cleaned
+  let cleaned = String(text || "")
+    .trim()
     .replace(/^```json\s*/i, "")
     .replace(/^```\s*/i, "")
     .replace(/\s*```$/i, "")
@@ -612,222 +211,102 @@ function extractJSON(text) {
     return JSON.parse(cleaned);
   } catch {}
 
-  const firstArray = cleaned.indexOf("[");
-  const lastArray = cleaned.lastIndexOf("]");
-
-  if (firstArray !== -1 && lastArray !== -1) {
-    const possibleJSON = cleaned.slice(
-      firstArray,
-      lastArray + 1
-    );
-
+  const first = cleaned.indexOf("[");
+  const last = cleaned.lastIndexOf("]");
+  if (first !== -1 && last !== -1) {
     try {
-      return JSON.parse(possibleJSON);
+      return JSON.parse(cleaned.slice(first, last + 1));
     } catch {}
   }
 
-  throw new Error(
-    "Could not extract valid JSON from Gemini response."
-  );
+  throw new Error("Could not extract valid JSON from Gemini response.");
 }
 
-/* ============================================================
-   FILE STORAGE
-   ============================================================ */
+function loadJSON(file, fallback) {
+  if (!existsSync(file)) return fallback;
+  try {
+    return JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    return fallback;
+  }
+}
+
+function saveJSON(file, value) {
+  writeFileSync(file, JSON.stringify(value, null, 2) + "\n");
+}
 
 function loadExisting() {
-  if (!existsSync(RESULTS_FILE)) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(
-      readFileSync(RESULTS_FILE, "utf8")
-    );
-
-    return cleanResults(parsed);
-  } catch (error) {
-    console.error(
-      "Could not read results.json:",
-      error.message
-    );
-
-    return [];
-  }
+  return cleanResults(loadJSON(RESULTS_FILE, []));
 }
-
-function saveResults(results) {
-  writeFileSync(
-    RESULTS_FILE,
-    JSON.stringify(results, null, 2) + "\n"
-  );
-}
-
-function loadNotified() {
-  if (!existsSync(NOTIFIED_FILE)) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(
-      readFileSync(NOTIFIED_FILE, "utf8")
-    );
-  } catch {
-    return {};
-  }
-}
-
-function saveNotified(notified) {
-  writeFileSync(
-    NOTIFIED_FILE,
-    JSON.stringify(notified, null, 2) + "\n"
-  );
-}
-
-/* ============================================================
-   GEMINI
-   ============================================================ */
 
 async function callGemini() {
   const endpoint =
-    `https://generativelanguage.googleapis.com/v1beta/models/` +
-    `${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
   const prompt = `
 You are an expert PhD opportunity researcher.
 
-Your task is to find currently open, fully funded PhD positions
-that are exceptionally well aligned with this specific candidate.
+Find currently open, fully funded PhD positions that are exceptionally
+well aligned with this candidate.
 
-================ CANDIDATE PROFILE ================
-
+================ CANDIDATE ================
 ${CANDIDATE_PROFILE}
 
-================ RESEARCH PRIORITIES ================
-
-${RESEARCH_PRIORITIES}
-
-================ DISCIPLINES ================
-
-${DISCIPLINES}
-
-================ METHODS ================
-
-${METHODS}
-
-================ EXCLUSIONS ================
-
-${EXCLUSIONS}
-
 ================ GEOGRAPHY ================
-
 ${GEOGRAPHY}
 
-================ FUNDING ================
-
-${FUNDING_RULES}
-
-================ VALIDITY ================
-
-${VALIDITY_RULES}
-
 ================ SEARCH STRATEGY ================
-
 ${SEARCH_STRATEGY}
 
-================ SCORING ================
-
-${SCORING}
+================ RULES ================
+${RULES}
 
 ================ OUTPUT ================
-
 ${OUTPUT_RULES}
 
-Use Google Search extensively.
-
-Search multiple conceptual clusters rather than relying on one query.
-
-Prioritize official university and research institution pages.
-
-The goal is not to find generic sustainability PhDs.
-
-The goal is to find PhDs that could realistically become the next
-academic step in this candidate's trajectory from sustainable design
-toward sustainable consumption, systems change, degrowth, post-growth,
-political economy and social/ecological transformation.
+Use Google Search extensively. For IELTS and language information,
+prefer official university sources. Search the position page and, when
+needed, the university's official admissions/doctoral English-language
+requirements page. Do not use third-party summaries for IELTS claims.
 
 Return only verified current opportunities.
 `;
 
   const body = {
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            text: prompt
-          }
-        ]
-      }
-    ],
-    tools: [
-      {
-        googleSearch: {}
-      }
-    ],
-    generationConfig: {
-  temperature: 0.2
-}
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    tools: [{ googleSearch: {} }],
+    generationConfig: { temperature: 0.2 }
   };
 
   console.log("Searching Gemini + Google Search...");
 
   const response = await fetch(endpoint, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-
-    throw new Error(
-      `Gemini API error ${response.status}: ${errorText}`
-    );
+    throw new Error(`Gemini API error ${response.status}: ${errorText}`);
   }
 
   const data = await response.json();
-
-  const text =
-    data?.candidates?.[0]?.content?.parts
-      ?.map(part => part.text || "")
-      .join("") || "";
+  const text = data?.candidates?.[0]?.content?.parts
+    ?.map(part => part.text || "")
+    .join("") || "";
 
   if (!text) {
-    console.error(
-      JSON.stringify(data, null, 2)
-    );
-
-    throw new Error(
-      "Gemini returned no usable text."
-    );
+    console.error(JSON.stringify(data, null, 2));
+    throw new Error("Gemini returned no usable text.");
   }
 
   return extractJSON(text);
 }
 
-/* ============================================================
-   TELEGRAM
-   ============================================================ */
-
 async function sendTelegramMessage(message) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-    console.log(
-      "Telegram secrets are not configured. Skipping Telegram."
-    );
-
+    console.log("Telegram secrets are not configured. Skipping Telegram.");
     return false;
   }
 
@@ -836,9 +315,7 @@ async function sendTelegramMessage(message) {
 
   const response = await fetch(endpoint, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: TELEGRAM_CHAT_ID,
       text: message,
@@ -847,234 +324,108 @@ async function sendTelegramMessage(message) {
   });
 
   const data = await response.json();
-
   if (!data.ok) {
-    console.error(
-      "Telegram API error:",
-      JSON.stringify(data, null, 2)
-    );
-
+    console.error("Telegram API error:", JSON.stringify(data, null, 2));
     return false;
   }
 
   console.log("Telegram notification sent.");
-
   return true;
 }
 
 function formatTelegramMessage(position) {
+  const languageLine = position.application_language === "Not English"
+    ? "⚠️ Language: Not English"
+    : `🗣️ Language: ${position.application_language || "Unknown"}`;
+
   return [
     `⭐ EXCEPTIONAL PhD MATCH — ${position.overall_score}/100`,
     "",
     `🎓 ${position.title}`,
     "",
     `🏛️ ${position.university}`,
-    `🌍 ${position.country || "Country not specified"}`,
+    `🌍 ${position.country}${position.city ? ` · ${position.city}` : ""}`,
+    languageLine,
+    `📚 IELTS: ${position.ielts_requirement || "Not specified"}`,
     `📅 Deadline: ${position.deadline || "Not specified"}`,
     "",
-    `💰 Funding:`,
+    "💰 Funding:",
     position.funding || "Not specified",
     "",
-    `🎯 Why it matches:`,
-    position.why_it_matches ||
-      "Strong match with your research profile.",
+    "🎯 Why it matches:",
+    position.why_it_matches || "Strong match with your research profile.",
     "",
-    `🧭 Strategic fit:`,
-    position.strategic_fit ||
-      "Strong alignment with your long-term research trajectory.",
+    "🧭 Strategic fit:",
+    position.strategic_fit || "Strong alignment with your research trajectory.",
     "",
-    `🔗 Apply:`,
+    "🔗 Apply:",
     position.url
   ].join("\n");
 }
 
-/* ============================================================
-   TELEGRAM NOTIFICATION LOGIC
-   ============================================================ */
-
 async function notifyExceptionalMatches(results) {
-  const notified = loadNotified();
-
+  const notified = loadJSON(NOTIFIED_FILE, {});
   let changed = false;
 
-  const exceptional = results.filter(
-    result => Number(result.overall_score) >= 90
-  );
-
-  console.log(
-    `Exceptional active positions: ${exceptional.length}`
-  );
-
-  for (const position of exceptional) {
+  for (const position of results.filter(x => Number(x.overall_score) >= 90)) {
     const url = normalizeURL(position.url);
+    const previousScore = Number(notified[url]?.score || 0);
 
-    const previousNotification = notified[url];
+    if (previousScore >= Number(position.overall_score)) continue;
 
-    /*
-      We notify when:
-
-      1. This position has never been notified before
-         OR
-      2. Its current score is higher than the score we previously
-         notified about.
-
-      This means:
-
-      New 93 → notify
-      Existing 93 → don't notify
-      Existing 85 → later becomes 93 → notify
-    */
-
-    const previousScore = Number(
-      previousNotification?.score || 0
-    );
-
-    if (
-      previousNotification &&
-      previousScore >= Number(position.overall_score)
-    ) {
-      continue;
-    }
-
-    const message =
-      formatTelegramMessage(position);
-
-    const sent =
-      await sendTelegramMessage(message);
-
-    if (sent) {
+    if (await sendTelegramMessage(formatTelegramMessage(position))) {
       notified[url] = {
         score: Number(position.overall_score),
         notified_at: new Date().toISOString()
       };
-
       changed = true;
     }
   }
 
-  if (changed) {
-    saveNotified(notified);
-  }
+  if (changed) saveJSON(NOTIFIED_FILE, notified);
 }
-
-/* ============================================================
-   MAIN
-   ============================================================ */
 
 async function main() {
   console.log("======================================");
   console.log("PH D RADAR");
   console.log("======================================");
 
-  console.log("Loading existing results...");
-
   const existingResults = loadExisting();
-
-  console.log(
-    `Existing active positions: ${existingResults.length}`
-  );
-
+  console.log(`Existing active positions: ${existingResults.length}`);
   console.log("Running new search...");
 
-  const rawResults = await callGemini();
+  const newSearchResults = cleanResults(await callGemini());
+  console.log(`Gemini returned ${newSearchResults.length} valid positions.`);
 
-  const newSearchResults =
-    cleanResults(rawResults);
-
-  console.log(
-    `Gemini returned ${newSearchResults.length} valid positions.`
-  );
-
-  /*
-    Existing positions are retained only if their deadline
-    is still valid because loadExisting() already removes
-    expired positions.
-  */
-
-  const existingByURL = new Map();
-
-  for (const result of existingResults) {
-    existingByURL.set(
-      normalizeURL(result.url),
-      result
-    );
-  }
-
-  /*
-    If Gemini finds an existing position again, keep the newest
-    information and score.
-  */
+  const byURL = new Map(existingResults.map(result => [normalizeURL(result.url), result]));
 
   for (const result of newSearchResults) {
     const url = normalizeURL(result.url);
+    const existing = byURL.get(url);
 
-    const existing =
-      existingByURL.get(url);
-
-    if (!existing) {
-      existingByURL.set(url, result);
-      continue;
-    }
-
-    /*
-      Keep the newer/better information.
-
-      If the new search gives a higher score, use it.
-      Otherwise retain the existing score.
-    */
-
-    if (
-      Number(result.overall_score) >=
-      Number(existing.overall_score)
-    ) {
-      existingByURL.set(url, {
-        ...existing,
-        ...result
-      });
+    if (!existing || Number(result.overall_score) >= Number(existing.overall_score)) {
+      byURL.set(url, existing ? { ...existing, ...result } : result);
     }
   }
 
-  const mergedResults =
-    cleanResults(
-      Array.from(existingByURL.values())
-    );
+  const mergedResults = cleanResults(Array.from(byURL.values()));
+  saveJSON(RESULTS_FILE, mergedResults);
 
-  saveResults(mergedResults);
+  console.log(`Saved ${mergedResults.length} active positions.`);
+  await notifyExceptionalMatches(mergedResults);
 
-  console.log(
-    `Saved ${mergedResults.length} active positions.`
-  );
-
-  /*
-    Telegram notifications happen AFTER results are saved.
-
-    Only 90+ results are considered.
-  */
-
-  await notifyExceptionalMatches(
-    mergedResults
-  );
-
-  console.log("");
-  console.log("Top matches:");
-
-  for (
-    const result of mergedResults.slice(0, 10)
-  ) {
+  console.log("\nTop matches:");
+  for (const result of mergedResults.slice(0, 10)) {
     console.log(
-      `${result.overall_score}/100 | ` +
-      `${result.title} | ` +
-      `${result.university}`
+      `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country}`
     );
   }
 
-  console.log("");
-  console.log("Radar complete.");
+  console.log("\nRadar complete.");
 }
 
 main().catch(error => {
-  console.error("");
-  console.error("RADAR FAILED");
+  console.error("\nRADAR FAILED");
   console.error(error);
   process.exit(1);
 });
