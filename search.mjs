@@ -1,4 +1,3 @@
-````javascript
 // PhD Radar — personalized global search
 // Gemini 2.5 Flash + Google Search grounding
 //
@@ -1082,4 +1081,3 @@ main().catch(error => {
   console.error(error);
   process.exit(1);
 });
-````
