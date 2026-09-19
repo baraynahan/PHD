@@ -340,6 +340,15 @@ function loadExisting() {
 }
 
 async function callGemini() {
+  console.log(`AI provider selected: ${AI_PROVIDER}`);
+  if (AI_PROVIDER === "gemini") {
+    console.log(`AI model: ${GEMINI_MODEL}`);
+    console.log(`Gemini API key configured: ${Boolean(GEMINI_API_KEY)}`);
+  } else {
+    console.log(`AI model: ${APMIX_MODEL}`);
+    console.log(`APMix API key configured: ${Boolean(APMIX_API_KEY)}`);
+  }
+
   const prompt = `
 You are an expert PhD opportunity researcher.
 
@@ -468,6 +477,13 @@ Return only opportunities you can identify with high confidence.`}
 
   const text = data?.choices?.[0]?.message?.content || "";
 
+  console.log("APMix request succeeded.");
+  if (data?.usage) {
+    console.log("APMix usage:", JSON.stringify(data.usage));
+  } else {
+    console.log("APMix did not return a usage object.");
+  }
+
   if (!text) {
     console.error(JSON.stringify(data, null, 2));
     throw new Error("APMix returned no usable text.");
@@ -567,7 +583,7 @@ async function main() {
   console.log("Running new search...");
 
   const newSearchResults = cleanResults(await callGemini());
-  console.log(`Gemini returned ${newSearchResults.length} valid positions.`);
+  console.log(`${AI_PROVIDER} returned ${newSearchResults.length} valid positions.`);
 
   const byURL = new Map(existingResults.map(result => [normalizeURL(result.url), result]));
 
