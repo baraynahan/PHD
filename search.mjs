@@ -7,6 +7,7 @@ import {
 const GEMINI_MODEL = "gemini-2.5-flash";
 const RESULTS_FILE = "results.json";
 const NOTIFIED_FILE = "notified.json";
+const SOURCES_FILE = "sources.json";
 
 const AI_PROVIDER = String(process.env.AI_PROVIDER || "gemini").toLowerCase();
 
@@ -452,7 +453,21 @@ Return only opportunities you can identify with high confidence.`}
       throw new Error("Gemini returned no usable text after retry.");
     }
 
-    return extractJSON(text);
+    const results = extractJSON(text);
+    const groundingChunks = data?.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    const sources = groundingChunks
+      .map(chunk => chunk?.web)
+      .filter(web => web?.uri)
+      .map(web => ({
+        title: String(web.title || "").trim(),
+        url: normalizeURL(web.uri)
+      }))
+      .filter(source => source.url);
+    const uniqueSources = Array.from(
+      new Map(sources.map(source => [source.url, source])).values()
+    );
+    console.log(`Gemini grounding sources captured: ${uniqueSources.length}`);
+    return { results, sources: uniqueSources };
   }
 
   const endpoint = "https://api.apmix.ai/v1/chat/completions";
@@ -493,7 +508,7 @@ Return only opportunities you can identify with high confidence.`}
     throw new Error("APMix returned no usable text.");
   }
 
-  return extractJSON(text);
+  return { results: extractJSON(text), sources: [] };
 }
 
 async function sendTelegramMessage(message) {
@@ -586,10 +601,18 @@ async function main() {
   console.log(`Existing active positions: ${existingResults.length}`);
   console.log("Running new search...");
 
-  const newSearchResults = cleanResults(await callGemini()).map(result => ({
+  const searchResponse = await callGemini();
+  const newSearchResults = cleanResults(searchResponse.results).map(result => ({
     ...result,
     ai_provider: AI_PROVIDER === "gemini" ? "Gemini" : "APMix"
   }));
+  saveJSON(SOURCES_FILE, {
+    searched_at: new Date().toISOString(),
+    ai_provider: AI_PROVIDER === "gemini" ? "Gemini" : "APMix",
+    model: AI_PROVIDER === "gemini" ? GEMINI_MODEL : APMIX_MODEL,
+    sources: Array.isArray(searchResponse.sources) ? searchResponse.sources : []
+  });
+  console.log(`Saved ${Array.isArray(searchResponse.sources) ? searchResponse.sources.length : 0} search sources.`);
   console.log(`${AI_PROVIDER} returned ${newSearchResults.length} valid positions.`);
 
   const byURL = new Map(existingResults.map(result => [normalizeURL(result.url), result]));
