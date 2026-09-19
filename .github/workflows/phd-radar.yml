@@ -63,7 +63,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add results.json notified.json
+          git add results.json notified.json sources.json
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
@@ -79,8 +79,8 @@ jobs:
 
               if ! git rebase origin/main; then
                 echo "Rebase conflict detected. Resolving generated result files..."
-                git checkout --theirs results.json notified.json
-                git add results.json notified.json
+                git checkout --theirs results.json notified.json sources.json
+                git add results.json notified.json sources.json
                 GIT_EDITOR=true git rebase --continue
               fi
 
