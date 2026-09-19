@@ -187,7 +187,13 @@ function cleanResults(results) {
       ielts_requirement: String(
         item.ielts_requirement || "Not specified on official university website"
       ).trim(),
-      ielts_source_url: normalizeURL(item.ielts_source_url)
+      ielts_source_url: normalizeURL(item.ielts_source_url),
+      verification_status: ["Verified", "Not verified"].includes(String(item.verification_status || ""))
+        ? String(item.verification_status)
+        : "Not verified",
+      verification_checked_at: String(item.verification_checked_at || "").trim(),
+      verification_note: String(item.verification_note || "").trim(),
+      verification_url: normalizeURL(item.verification_url)
     });
   }
 
@@ -197,6 +203,88 @@ function cleanResults(results) {
   );
 
   return cleaned;
+}
+
+
+async function verifyPosition(position) {
+  const checkedAt = new Date().toISOString();
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
+    const response = await fetch(position.url, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "PhD-Radar/1.0 vacancy-check"
+      }
+    });
+
+    clearTimeout(timeout);
+
+    const finalURL = normalizeURL(response.url || position.url);
+    const contentType = String(response.headers.get("content-type") || "");
+    const body = contentType.includes("text/")
+      ? (await response.text()).slice(0, 250000)
+      : "";
+    const text = body.toLowerCase();
+
+    const phdSignal = /phd|ph\.d|doctoral|doctorate/.test(text);
+    const vacancySignal = /vacancy|position|fellowship|scholarship|researcher|job opening|apply/.test(text);
+    const titleWords = String(position.title || "")
+      .toLowerCase()
+      .split(/\\W+/)
+      .filter(word => word.length >= 5)
+      .slice(0, 8);
+    const titleSignal = titleWords.length === 0 ||
+      titleWords.filter(word => text.includes(word)).length >= Math.min(2, titleWords.length);
+
+    if (response.ok && phdSignal && vacancySignal && titleSignal) {
+      return {
+        verification_status: "Verified",
+        verification_checked_at: checkedAt,
+        verification_note: `HTTP ${response.status}; page contains PhD/doctoral and vacancy/position signals`,
+        verification_url: finalURL
+      };
+    }
+
+    return {
+      verification_status: "Not verified",
+      verification_checked_at: checkedAt,
+      verification_note: response.ok
+        ? "Page is reachable, but the automated content check could not confirm that it is a PhD vacancy page."
+        : `HTTP ${response.status}`,
+      verification_url: finalURL
+    };
+  } catch (error) {
+    return {
+      verification_status: "Not verified",
+      verification_checked_at: checkedAt,
+      verification_note: error?.name === "AbortError"
+        ? "Verification timed out."
+        : `Could not fetch page: ${String(error?.message || error)}`,
+      verification_url: normalizeURL(position.url)
+    };
+  }
+}
+
+async function verifyResults(results) {
+  console.log(`Verifying ${results.length} results (informational only; no results will be removed)...`);
+  const verified = [];
+
+  for (let i = 0; i < results.length; i += 5) {
+    const batch = results.slice(i, i + 5);
+    const checked = await Promise.all(batch.map(verifyPosition));
+    for (let j = 0; j < batch.length; j++) {
+      verified.push({ ...batch[j], ...checked[j] });
+      console.log(
+        `${checked[j].verification_status === "Verified" ? "✓" : "?"} ${batch[j].title}`
+      );
+    }
+  }
+
+  return verified;
 }
 
 function extractJSON(text) {
@@ -269,12 +357,7 @@ prefer official university sources. Search the position page and, when
 needed, the university's official admissions/doctoral English-language
 requirements page. Do not use third-party summaries for IELTS claims.
 
-Return current opportunities found through search. Do not invent a URL.
-If you found a real vacancy but the exact application URL is difficult to
-recover, use the best real official vacancy URL you actually found rather
-than constructing one. Prefer a direct vacancy page, but an official
-university recruitment page is acceptable if it clearly identifies the
-specific vacancy.
+Return only verified current opportunities.
 `;
 
   const body = {
@@ -414,10 +497,11 @@ async function main() {
   }
 
   const mergedResults = cleanResults(Array.from(byURL.values()));
-  saveJSON(RESULTS_FILE, mergedResults);
+  const verifiedResults = await verifyResults(mergedResults);
+  saveJSON(RESULTS_FILE, verifiedResults);
 
-  console.log(`Saved ${mergedResults.length} active positions.`);
-  await notifyExceptionalMatches(mergedResults);
+  console.log(`Saved ${verifiedResults.length} active positions. Verification is informational only; no results were removed.`);
+  await notifyExceptionalMatches(verifiedResults);
 
   console.log("\nTop matches:");
   for (const result of mergedResults.slice(0, 10)) {
