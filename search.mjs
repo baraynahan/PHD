@@ -314,6 +314,32 @@ function officialUniversityDomain(url, university) {
   }
 }
 
+function hasDeadlineEvidence(text, deadline) {
+  const variants = dateVariants(deadline);
+  if (variants.some(date => text.includes(date))) return true;
+
+  const match = String(deadline || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return false;
+
+  const [, year, month, day] = match;
+  const monthName = new Date(`${deadline}T12:00:00Z`).toLocaleString("en-GB", {
+    month: "long",
+    timeZone: "UTC"
+  }).toLowerCase();
+  const shortMonth = new Date(`${deadline}T12:00:00Z`).toLocaleString("en-GB", {
+    month: "short",
+    timeZone: "UTC"
+  }).toLowerCase();
+
+  const deadlineContext = text.match(/.{0,180}(deadline|closing date|apply by|applications? (?:close|due)|apply before).{0,240}/g) || [];
+  return deadlineContext.some(context => {
+    const hasYear = context.includes(year);
+    const hasMonth = context.includes(month) || context.includes(monthName) || context.includes(shortMonth);
+    const hasDay = new RegExp(`(?:^|\\D)${Number(day)}(?:st|nd|rd|th)?(?:\\D|$)`).test(context);
+    return hasYear && hasMonth && hasDay;
+  });
+}
+
 async function fetchPage(url) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), VERIFICATION_TIMEOUT_MS);
@@ -384,11 +410,11 @@ function verifyPageContent(position, page) {
     return { verified: false, reason: "Page does not sufficiently match the university or position title." };
   }
 
-  const deadlineMatches = dateVariants(position.deadline).some(date => text.includes(date));
+  const deadlineMatches = hasDeadlineEvidence(text, position.deadline);
   if (!deadlineMatches) {
     return {
       verified: false,
-      reason: `The page does not contain the reported deadline ${position.deadline} in a recognised format.`
+      reason: `The page does not contain sufficient evidence for the reported deadline ${position.deadline}.`
     };
   }
 
@@ -418,11 +444,19 @@ async function verifyPosition(position) {
       };
     }
 
-    if (!officialUniversityDomain(page.finalUrl, position.university)) {
+    const pageText = normalizeText(page.body).slice(0, MAX_PAGE_TEXT);
+    const universityHit = pageText.includes(String(position.university || "").toLowerCase());
+    const titleHit = titleTokens(position.title).filter(token => pageText.includes(token)).length;
+    const officialDomain = officialUniversityDomain(page.finalUrl, position.university);
+
+    // University vacancy systems often use a short domain or an ATS subdomain
+    // that does not contain the university's full name (e.g. jobs.tue.nl).
+    // The live-page content check is therefore the primary identity check.
+    if (!officialDomain && !universityHit && titleHit < 2) {
       return {
         ...position,
         verified: false,
-        verification_reason: "The vacancy URL does not appear to be on the university's official domain.",
+        verification_reason: "The live page does not sufficiently identify the reported university or position.",
         verified_url: page.finalUrl || candidateURL,
         verified_at: new Date().toISOString()
       };
