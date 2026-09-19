@@ -8,12 +8,24 @@ const GEMINI_MODEL = "gemini-2.5-flash";
 const RESULTS_FILE = "results.json";
 const NOTIFIED_FILE = "notified.json";
 
+const AI_PROVIDER = String(process.env.AI_PROVIDER || "gemini").toLowerCase();
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const APMIX_API_KEY = process.env.APMIX_API_KEY;
+const APMIX_MODEL = process.env.APMIX_MODEL || "deepseek/deepseek-v4.1-flash";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-if (!GEMINI_API_KEY) {
+if (AI_PROVIDER === "gemini" && !GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY is not configured.");
+}
+
+if (AI_PROVIDER === "apmix" && !APMIX_API_KEY) {
+  throw new Error("APMIX_API_KEY is not configured.");
+}
+
+if (!["gemini", "apmix"].includes(AI_PROVIDER)) {
+  throw new Error('AI_PROVIDER must be "gemini" or "apmix".');
 }
 
 const CANDIDATE_PROFILE = `
@@ -328,9 +340,6 @@ function loadExisting() {
 }
 
 async function callGemini() {
-  const endpoint =
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-
   const prompt = `
 You are an expert PhD opportunity researcher.
 
@@ -352,72 +361,116 @@ ${RULES}
 ================ OUTPUT ================
 ${OUTPUT_RULES}
 
-Use Google Search extensively. For IELTS and language information,
+${AI_PROVIDER === "gemini"
+  ? `Use Google Search extensively. For IELTS and language information,
 prefer official university sources. Search the position page and, when
 needed, the university's official admissions/doctoral English-language
 requirements page. Do not use third-party summaries for IELTS claims.
 
-Return only verified current opportunities.
+Return only verified current opportunities.`
+  : `You are being tested through APMix using an OpenAI-compatible API.
+There is no Google Search tool available in this request. Do not invent
+URLs, deadlines or positions. Use only information you actually know.
+If you cannot reliably identify a current vacancy, return fewer results
+rather than fabricating one.
+
+Return only opportunities you can identify with high confidence.`}
 `;
 
-  async function requestGemini(generationConfig) {
-    const body = {
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      tools: [{ googleSearch: {} }],
-      generationConfig
-    };
+  if (AI_PROVIDER === "gemini") {
+    const endpoint =
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
+    async function requestGemini(generationConfig) {
+      const body = {
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        tools: [{ googleSearch: {} }],
+        generationConfig
+      };
 
-    const data = await response.json();
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
 
-    if (!response.ok) {
-      throw new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
+      }
+
+      return data;
     }
 
-    return data;
-  }
+    console.log("Gemini is searching Google...");
 
-  console.log("Gemini is searching Google...");
+    let data = await requestGemini({ temperature: 0.2 });
 
-  let data = await requestGemini({ temperature: 0.2 });
-
-  let text = data?.candidates?.[0]?.content?.parts
-    ?.map(part => part.text || "")
-    .join("") || "";
-
-  if (!text) {
-    const candidate = data?.candidates?.[0];
-    console.warn(
-      "Gemini returned no text on the first attempt.",
-      JSON.stringify({
-        finishReason: candidate?.finishReason,
-        finishMessage: candidate?.finishMessage,
-        tokenCount: candidate?.tokenCount,
-        hasGrounding: Boolean(candidate?.groundingMetadata),
-        promptFeedback: data?.promptFeedback
-      })
-    );
-
-    // Retry with thinking disabled. Gemini documents that 2.5 thinking
-    // can consume the response budget before producing visible output.
-    data = await requestGemini({
-      temperature: 0.2,
-      thinkingConfig: { thinkingBudget: 0 }
-    });
-
-    text = data?.candidates?.[0]?.content?.parts
+    let text = data?.candidates?.[0]?.content?.parts
       ?.map(part => part.text || "")
       .join("") || "";
+
+    if (!text) {
+      const candidate = data?.candidates?.[0];
+      console.warn(
+        "Gemini returned no text on the first attempt.",
+        JSON.stringify({
+          finishReason: candidate?.finishReason,
+          finishMessage: candidate?.finishMessage,
+          tokenCount: candidate?.tokenCount,
+          hasGrounding: Boolean(candidate?.groundingMetadata),
+          promptFeedback: data?.promptFeedback
+        })
+      );
+
+      data = await requestGemini({
+        temperature: 0.2,
+        thinkingConfig: { thinkingBudget: 0 }
+      });
+
+      text = data?.candidates?.[0]?.content?.parts
+        ?.map(part => part.text || "")
+        .join("") || "";
+    }
+
+    if (!text) {
+      console.error(JSON.stringify(data, null, 2));
+      throw new Error("Gemini returned no usable text after retry.");
+    }
+
+    return extractJSON(text);
   }
+
+  const endpoint = "https://api.apmix.ai/v1/chat/completions";
+
+  console.log(`APMix is testing model: ${APMIX_MODEL}`);
+  console.log("APMix test mode: no Google Search grounding is attached to this request.");
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${APMIX_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: APMIX_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(`APMix API error ${response.status}: ${JSON.stringify(data)}`);
+  }
+
+  const text = data?.choices?.[0]?.message?.content || "";
 
   if (!text) {
     console.error(JSON.stringify(data, null, 2));
-    throw new Error("Gemini returned no usable text after retry.");
+    throw new Error("APMix returned no usable text.");
   }
 
   return extractJSON(text);
