@@ -69,7 +69,20 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "Update PhD radar results [skip ci]"
-            git push
+
+            # The repository can change while the radar is running.
+            # Rebase the results commit onto the latest main before pushing.
+            # This avoids non-fast-forward failures without force-pushing.
+            git fetch origin main
+
+            if ! git rebase origin/main; then
+              echo "Rebase conflict detected. Resolving only generated result files..."
+              git checkout --theirs results.json notified.json
+              git add results.json notified.json
+              GIT_EDITOR=true git rebase --continue
+            fi
+
+            git push origin HEAD:main
           fi
 
       # ----------------------------------------
