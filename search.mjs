@@ -378,14 +378,38 @@ function verifyPageContent(position, page) {
   }
 
   const text = normalizeText(page.body).slice(0, MAX_PAGE_TEXT);
-  if (text.length < 300) {
-    return { verified: false, reason: "Page returned too little readable content." };
-  }
+  const rawLower = String(page.body || "").toLowerCase();
+  const pageTitle = (String(page.body || "").match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i)?.[1] || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\\s+/g, " ")
+    .trim()
+    .toLowerCase();
 
   const phdTerms = [
     "phd", "ph.d", "doctoral", "doctorate", "doctoral researcher",
     "doctoral candidate", "ph.d. candidate"
   ];
+  if (text.length < 300) {
+    const candidateTokens = titleTokens(position.title);
+    const identityHits = candidateTokens.filter(token =>
+      rawLower.includes(token) || pageTitle.includes(token)
+    ).length;
+    const hasPhDInShell = phdTerms.some(term =>
+      rawLower.includes(term) ||
+      pageTitle.includes(term) ||
+      page.finalUrl.toLowerCase().includes(term.replace(/[^a-z0-9]/g, ""))
+    );
+
+    if (identityHits >= 3 && hasPhDInShell) {
+      return {
+        verified: true,
+        reason: "Live page returned successfully; vacancy appears to be a JS-rendered/low-text page, but its title/URL identifies the PhD position."
+      };
+    }
+
+    return { verified: false, reason: "Page returned too little readable content to verify the vacancy." };
+  }
+
   const vacancyTerms = [
     "apply", "application", "deadline", "closing date", "vacancy",
     "position", "funded", "salary", "stipend"
