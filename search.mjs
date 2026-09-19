@@ -122,7 +122,8 @@ Return ONLY a valid JSON array. Every object MUST contain:
   "application_language": "English | Not English | Unknown",
   "language_source_url": "...",
   "ielts_requirement": "...",
-  "ielts_source_url": "..."
+  "ielts_source_url": "...",
+  "ai_provider": "Gemini | APMix"
 }
 
 Use an empty string for source URLs when no official source was found.
@@ -200,6 +201,9 @@ function cleanResults(results) {
         item.ielts_requirement || "Not specified on official university website"
       ).trim(),
       ielts_source_url: normalizeURL(item.ielts_source_url),
+      ai_provider: ["Gemini", "APMix"].includes(String(item.ai_provider || ""))
+        ? String(item.ai_provider)
+        : (AI_PROVIDER === "gemini" ? "Gemini" : "APMix"),
       verification_status: ["Verified", "Not verified"].includes(String(item.verification_status || ""))
         ? String(item.verification_status)
         : "Not verified",
@@ -582,7 +586,10 @@ async function main() {
   console.log(`Existing active positions: ${existingResults.length}`);
   console.log("Running new search...");
 
-  const newSearchResults = cleanResults(await callGemini());
+  const newSearchResults = cleanResults(await callGemini()).map(result => ({
+    ...result,
+    ai_provider: AI_PROVIDER === "gemini" ? "Gemini" : "APMix"
+  }));
   console.log(`${AI_PROVIDER} returned ${newSearchResults.length} valid positions.`);
 
   const byURL = new Map(existingResults.map(result => [normalizeURL(result.url), result]));
