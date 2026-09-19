@@ -360,33 +360,64 @@ requirements page. Do not use third-party summaries for IELTS claims.
 Return only verified current opportunities.
 `;
 
-  const body = {
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    tools: [{ googleSearch: {} }],
-    generationConfig: { temperature: 0.2 }
-  };
+  async function requestGemini(generationConfig) {
+    const body = {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      tools: [{ googleSearch: {} }],
+      generationConfig
+    };
 
-  console.log("Searching Gemini + Google Search...");
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
+    const data = await response.json();
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API error ${response.status}: ${errorText}`);
+    if (!response.ok) {
+      throw new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
+    }
+
+    return data;
   }
 
-  const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts
+  console.log("Gemini is searching Google...");
+
+  let data = await requestGemini({ temperature: 0.2 });
+
+  let text = data?.candidates?.[0]?.content?.parts
     ?.map(part => part.text || "")
     .join("") || "";
 
   if (!text) {
+    const candidate = data?.candidates?.[0];
+    console.warn(
+      "Gemini returned no text on the first attempt.",
+      JSON.stringify({
+        finishReason: candidate?.finishReason,
+        finishMessage: candidate?.finishMessage,
+        tokenCount: candidate?.tokenCount,
+        hasGrounding: Boolean(candidate?.groundingMetadata),
+        promptFeedback: data?.promptFeedback
+      })
+    );
+
+    // Retry with thinking disabled. Gemini documents that 2.5 thinking
+    // can consume the response budget before producing visible output.
+    data = await requestGemini({
+      temperature: 0.2,
+      thinkingConfig: { thinkingBudget: 0 }
+    });
+
+    text = data?.candidates?.[0]?.content?.parts
+      ?.map(part => part.text || "")
+      .join("") || "";
+  }
+
+  if (!text) {
     console.error(JSON.stringify(data, null, 2));
-    throw new Error("Gemini returned no usable text.");
+    throw new Error("Gemini returned no usable text after retry.");
   }
 
   return extractJSON(text);
