@@ -420,6 +420,7 @@ Return only opportunities you can identify with high confidence.`}
     console.log("Gemini is searching Google...");
 
     let data = await requestGemini({ temperature: 0.2 });
+    let groundingResponses = [data];
 
     let text = data?.candidates?.[0]?.content?.parts
       ?.map(part => part.text || "")
@@ -434,6 +435,8 @@ Return only opportunities you can identify with high confidence.`}
           finishMessage: candidate?.finishMessage,
           tokenCount: candidate?.tokenCount,
           hasGrounding: Boolean(candidate?.groundingMetadata),
+          groundingChunks: candidate?.groundingMetadata?.groundingChunks?.length || 0,
+          webSearchQueries: candidate?.groundingMetadata?.webSearchQueries || [],
           promptFeedback: data?.promptFeedback
         })
       );
@@ -442,6 +445,7 @@ Return only opportunities you can identify with high confidence.`}
         temperature: 0.2,
         thinkingConfig: { thinkingBudget: 0 }
       });
+      groundingResponses.push(data);
 
       text = data?.candidates?.[0]?.content?.parts
         ?.map(part => part.text || "")
@@ -454,8 +458,11 @@ Return only opportunities you can identify with high confidence.`}
     }
 
     const results = extractJSON(text);
-    const groundingChunks = data?.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-    const sources = groundingChunks
+    const sources = groundingResponses
+      .flatMap(response => response?.candidates || [])
+      .flatMap(candidate => candidate?.groundingMetadata?.groundingChunks || [])
+      .map(chunk => chunk?.web)
+      .filter(web => web?.uri)
       .map(chunk => chunk?.web)
       .filter(web => web?.uri)
       .map(web => ({
