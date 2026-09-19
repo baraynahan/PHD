@@ -269,7 +269,12 @@ prefer official university sources. Search the position page and, when
 needed, the university's official admissions/doctoral English-language
 requirements page. Do not use third-party summaries for IELTS claims.
 
-Return only verified current opportunities.
+Return current opportunities found through search. Do not invent a URL.
+If you found a real vacancy but the exact application URL is difficult to
+recover, use the best real official vacancy URL you actually found rather
+than constructing one. Prefer a direct vacancy page, but an official
+university recruitment page is acceptable if it clearly identifies the
+specific vacancy.
 `;
 
   const body = {
