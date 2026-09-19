@@ -19,7 +19,7 @@
     "ielts_requirement": "Overall score of 6.5 with a minimum of 6.0 on each section.",
     "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/msc-programmes/admission-requirements/language-requirements",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-19T12:33:30.641Z",
+    "verification_checked_at": "2026-09-19T12:54:05.774Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=8403"
   },
@@ -43,9 +43,33 @@
     "ielts_requirement": "Overall band score of at least 7.0 and a minimum of 6.5 for each section.",
     "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/phd-and-engd/admission",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-19T12:33:30.642Z",
+    "verification_checked_at": "2026-09-19T12:54:05.774Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760"
+  },
+  {
+    "title": "PhD Research Fellow in Human Geography and Sustainable Development",
+    "university": "University of Bergen",
+    "country": "Norway",
+    "city": "Bergen",
+    "deadline": "2026-10-15",
+    "url": "https://www.jobbnorge.no/en/available-jobs/job/237083/phd-research-fellow-in-human-geography-and-sustainable-development",
+    "funding": "Fully funded, 4-year fixed-term employment contract with a competitive salary. Includes 25% teaching, supervision, and administrative duties.",
+    "overall_score": 90,
+    "why_it_matches": "This position is an excellent match for the candidate's profile, aligning directly with strong interests in sustainable consumption, consumption systems, ecological/social transformation, political economy, and governance. The research themes of the Human Geography and Sustainable Development Research Group, including climate and energy transformation, green transformation, circular economy, industrial development, and political ecology, are highly relevant. The candidate's comfort with qualitative, theoretical, policy, participatory, and mixed-method research is also a perfect fit for this interdisciplinary field.",
+    "strategic_fit": "The candidate's trajectory from product design to social and political transformation, with a focus on degrowth, post-growth, and alternative ownership, finds a strong alignment here. The opportunity to develop a PhD proposal within themes like green transformation, circular economy, and political ecology directly addresses the candidate's desire to explore systemic changes and policy implications. The interdisciplinary nature of the Human Geography department and its focus on human-environment interactions provide an ideal environment for the candidate's broad research interests.",
+    "why_it_is_not_perfect": "",
+    "supervisor": "",
+    "classification": "",
+    "research_area": "",
+    "application_language": "English",
+    "language_source_url": "https://www.jobbnorge.no/en/available-jobs/job/237083/phd-research-fellow-in-human-geography-and-sustainable-development",
+    "ielts_requirement": "Minimum overall band score of 6.5.",
+    "ielts_source_url": "https://www.uib.no/en/matnat/54728/admission-requirements-phd-programme-faculty-science-and-technology",
+    "verification_status": "Not verified",
+    "verification_checked_at": "2026-09-19T12:54:05.774Z",
+    "verification_note": "HTTP 404",
+    "verification_url": "https://www.jobbnorge.no/en/available-jobs/job/237083/personvernombud"
   },
   {
     "title": "PhD in Sustainability Science (Just Energy Transitions)",
@@ -67,7 +91,7 @@
     "ielts_requirement": "Overall score of 6.5 with no section below 5.5.",
     "ielts_source_url": "https://www.lunduniversity.lu.se/admissions/english-language-requirements",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-19T12:33:30.642Z",
+    "verification_checked_at": "2026-09-19T12:54:05.774Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.lu.se/vacancies/phd-position-in-sustainability-science-just-energy-transitions"
   },
@@ -91,7 +115,7 @@
     "ielts_requirement": "Not specified on official university website",
     "ielts_source_url": "",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-19T12:33:30.642Z",
+    "verification_checked_at": "2026-09-19T12:54:05.774Z",
     "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND www.kulturpraxis-reparation.de",
     "verification_url": "https://www.kulturpraxis-reparation.de/en/fellowships/call-for-fellowships-2027-2028"
   },
@@ -115,7 +139,7 @@
     "ielts_requirement": "IELTS Band 6 (in all categories).",
     "ielts_source_url": "https://www.uni-flensburg.de/en/sustainable-energy-and-development/admission/admission-requirements",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-19T12:33:30.642Z",
+    "verification_checked_at": "2026-09-19T12:54:07.033Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.uni-flensburg.de/fileadmin/content/europa-universitaet/organisation/einrichtungen/wasatia-graduate-school/dokumente/Call_for_PhD_Candidates_Wasatia_Graduate_School_2026.pdf"
   }
