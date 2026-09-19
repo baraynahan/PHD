@@ -7,8 +7,6 @@ import {
 const GEMINI_MODEL = "gemini-2.5-flash";
 const RESULTS_FILE = "results.json";
 const NOTIFIED_FILE = "notified.json";
-const VERIFICATION_TIMEOUT_MS = 15000;
-const MAX_PAGE_TEXT = 180000;
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -189,11 +187,7 @@ function cleanResults(results) {
       ielts_requirement: String(
         item.ielts_requirement || "Not specified on official university website"
       ).trim(),
-      ielts_source_url: normalizeURL(item.ielts_source_url),
-      verified: item.verified === true,
-      verification_reason: String(item.verification_reason || "").trim(),
-      verified_url: normalizeURL(item.verified_url || item.url),
-      verified_at: String(item.verified_at || "").trim()
+      ielts_source_url: normalizeURL(item.ielts_source_url)
     });
   }
 
@@ -208,9 +202,9 @@ function cleanResults(results) {
 function extractJSON(text) {
   let cleaned = String(text || "")
     .trim()
-    .replace(/^\`\`\`json\s*/i, "")
-    .replace(/^\`\`\`\s*/i, "")
-    .replace(/\s*\`\`\`$/, "")
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/i, "")
     .trim();
 
   try {
@@ -245,353 +239,6 @@ function loadExisting() {
   return cleanResults(loadJSON(RESULTS_FILE, []));
 }
 
-function normalizeText(text) {
-  return String(text || "")
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
-
-function escapeRegExp(value) {
-  return String(value || "").replace(/[.*+?^{}()|[\]\\]/g, "\\$&");
-}
-
-function titleTokens(title) {
-  return String(title || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, " ")
-    .split(/\s+/)
-    .filter(token => token.length >= 4 && ![
-      "with", "from", "this", "that", "phd", "doctoral", "position",
-      "research", "project", "candidate", "university"
-    ].includes(token));
-}
-
-function dateVariants(isoDate) {
-  const match = String(isoDate || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return [];
-  const [, year, month, day] = match;
-  const date = new Date(`${isoDate}T12:00:00Z`);
-  const monthName = date.toLocaleString("en-GB", { month: "long", timeZone: "UTC" });
-  const shortMonth = date.toLocaleString("en-GB", { month: "short", timeZone: "UTC" });
-
-  return [
-    `${year}-${month}-${day}`,
-    `${day}/${month}/${year}`,
-    `${day}-${month}-${year}`,
-    `${month}/${day}/${year}`,
-    `${month}-${day}-${year}`,
-    `${day} ${monthName} ${year}`,
-    `${monthName} ${day}, ${year}`,
-    `${day} ${shortMonth} ${year}`,
-    `${shortMonth} ${day}, ${year}`
-  ].map(value => value.toLowerCase());
-}
-
-function officialUniversityDomain(url, university) {
-  try {
-    const hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
-    const universityTokens = String(university || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, " ")
-      .split(/\s+/)
-      .filter(token => token.length >= 5 && ![
-        "university", "universiteit", "universita", "universitys",
-        "college", "school", "institute", "institution"
-      ].includes(token));
-
-    return universityTokens.some(token => hostname.includes(token));
-  } catch {
-    return false;
-  }
-}
-
-function hasDeadlineEvidence(text, deadline) {
-  const variants = dateVariants(deadline);
-  if (variants.some(date => text.includes(date))) return true;
-
-  const match = String(deadline || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return false;
-
-  const [, year, month, day] = match;
-  const monthName = new Date(`${deadline}T12:00:00Z`).toLocaleString("en-GB", {
-    month: "long",
-    timeZone: "UTC"
-  }).toLowerCase();
-  const shortMonth = new Date(`${deadline}T12:00:00Z`).toLocaleString("en-GB", {
-    month: "short",
-    timeZone: "UTC"
-  }).toLowerCase();
-
-  const deadlineContext = text.match(/.{0,180}(deadline|closing date|apply by|applications? (?:close|due)|apply before).{0,240}/g) || [];
-  return deadlineContext.some(context => {
-    const hasYear = context.includes(year);
-    const hasMonth = context.includes(month) || context.includes(monthName) || context.includes(shortMonth);
-    const hasDay = new RegExp(`(?:^|\\D)${Number(day)}(?:st|nd|rd|th)?(?:\\D|$)`).test(context);
-    return hasYear && hasMonth && hasDay;
-  });
-}
-
-async function fetchPage(url) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), VERIFICATION_TIMEOUT_MS);
-
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-      redirect: "follow",
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "PHD-Radar/1.0 (+https://github.com/baraynahan/PHD)"
-      }
-    });
-
-    const contentType = response.headers.get("content-type") || "";
-    const body = await response.text();
-    return {
-      ok: response.ok,
-      status: response.status,
-      finalUrl: normalizeURL(response.url || url),
-      contentType,
-      body
-    };
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-function verifyPageContent(position, page) {
-  if (!page.ok) {
-    return { verified: false, reason: `HTTP ${page.status}` };
-  }
-
-  if (!/^text\/(html|plain)/i.test(page.contentType)) {
-    return { verified: false, reason: `Unsupported content type: ${page.contentType || "unknown"}` };
-  }
-
-  const text = normalizeText(page.body).slice(0, MAX_PAGE_TEXT);
-  const rawLower = String(page.body || "").toLowerCase();
-  const pageTitle = (String(page.body || "").match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i)?.[1] || "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\\s+/g, " ")
-    .trim()
-    .toLowerCase();
-
-  const phdTerms = [
-    "phd", "ph.d", "doctoral", "doctorate", "doctoral researcher",
-    "doctoral candidate", "ph.d. candidate"
-  ];
-  if (text.length < 300) {
-    const candidateTokens = titleTokens(position.title);
-    const identityHits = candidateTokens.filter(token =>
-      rawLower.includes(token) || pageTitle.includes(token)
-    ).length;
-    const hasPhDInShell = phdTerms.some(term =>
-      rawLower.includes(term) ||
-      pageTitle.includes(term) ||
-      page.finalUrl.toLowerCase().includes(term.replace(/[^a-z0-9]/g, ""))
-    );
-
-    if (identityHits >= 3 && hasPhDInShell) {
-      return {
-        verified: true,
-        reason: "Live page returned successfully; vacancy appears to be a JS-rendered/low-text page, but its title/URL identifies the PhD position."
-      };
-    }
-
-    return { verified: false, reason: "Page returned too little readable content to verify the vacancy." };
-  }
-
-  const vacancyTerms = [
-    "apply", "application", "deadline", "closing date", "vacancy",
-    "position", "funded", "salary", "stipend"
-  ];
-
-  const hasPhD = phdTerms.some(term => text.includes(term));
-  const vacancyHits = vacancyTerms.filter(term => text.includes(term)).length;
-  const universityHit = text.includes(String(position.university || "").toLowerCase());
-  const titleHit = titleTokens(position.title).filter(token =>
-    text.includes(token)
-  ).length;
-
-  if (!hasPhD) {
-    return { verified: false, reason: "Page does not appear to describe a PhD/doctoral position." };
-  }
-
-  if (vacancyHits < 2) {
-    return { verified: false, reason: "Page does not contain enough vacancy/application evidence." };
-  }
-
-  if (!universityHit && titleHit < 2) {
-    return { verified: false, reason: "Page does not sufficiently match the university or position title." };
-  }
-
-  const deadlineMatches = hasDeadlineEvidence(text, position.deadline);
-  if (!deadlineMatches) {
-    return {
-      verified: false,
-      reason: `The page does not contain sufficient evidence for the reported deadline ${position.deadline}.`
-    };
-  }
-
-  return {
-    verified: true,
-    reason: "Live page returned successfully and contains PhD, vacancy, identity and deadline evidence."
-  };
-}
-
-async function verifyPosition(position) {
-  const candidateURL = normalizeURL(position.url);
-  if (!candidateURL) {
-    return { ...position, verified: false, verification_reason: "Missing URL." };
-  }
-
-  try {
-    const page = await fetchPage(candidateURL);
-    const contentCheck = verifyPageContent(position, page);
-
-    if (!contentCheck.verified) {
-      return {
-        ...position,
-        verified: false,
-        verification_reason: contentCheck.reason,
-        verified_url: page.finalUrl || candidateURL,
-        verified_at: new Date().toISOString()
-      };
-    }
-
-    const pageText = normalizeText(page.body).slice(0, MAX_PAGE_TEXT);
-    const universityHit = pageText.includes(String(position.university || "").toLowerCase());
-    const titleHit = titleTokens(position.title).filter(token => pageText.includes(token)).length;
-    const officialDomain = officialUniversityDomain(page.finalUrl, position.university);
-
-    // University vacancy systems often use a short domain or an ATS subdomain
-    // that does not contain the university's full name (e.g. jobs.tue.nl).
-    // The live-page content check is therefore the primary identity check.
-    if (!officialDomain && !universityHit && titleHit < 2) {
-      return {
-        ...position,
-        verified: false,
-        verification_reason: "The live page does not sufficiently identify the reported university or position.",
-        verified_url: page.finalUrl || candidateURL,
-        verified_at: new Date().toISOString()
-      };
-    }
-
-    return {
-      ...position,
-      url: page.finalUrl || candidateURL,
-      verified_url: page.finalUrl || candidateURL,
-      verified: true,
-      verification_reason: contentCheck.reason,
-      verified_at: new Date().toISOString()
-    };
-  } catch (error) {
-    return {
-      ...position,
-      verified: false,
-      verification_reason: `URL fetch failed: ${error?.message || "unknown error"}`,
-      verified_url: candidateURL,
-      verified_at: new Date().toISOString()
-    };
-  }
-}
-
-async function verifyIELTSSource(position) {
-  const sourceURL = normalizeURL(position.ielts_source_url);
-  if (!sourceURL) {
-    return {
-      ...position,
-      ielts_source_url: "",
-      ielts_requirement: "Not specified on official university website"
-    };
-  }
-
-  try {
-    const page = await fetchPage(sourceURL);
-    if (!page.ok) {
-      return {
-        ...position,
-        ielts_source_url: "",
-        ielts_requirement: "Not specified on official university website"
-      };
-    }
-
-    const text = normalizeText(page.body).slice(0, MAX_PAGE_TEXT);
-    if (!officialUniversityDomain(page.finalUrl || sourceURL, position.university)) {
-      return {
-        ...position,
-        ielts_source_url: "",
-        ielts_requirement: "Not specified on official university website"
-      };
-    }
-
-    const mentionsEnglish = /(ielts|english language|english proficiency|language requirement|english requirement)/i.test(text);
-    if (!mentionsEnglish) {
-      return {
-        ...position,
-        ielts_source_url: "",
-        ielts_requirement: "Not specified on official university website"
-      };
-    }
-
-    return {
-      ...position,
-      ielts_source_url: page.finalUrl || sourceURL
-    };
-  } catch {
-    return {
-      ...position,
-      ielts_source_url: "",
-      ielts_requirement: "Not specified on official university website"
-    };
-  }
-}
-
-async function verifyLanguageSource(position) {
-  const sourceURL = normalizeURL(position.language_source_url);
-  if (!sourceURL) return position;
-
-  try {
-    const page = await fetchPage(sourceURL);
-    if (!page.ok || !officialUniversityDomain(page.finalUrl || sourceURL, position.university)) {
-      return { ...position, language_source_url: "" };
-    }
-    return { ...position, language_source_url: page.finalUrl || sourceURL };
-  } catch {
-    return { ...position, language_source_url: "" };
-  }
-}
-
-async function verifyResults(results) {
-  console.log(`Verifying ${results.length} candidate positions against live pages...`);
-  const verified = [];
-
-  for (const position of results) {
-    const checked = await verifyPosition(position);
-
-    if (!checked.verified) {
-      console.log(`  ✗ ${position.title} — ${checked.verification_reason}`);
-      continue;
-    }
-
-    const withLanguage = await verifyLanguageSource(checked);
-    const withIELTS = await verifyIELTSSource(withLanguage);
-    verified.push(withIELTS);
-    console.log(`  ✓ ${withIELTS.title} — verified`);
-  }
-
-  return cleanResults(verified).filter(position => position.verified === true);
-}
-
 async function callGemini() {
   const endpoint =
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
@@ -622,10 +269,6 @@ prefer official university sources. Search the position page and, when
 needed, the university's official admissions/doctoral English-language
 requirements page. Do not use third-party summaries for IELTS claims.
 
-The URL and deadline will be independently checked by the program after
-your response. Never fabricate a plausible URL or deadline. Only return
-a candidate when you found evidence for it through web search.
-
 Return only verified current opportunities.
 `;
 
@@ -649,8 +292,7 @@ Return only verified current opportunities.
   }
 
   const data = await response.json();
-  const candidate = data?.candidates?.[0];
-  const text = candidate?.content?.parts
+  const text = data?.candidates?.[0]?.content?.parts
     ?.map(part => part.text || "")
     .join("") || "";
 
@@ -659,12 +301,6 @@ Return only verified current opportunities.
     throw new Error("Gemini returned no usable text.");
   }
 
-  const groundingChunks = candidate?.groundingMetadata?.groundingChunks || [];
-  const groundingURLs = groundingChunks
-    .map(chunk => chunk?.web?.uri)
-    .filter(Boolean);
-
-  console.log(`Google grounding returned ${groundingURLs.length} source URLs.`);
   return extractJSON(text);
 }
 
@@ -731,7 +367,7 @@ async function notifyExceptionalMatches(results) {
   const notified = loadJSON(NOTIFIED_FILE, {});
   let changed = false;
 
-  for (const position of results.filter(x => Number(x.overall_score) >= 90 && x.verified)) {
+  for (const position of results.filter(x => Number(x.overall_score) >= 90)) {
     const url = normalizeURL(position.url);
     const previousScore = Number(notified[url]?.score || 0);
 
@@ -755,31 +391,33 @@ async function main() {
   console.log("======================================");
 
   const existingResults = loadExisting();
-  console.log(`Existing active positions before verification: ${existingResults.length}`);
-
+  console.log(`Existing active positions: ${existingResults.length}`);
   console.log("Running new search...");
-  const rawSearchResults = cleanResults(await callGemini());
-  console.log(`Gemini returned ${rawSearchResults.length} structurally valid positions.`);
 
-  const combined = [...existingResults, ...rawSearchResults];
-  const deduplicated = cleanResults(
-    Array.from(
-      new Map(combined.map(result => [normalizeURL(result.url), result])).values()
-    )
-  );
+  const newSearchResults = cleanResults(await callGemini());
+  console.log(`Gemini returned ${newSearchResults.length} valid positions.`);
 
-  const verifiedResults = await verifyResults(deduplicated);
-  saveJSON(RESULTS_FILE, verifiedResults);
+  const byURL = new Map(existingResults.map(result => [normalizeURL(result.url), result]));
 
-  console.log(`Saved ${verifiedResults.length} verified active positions.`);
-  console.log(`Removed ${deduplicated.length - verifiedResults.length} unverified/stale positions.`);
+  for (const result of newSearchResults) {
+    const url = normalizeURL(result.url);
+    const existing = byURL.get(url);
 
-  await notifyExceptionalMatches(verifiedResults);
+    if (!existing || Number(result.overall_score) >= Number(existing.overall_score)) {
+      byURL.set(url, existing ? { ...existing, ...result } : result);
+    }
+  }
 
-  console.log("\nTop verified matches:");
-  for (const result of verifiedResults.slice(0, 10)) {
+  const mergedResults = cleanResults(Array.from(byURL.values()));
+  saveJSON(RESULTS_FILE, mergedResults);
+
+  console.log(`Saved ${mergedResults.length} active positions.`);
+  await notifyExceptionalMatches(mergedResults);
+
+  console.log("\nTop matches:");
+  for (const result of mergedResults.slice(0, 10)) {
     console.log(
-      `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country} | VERIFIED`
+      `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country}`
     );
   }
 
