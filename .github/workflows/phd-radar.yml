@@ -71,18 +71,32 @@ jobs:
             git commit -m "Update PhD radar results [skip ci]"
 
             # The repository can change while the radar is running.
-            # Rebase the results commit onto the latest main before pushing.
-            # This avoids non-fast-forward failures without force-pushing.
-            git fetch origin main
+            # Rebase onto the latest main, then retry the push if another
+            # commit lands between fetch/rebase and push.
+            for attempt in 1 2 3 4 5; do
+              echo "Preparing push (attempt $attempt/5)..."
+              git fetch origin main
 
-            if ! git rebase origin/main; then
-              echo "Rebase conflict detected. Resolving only generated result files..."
-              git checkout --theirs results.json notified.json
-              git add results.json notified.json
-              GIT_EDITOR=true git rebase --continue
-            fi
+              if ! git rebase origin/main; then
+                echo "Rebase conflict detected. Resolving generated result files..."
+                git checkout --theirs results.json notified.json
+                git add results.json notified.json
+                GIT_EDITOR=true git rebase --continue
+              fi
 
-            git push origin HEAD:main
+              if git push origin HEAD:main; then
+                echo "Results pushed successfully."
+                break
+              fi
+
+              if [ "$attempt" -eq 5 ]; then
+                echo "Failed to push after 5 attempts."
+                exit 1
+              fi
+
+              echo "Remote main changed during push; retrying..."
+              sleep 3
+            done
           fi
 
       # ----------------------------------------
