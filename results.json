@@ -17,7 +17,35 @@
     "application_language": "English",
     "language_source_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=8403",
     "ielts_requirement": "Overall score of 6.5 with a minimum of 6.0 on each section.",
-    "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/msc-programmes/admission-requirements/language-requirements"
+    "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/msc-programmes/admission-requirements/language-requirements",
+    "verification_status": "Not verified",
+    "verification_checked_at": "2026-09-19T12:33:30.641Z",
+    "verification_note": "HTTP 404",
+    "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=8403"
+  },
+  {
+    "title": "PhD Position Transition Pathways and Innovation for Circular Consumption of E-bikes and Electronics",
+    "university": "Delft University of Technology (TU Delft)",
+    "country": "Netherlands",
+    "city": "Delft",
+    "deadline": "2026-09-30",
+    "url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760",
+    "funding": "Fully funded (4-year PhD employment, salary from €3204 to €4051 gross per month, plus 8% holiday allowance and an 8.3% end-of-year bonus).",
+    "overall_score": 95,
+    "why_it_matches": "This position is an exceptional match for the candidate. The project directly addresses 'circular consumption,' 'transition pathways,' 'innovation,' and 'consumer behaviour' within the context of a 'circular society.' The candidate's trajectory (PRODUCT DESIGN → SUSTAINABLE DESIGN → SUSTAINABLE CONSUMPTION → PRODUCT LONGEVITY → CONSUMPTION SYSTEMS → OWNERSHIP / ACCESS → POST-GROWTH / DEGROWTH → SOCIAL + POLITICAL TRANSFORMATION) aligns perfectly with the project's focus on systemic transitions and circularity. The mention of 'design research' and 'stakeholder engagement' directly matches the candidate's background and interests in transition design, social design, participatory/co-design, and consumption systems. The methods (qualitative, quantitative, stakeholder workshops, interviews, backcasting, social simulation modelling) are all within the candidate's comfort zone.",
+    "strategic_fit": "The candidate's industrial design background, sustainability education, and research interests in sustainable consumption, product longevity, consumption systems, alternative ownership/access, circular economy, and transition design are directly applicable. The project's emphasis on behavioural change, policy mixes, and social simulation aligns with the candidate's comfort with theoretical, policy, participatory, and mixed-method research. The focus on 'systemic transitions' and 'circular society' provides a strong platform for exploring post-growth/degrowth concepts in a practical, applied context.",
+    "why_it_is_not_perfect": "",
+    "supervisor": "",
+    "classification": "",
+    "research_area": "",
+    "application_language": "English",
+    "language_source_url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760",
+    "ielts_requirement": "Overall band score of at least 7.0 and a minimum of 6.5 for each section.",
+    "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/phd-and-engd/admission",
+    "verification_status": "Not verified",
+    "verification_checked_at": "2026-09-19T12:33:30.642Z",
+    "verification_note": "HTTP 404",
+    "verification_url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760"
   },
   {
     "title": "PhD in Sustainability Science (Just Energy Transitions)",
@@ -37,7 +65,11 @@
     "application_language": "English",
     "language_source_url": "https://www.lunduniversity.lu.se/admissions/english-language-requirements",
     "ielts_requirement": "Overall score of 6.5 with no section below 5.5.",
-    "ielts_source_url": "https://www.lunduniversity.lu.se/admissions/english-language-requirements"
+    "ielts_source_url": "https://www.lunduniversity.lu.se/admissions/english-language-requirements",
+    "verification_status": "Not verified",
+    "verification_checked_at": "2026-09-19T12:33:30.642Z",
+    "verification_note": "HTTP 404",
+    "verification_url": "https://www.lu.se/vacancies/phd-position-in-sustainability-science-just-energy-transitions"
   },
   {
     "title": "KHK CURE Fellowships 2027/2028: “Things” (Cultural Practices of Reparation)",
@@ -57,6 +89,34 @@
     "application_language": "English",
     "language_source_url": "https://www.kulturpraxis-reparation.de/en/fellowships/call-for-fellowships-2027-2028",
     "ielts_requirement": "Not specified on official university website",
-    "ielts_source_url": ""
+    "ielts_source_url": "",
+    "verification_status": "Not verified",
+    "verification_checked_at": "2026-09-19T12:33:30.642Z",
+    "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND www.kulturpraxis-reparation.de",
+    "verification_url": "https://www.kulturpraxis-reparation.de/en/fellowships/call-for-fellowships-2027-2028"
+  },
+  {
+    "title": "Call for Ph.D. Candidates in Peace and Conflict Resolution (European Wasatia Graduate School)",
+    "university": "Europa-Universität Flensburg",
+    "country": "Germany",
+    "city": "Flensburg",
+    "deadline": "2026-09-30",
+    "url": "https://www.uni-flensburg.de/fileadmin/content/europa-universitaet/organisation/einrichtungen/wasatia-graduate-school/dokumente/Call_for_PhD_Candidates_Wasatia_Graduate_School_2026.pdf",
+    "funding": "Fully funded (grant to cover tuition (Semestergebühr) and cost of living for up to 36 months).",
+    "overall_score": 75,
+    "why_it_matches": "The project focuses on 'justice and reconciliation in political transformations' and 'sustainable peace.' The candidate's interests in 'social + political transformation,' 'design justice,' 'governance,' and 'policy' align well. While not directly 'design' or 'consumption systems,' the broader themes of societal change, justice, and governance are a good fit for a PhD outside of traditional design departments. The interdisciplinary nature across humanities and social sciences is also a strong match for the candidate's comfort with diverse fields.",
+    "strategic_fit": "The candidate's background as a lecturer and researcher, combined with interests in social and political transformation, makes this a viable option. The program's emphasis on interdisciplinary and dialogue-driven research aligns with the candidate's comfort with qualitative, theoretical, policy, and participatory methods. It offers an opportunity to apply a critical design lens to peace and conflict resolution, contributing to social transformation.",
+    "why_it_is_not_perfect": "",
+    "supervisor": "",
+    "classification": "",
+    "research_area": "",
+    "application_language": "English",
+    "language_source_url": "https://www.uni-flensburg.de/fileadmin/content/europa-universitaet/organisation/einrichtungen/wasatia-graduate-school/dokumente/Call_for_PhD_Candidates_Wasatia_Graduate_School_2026.pdf",
+    "ielts_requirement": "IELTS Band 6 (in all categories).",
+    "ielts_source_url": "https://www.uni-flensburg.de/en/sustainable-energy-and-development/admission/admission-requirements",
+    "verification_status": "Not verified",
+    "verification_checked_at": "2026-09-19T12:33:30.642Z",
+    "verification_note": "HTTP 404",
+    "verification_url": "https://www.uni-flensburg.de/fileadmin/content/europa-universitaet/organisation/einrichtungen/wasatia-graduate-school/dokumente/Call_for_PhD_Candidates_Wasatia_Graduate_School_2026.pdf"
   }
 ]
