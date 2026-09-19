@@ -46,7 +46,10 @@ jobs:
       # ----------------------------------------
       - name: Run PhD search
         env:
+          AI_PROVIDER: ${{ vars.AI_PROVIDER || 'gemini' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          APMIX_API_KEY: ${{ secrets.APMIX_API_KEY }}
+          APMIX_MODEL: ${{ vars.APMIX_MODEL || 'deepseek/deepseek-v4.1-flash' }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
