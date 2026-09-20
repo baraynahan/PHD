@@ -142,9 +142,20 @@ Return ONLY a valid JSON array. Every object MUST contain:
   "language_source_url": "...",
   "ielts_requirement": "...",
   "ielts_source_url": "...",
+  "sources": [
+    {"title": "...", "url": "..."}
+  ],
   "ai_provider": "Gemini | APMix"
 }
 Use an empty string for source URLs when no official source was found.
+"sources" must contain the useful web pages that support THIS SPECIFIC
+position, in addition to the application/vacancy URL. Do not repeat the
+application/vacancy URL in "sources".
+Prefer pages actually found through Google Search in this session, such as
+the exact project description, research group/project page, funding call,
+official project announcement, or reputable vacancy listing.
+Do not use a university homepage, generic PhD programme page, or unrelated
+page as a source.
 The application/vacancy URL must be the real position page. Do not invent
 information, dates, IELTS scores, language status or URLs.
 
@@ -249,7 +260,7 @@ function cleanResults(results) {
               title: String(source?.title || "").trim(),
               url: normalizeURL(source?.url)
             }))
-            .filter(source => source.url)
+            .filter(source => source.url && source.url !== url)
         : []
     });
   }
@@ -540,8 +551,9 @@ function attachSourcesToPositions(results, searchSources) {
   const sources = Array.isArray(searchSources) ? searchSources : [];
 
   return results.map(position => {
+    const positionURL = normalizeURL(position.url);
     const positionURLs = new Set([
-      normalizeURL(position.url),
+      positionURL,
       normalizeURL(position.verification_url),
       normalizeURL(position.ielts_source_url),
       normalizeURL(position.language_source_url)
@@ -556,40 +568,134 @@ function attachSourcesToPositions(results, searchSources) {
       .split(/\W+/)
       .filter(word => word.length >= 5);
 
-    const matched = sources.filter(source => {
+    // Keep only sources that are genuinely additional to the clickable
+    // application URL. Never manufacture a "source" by copying position.url.
+    const modelSources = Array.isArray(position.sources)
+      ? position.sources
+          .map(source => ({
+            title: String(source?.title || "").trim(),
+            url: normalizeURL(source?.url)
+          }))
+          .filter(source => source.url && !positionURLs.has(source.url))
+      : [];
+
+    const matchedGrounding = sources.filter(source => {
       const url = normalizeURL(source?.url);
-      if (!url) return false;
-      if (positionURLs.has(url)) return true;
+      if (!url || positionURLs.has(url)) return false;
 
       const haystack = `${source?.title || ""} ${url}`.toLowerCase();
       const titleHits = titleWords.filter(word => haystack.includes(word)).length;
       const universityHit = universityWords.some(word => haystack.includes(word));
 
       return universityHit && titleHits >= Math.min(2, titleWords.length || 2);
-    });
+    }).map(source => ({
+      title: String(source?.title || "").trim(),
+      url: normalizeURL(source?.url)
+    }));
 
-    const ownSources = [
-      { title: "PhD vacancy / application page", url: normalizeURL(position.url) },
-      position.verification_url && position.verification_url !== position.url
-        ? { title: "Verified vacancy URL", url: normalizeURL(position.verification_url) }
-        : null,
-      position.ielts_source_url
-        ? { title: "Official IELTS / English requirement source", url: normalizeURL(position.ielts_source_url) }
-        : null,
-      position.language_source_url
-        ? { title: "Official language source", url: normalizeURL(position.language_source_url) }
-        : null
-    ].filter(Boolean);
-
-    const combined = [...ownSources, ...matched];
     const unique = Array.from(new Map(
-      combined
-        .filter(source => source.url)
+      [...modelSources, ...matchedGrounding]
+        .filter(source => source.url && !positionURLs.has(source.url))
         .map(source => [source.url, source])
     ).values());
 
     return { ...position, sources: unique };
   });
+}
+
+async function validateAdditionalSources(results) {
+  const validated = [];
+
+  for (const position of results) {
+    const applicationURL = normalizeURL(position.url);
+    const sources = Array.isArray(position.sources) ? position.sources : [];
+    const good = [];
+
+    for (const source of sources.slice(0, 6)) {
+      const url = normalizeURL(source?.url);
+      if (!url || url === applicationURL) continue;
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const response = await fetch(url, {
+          method: "GET",
+          redirect: "follow",
+          signal: controller.signal,
+          headers: { "User-Agent": "PhD-Radar/1.0 source-check" }
+        });
+        clearTimeout(timeout);
+
+        const finalURL = normalizeURL(response.url || url);
+        if (!response.ok || finalURL === applicationURL) continue;
+
+        const contentType = String(response.headers.get("content-type") || "");
+        if (!contentType || contentType.includes("text/") || contentType.includes("html")) {
+          good.push({
+            title: source.title || "Supporting source",
+            url: finalURL
+          });
+        }
+      } catch {}
+    }
+
+    validated.push({ ...position, sources: Array.from(
+      new Map(good.map(source => [source.url, source])).values()
+    )});
+  }
+
+  return validated;
+}
+
+async function enrichExistingSources(results) {
+  if (!GEMINI_API_KEY || geminiQuotaExhausted) return results;
+
+  const targets = results.filter(position => !Array.isArray(position.sources) || position.sources.length === 0).slice(0, 2);
+  if (!targets.length) return results;
+
+  const endpoint =
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+  const prompt = `
+For each of these CURRENT PhD vacancies, find 2-4 ADDITIONAL web pages that
+support or describe the exact vacancy/project. Do NOT return the application
+URL itself. Do NOT return a university homepage or generic doctoral programme.
+Use Google Search and return only URLs actually found in the search results.
+
+Return ONLY JSON in this format:
+[{"title":"position title","sources":[{"title":"source title","url":"https://..."}]}]
+
+Positions:
+${targets.map((p,i)=>`${i+1}. ${p.title} | ${p.university} | ${p.country} | deadline ${p.deadline} | application ${p.url}`).join("\n")}
+`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        tools: [{ google_search: {} }],
+        generationConfig: { temperature: 0 }
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      if (response.status === 429) geminiQuotaExhausted = true;
+      return results;
+    }
+    const text = data?.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("") || "";
+    if (!text) return results;
+    const found = extractJSON(text);
+    const byTitle = new Map((Array.isArray(found) ? found : []).map(x => [String(x.title || "").toLowerCase(), x.sources]));
+    return results.map(position => {
+      const extra = byTitle.get(String(position.title || "").toLowerCase());
+      return extra ? { ...position, sources: extra } : position;
+    });
+  } catch (error) {
+    console.warn("Existing-source enrichment failed:", String(error?.message || error));
+    return results;
+  }
 }
 
 function loadExisting() {
@@ -1036,10 +1142,12 @@ async function main() {
 
   const mergedResults = cleanResults(Array.from(byURL.values()));
   const verifiedResults = await verifyResults(mergedResults);
-  const resultsWithSources = attachSourcesToPositions(
+  let resultsWithSources = attachSourcesToPositions(
     verifiedResults,
     searchResponse.sources
   );
+  resultsWithSources = await enrichExistingSources(resultsWithSources);
+  resultsWithSources = await validateAdditionalSources(resultsWithSources);
   saveJSON(RESULTS_FILE, resultsWithSources);
 
   console.log(`Saved ${resultsWithSources.length} active positions. Verification is informational only; no results were removed.`);
