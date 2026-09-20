@@ -20,7 +20,7 @@
     "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/msc-programmes/admission-requirements/language-requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-19T14:18:06.297Z",
+    "verification_checked_at": "2026-09-20T22:45:29.600Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=8403"
   },
@@ -45,7 +45,7 @@
     "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/phd-and-engd/admission",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-19T14:18:06.297Z",
+    "verification_checked_at": "2026-09-20T22:45:29.600Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760"
   },
@@ -70,7 +70,7 @@
     "ielts_source_url": "https://www.leeds.ac.uk/info/130500/admissions/143/entry_requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-19T14:18:06.297Z",
+    "verification_checked_at": "2026-09-20T22:45:29.601Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://phd.leeds.ac.uk/project/1897-justice-implications-of-the-uk-s-net-zero-carbon-policies"
   },
@@ -95,9 +95,34 @@
     "ielts_source_url": "https://www.uib.no/en/matnat/54728/admission-requirements-phd-programme-faculty-science-and-technology",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-19T14:18:06.297Z",
+    "verification_checked_at": "2026-09-20T22:45:29.601Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.jobbnorge.no/en/available-jobs/job/237083/personvernombud"
+  },
+  {
+    "title": "Doctoral Researcher in Social Sciences on the Politics of the Green Transition",
+    "university": "LUT University",
+    "country": "Finland",
+    "city": "Lappeenranta",
+    "deadline": "2026-10-03",
+    "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHiYPg5p-36C_jl612913bSk1fetCtThFyvSZjhI9ChoquJ5kCTKUY_n_9ojM_YMLI20XK3lqq-ghWLxbYz09nZFeoFy1eY6syjSvFJn1ZrESF-a06p4bmpky0N8V69777ipxACmwOdtANW8mBQ2JN0IqMdVel8vYoOl7rkOlBYGi27xhraDTbgegbhZuUAIywy0S39rqLrc29_Qf-NFvBlPOUpAsGIV52rP4jMX4MVBmzE3Le8pvw=",
+    "funding": "Fully funded, four-year doctoral researcher position funded by the Research Council of Finland through the GREENSHUFFLE project. Starting salary approximately EUR 3,100 per month.",
+    "overall_score": 88,
+    "why_it_matches": "This project explores the politics of the green transition, focusing on the political consequences of unequal occupational recognition and how changing social valuations of occupations may shape political divisions in attitudes toward sustainability transitions. This aligns well with the candidate's interests in political economy, social transformation, governance, policy, and transition studies. The project's use of both qualitative and quantitative research activities fits the candidate's comfort with mixed-method research.",
+    "strategic_fit": "Strong fit for political economy, social transformation, governance, and policy. The candidate's background in sustainability education and design research could provide a valuable interdisciplinary perspective.",
+    "why_it_is_not_perfect": "",
+    "supervisor": "",
+    "classification": "",
+    "research_area": "",
+    "application_language": "English",
+    "language_source_url": "https://www.helsinki.fi/en/admissions/doctoral-admissions/eligibility-doctoral-programmes/proving-your-language-skills-doctoral-education",
+    "ielts_requirement": "Not specified on official university website",
+    "ielts_source_url": "",
+    "ai_provider": "Gemini",
+    "verification_status": "Verified",
+    "verification_checked_at": "2026-09-20T22:45:29.601Z",
+    "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
+    "verification_url": "https://www.applykite.com/positions/doctoral-researcher-in-social-sciences-on-the-politics-of-the-green-transition-n7h1dowtqr"
   },
   {
     "title": "PhD in Sustainability Science (Just Energy Transitions)",
@@ -120,7 +145,7 @@
     "ielts_source_url": "https://www.lunduniversity.lu.se/admissions/english-language-requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-19T14:18:06.297Z",
+    "verification_checked_at": "2026-09-20T22:45:30.868Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.lu.se/vacancies/phd-position-in-sustainability-science-just-energy-transitions"
   },
@@ -145,7 +170,7 @@
     "ielts_source_url": "",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-19T14:18:07.940Z",
+    "verification_checked_at": "2026-09-20T22:45:30.868Z",
     "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND www.kulturpraxis-reparation.de",
     "verification_url": "https://www.kulturpraxis-reparation.de/en/fellowships/call-for-fellowships-2027-2028"
   },
@@ -170,7 +195,7 @@
     "ielts_source_url": "https://www.uni-flensburg.de/en/sustainable-energy-and-development/admission/admission-requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-19T14:18:07.941Z",
+    "verification_checked_at": "2026-09-20T22:45:30.868Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.uni-flensburg.de/fileadmin/content/europa-universitaet/organisation/einrichtungen/wasatia-graduate-school/dokumente/Call_for_PhD_Candidates_Wasatia_Graduate_School_2026.pdf"
   }
