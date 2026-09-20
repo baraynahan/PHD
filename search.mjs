@@ -10,20 +10,34 @@ const NOTIFIED_FILE = "notified.json";
 const SOURCES_FILE = "sources.json";
 
 const AI_PROVIDER = String(process.env.AI_PROVIDER || "gemini").toLowerCase();
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const APMIX_API_KEY = process.env.APMIX_API_KEY;
-const APMIX_MODEL = process.env.APMIX_MODEL || "deepseek/deepseek-v4.1-flash";
+const APMIX_MODEL = process.env.APMIX_MODEL || "deepseek-v4.1-flash-free";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+// Keep the daily radar resilient to Gemini free-tier limits and avoid spending
+// Gemini requests repeatedly repairing old vacancy URLs.
+const URL_REPAIR_LIMIT = 2;
+const VERIFICATION_CACHE_DAYS = 7;
+let geminiQuotaExhausted = false;
+let urlRepairsUsed = 0;
 
 if (AI_PROVIDER === "gemini" && !GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY is not configured.");
 }
-if (AI_PROVIDER === "apmix" && !APMIX_API_KEY) {
+
+if (["apmix", "both"].includes(AI_PROVIDER) && !APMIX_API_KEY) {
   throw new Error("APMIX_API_KEY is not configured.");
 }
-if (!["gemini", "apmix"].includes(AI_PROVIDER)) {
-  throw new Error('AI_PROVIDER must be "gemini" or "apmix".');
+
+if (["gemini", "both"].includes(AI_PROVIDER) && !GEMINI_API_KEY) {
+  throw new Error("GEMINI_API_KEY is not configured.");
+}
+
+if (!["gemini", "apmix", "both"].includes(AI_PROVIDER)) {
+  throw new Error('AI_PROVIDER must be "gemini", "apmix", or "both".');
 }
 
 const CANDIDATE_PROFILE = `
@@ -70,9 +84,16 @@ systems, service systems, product longevity, repair/reuse, sustainable
 lifestyles, social practices, circular economy and societal/ecological
 transformation.
 
-Prioritise official university career/vacancy pages and official doctoral
-position pages. The result must be a specific open PhD/doctoral vacancy,
-not a generic programme.
+Search the entire web for real current vacancies. Prefer primary/official
+sources when available, but do NOT require the URL to be on a university
+domain. Valid sources can include university vacancy systems, research
+institutes, EURAXESS, national research portals, AcademicJobs, FindAPhD,
+or other reputable vacancy platforms, provided the page identifies the
+specific vacancy and gives a usable application route.
+
+Never replace a useful vacancy URL with a guessed university homepage,
+generic doctoral programme page, or another page just because it is on an
+official university domain. The URL must correspond to the exact vacancy.
 `;
 
 const RULES = `
@@ -123,18 +144,23 @@ Return ONLY a valid JSON array. Every object MUST contain:
   "ielts_source_url": "...",
   "ai_provider": "Gemini | APMix"
 }
-
-Use an empty string for source URLs when no official source was found.
 The application/vacancy URL must be the real position page. Do not invent
 information, dates, IELTS scores, language status or URLs.
 
-CRITICAL URL RULE: the "url" field (and "language_source_url" and
-"ielts_source_url" when present) must be copied character-for-character
-from a URL you actually retrieved via Google Search in this request.
-Never construct, guess, shorten, or "clean up" a URL based on what a
-university's site structure usually looks like. If you are not certain
-you saw the exact URL in a search result, omit that position entirely
-rather than guessing at a URL.
+STRICT URL RULE:
+The "url" field must be copied character-for-character from a URL you
+actually retrieved via Google Search in this session. Never type a URL
+from memory, guess one, shorten one, or construct one by pattern
+(e.g. guessing a "/vacancies/12345" style path). Never normalize,
+"clean up", or simplify a URL you found.
+If your search results do not contain an exact application-page URL for
+a position, use the closest URL you actually retrieved that leads to
+that vacancy (e.g. a listing or search-result page) and lower
+overall_score by 15 points to reflect the uncertainty. If you have no
+retrieved URL at all for a position, omit that position entirely rather
+than inventing a URL.
+The same verbatim-copy rule applies to language_source_url and
+ielts_source_url.
 `;
 
 function normalizeURL(url) {
@@ -160,31 +186,14 @@ function isFutureDeadline(deadline) {
   return Number.isFinite(date.getTime()) && date.getTime() > Date.now();
 }
 
-// NEW: checks whether a URL's domain matches any URL Gemini actually
-// retrieved via Google Search grounding in this run. This catches URLs
-// the model "cleaned up" or invented rather than copied from a real result.
-function urlMatchesSources(url, sources) {
-  try {
-    const targetHost = new URL(url).hostname.replace(/^www\./, "");
-    return sources.some(source => {
-      try {
-        return new URL(source.url).hostname.replace(/^www\./, "") === targetHost;
-      } catch {
-        return false;
-      }
-    });
-  } catch {
-    return false;
-  }
-}
-
-function cleanResults(results, sources = []) {
+function cleanResults(results) {
   if (!Array.isArray(results)) return [];
   const seen = new Set();
   const cleaned = [];
 
   for (const item of results) {
     if (!item || typeof item !== "object") continue;
+
     const title = String(item.title || "").trim();
     const university = String(item.university || "").trim();
     const country = String(item.country || "").trim();
@@ -202,14 +211,6 @@ function cleanResults(results, sources = []) {
     const language = ["English", "Not English", "Unknown"].includes(
       String(item.application_language || "")
     ) ? String(item.application_language) : "Unknown";
-
-    // NEW: true = domain matched a real grounding source this run,
-    // false = checked and no match found, null = not checked this run
-    // (e.g. item merged in from a previous run with no fresh sources list;
-    // in that case we keep whatever flag it already had rather than wiping it).
-    const urlGrounded = sources.length > 0
-      ? urlMatchesSources(url, sources)
-      : (typeof item.url_grounded === "boolean" ? item.url_grounded : null);
 
     cleaned.push({
       title,
@@ -234,14 +235,13 @@ function cleanResults(results, sources = []) {
       ielts_source_url: normalizeURL(item.ielts_source_url),
       ai_provider: ["Gemini", "APMix"].includes(String(item.ai_provider || ""))
         ? String(item.ai_provider)
-        : (AI_PROVIDER === "gemini" ? "Gemini" : "APMix"),
+        : "Gemini",
       verification_status: ["Verified", "Not verified"].includes(String(item.verification_status || ""))
         ? String(item.verification_status)
         : "Not verified",
       verification_checked_at: String(item.verification_checked_at || "").trim(),
       verification_note: String(item.verification_note || "").trim(),
-      verification_url: normalizeURL(item.verification_url),
-      url_grounded: urlGrounded
+      verification_url: normalizeURL(item.verification_url)
     });
   }
 
@@ -249,25 +249,24 @@ function cleanResults(results, sources = []) {
     b.overall_score - a.overall_score ||
     new Date(a.deadline) - new Date(b.deadline)
   );
+
   return cleaned;
 }
 
-async function verifyPosition(position) {
-  const checkedAt = new Date().toISOString();
+
+async function inspectVacancyURL(url, position) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    const response = await fetch(position.url, {
+    const response = await fetch(url, {
       method: "GET",
       redirect: "follow",
       signal: controller.signal,
-      headers: {
-        "User-Agent": "PhD-Radar/1.0 vacancy-check"
-      }
+      headers: { "User-Agent": "PhD-Radar/1.0 vacancy-check" }
     });
-    clearTimeout(timeout);
 
-    const finalURL = normalizeURL(response.url || position.url);
+    const finalURL = normalizeURL(response.url || url);
     const contentType = String(response.headers.get("content-type") || "");
     const body = contentType.includes("text/")
       ? (await response.text()).slice(0, 250000)
@@ -276,39 +275,199 @@ async function verifyPosition(position) {
 
     const phdSignal = /phd|ph\.d|doctoral|doctorate/.test(text);
     const vacancySignal = /vacancy|position|fellowship|scholarship|researcher|job opening|apply/.test(text);
-
     const titleWords = String(position.title || "")
       .toLowerCase()
       .split(/\W+/)
       .filter(word => word.length >= 5)
-      .slice(0, 8);
-    const titleSignal = titleWords.length === 0 ||
-      titleWords.filter(word => text.includes(word)).length >= Math.min(2, titleWords.length);
+      .slice(0, 10);
+    const titleHits = titleWords.filter(word => text.includes(word)).length;
+    const titleSignal = titleWords.length === 0 || titleHits >= Math.min(2, titleWords.length);
+    const universitySignal = String(position.university || "")
+      .toLowerCase()
+      .split(/\W+/)
+      .filter(word => word.length >= 5)
+      .some(word => text.includes(word));
 
-    if (response.ok && phdSignal && vacancySignal && titleSignal) {
+    const verified = response.ok && phdSignal && vacancySignal &&
+      (titleSignal || universitySignal);
+
+    return {
+      verified,
+      status: response.status,
+      finalURL,
+      note: verified
+        ? `HTTP ${response.status}; page identifies a PhD/doctoral vacancy`
+        : response.ok
+          ? "Page is reachable, but the automated content check could not confirm the exact PhD vacancy."
+          : `HTTP ${response.status}`
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function findReplacementURL(position) {
+  if (!GEMINI_API_KEY || geminiQuotaExhausted || urlRepairsUsed >= URL_REPAIR_LIMIT) return null;
+  urlRepairsUsed += 1;
+
+  const endpoint =
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+  const prompt = `
+Find the CURRENT working vacancy/application URL for this exact PhD position.
+
+Title: ${position.title}
+University/organisation: ${position.university}
+Country: ${position.country}
+City: ${position.city || "unknown"}
+Deadline: ${position.deadline}
+
+Search the web extensively. The vacancy may be hosted by a university,
+EURAXESS, a research institute, a national research portal, AcademicJobs,
+FindAPhD, or another reputable vacancy platform.
+
+Return ONLY JSON:
+{"url":"...","reason":"..."}
+
+Rules:
+- The URL must be a real, currently accessible page for THIS exact vacancy.
+- Do not return a university homepage, generic PhD programme page, search
+  results page, or guessed URL.
+- Do not return an expired/archived vacancy.
+- If you cannot find a reliable working URL, return {"url":"","reason":"not found"}.
+`;
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      tools: [{ google_search: {} }],
+      generationConfig: { temperature: 0 }
+    })
+  });
+
+  if (!response.ok) return null;
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts
+    ?.map(part => part.text || "").join("") || "";
+
+  let candidate = null;
+  try {
+    candidate = extractJSON(text);
+  } catch {
+    return null;
+  }
+
+  const url = normalizeURL(candidate?.url);
+  if (!url || url === normalizeURL(position.url)) return null;
+
+  try {
+    const inspected = await inspectVacancyURL(url, position);
+    if (!inspected.verified) return null;
+    return { url: inspected.finalURL, note: inspected.note };
+  } catch {
+    return null;
+  }
+}
+
+async function verifyPosition(position) {
+  const checkedAt = new Date().toISOString();
+
+  // Existing positions do not need an expensive network/AI verification on
+  // every daily run. Reuse a recent successful verification for 7 days.
+  if (position.verification_status === "Verified" && position.verification_checked_at) {
+    const checkedAtMs = Date.parse(position.verification_checked_at);
+    const cacheAgeMs = Date.now() - checkedAtMs;
+    if (Number.isFinite(checkedAtMs) && cacheAgeMs >= 0 && cacheAgeMs < VERIFICATION_CACHE_DAYS * 86400000) {
+      return {
+        verification_status: "Verified",
+        verification_checked_at: position.verification_checked_at,
+        verification_note: position.verification_note || "Recently verified; reused cached verification.",
+        verification_url: position.verification_url || position.url,
+        url: position.url
+      };
+    }
+  }
+  try {
+    const inspected = await inspectVacancyURL(position.url, position);
+
+    if (inspected.verified) {
       return {
         verification_status: "Verified",
         verification_checked_at: checkedAt,
-        verification_note: `HTTP ${response.status}; page contains PhD/doctoral and vacancy/position signals`,
-        verification_url: finalURL
+        verification_note: inspected.note,
+        verification_url: inspected.finalURL,
+        url: inspected.finalURL
+      };
+    }
+
+    console.log(`↻ URL needs repair: ${position.title}`);
+    if (geminiQuotaExhausted) {
+      return {
+        verification_status: "Not verified",
+        verification_checked_at: checkedAt,
+        verification_note: `${inspected.note} Gemini quota is exhausted, so URL repair was skipped.`,
+        verification_url: inspected.finalURL
+      };
+    }
+    if (urlRepairsUsed >= URL_REPAIR_LIMIT) {
+      return {
+        verification_status: "Not verified",
+        verification_checked_at: checkedAt,
+        verification_note: `${inspected.note} URL repair limit (${URL_REPAIR_LIMIT}) reached for this run.`,
+        verification_url: inspected.finalURL
+      };
+    }
+    const replacement = await findReplacementURL(position);
+
+    if (replacement) {
+      console.log(`✓ Recovered working vacancy URL: ${replacement.url}`);
+      return {
+        verification_status: "Verified",
+        verification_checked_at: checkedAt,
+        verification_note: `Original URL was invalid or mismatched; recovered current vacancy URL. ${replacement.note}`,
+        verification_url: replacement.url,
+        url: replacement.url
       };
     }
 
     return {
       verification_status: "Not verified",
       verification_checked_at: checkedAt,
-      verification_note: response.ok
-        ? "Page is reachable, but the automated content check could not confirm that it is a PhD vacancy page."
-        : `HTTP ${response.status}`,
-      verification_url: finalURL
+      verification_note: inspected.note,
+      verification_url: inspected.finalURL
     };
   } catch (error) {
+    console.log(`↻ URL check failed; attempting repair: ${position.title}`);
+    if (geminiQuotaExhausted || urlRepairsUsed >= URL_REPAIR_LIMIT) {
+      return {
+        verification_status: "Not verified",
+        verification_checked_at: checkedAt,
+        verification_note: `${error?.name === "AbortError" ? "Verification timed out." : "Verification request failed."} URL repair was skipped because Gemini is unavailable or the repair limit was reached.`,
+        verification_url: normalizeURL(position.url)
+      };
+    }
+    try {
+      const replacement = await findReplacementURL(position);
+      if (replacement) {
+        console.log(`✓ Recovered working vacancy URL: ${replacement.url}`);
+        return {
+          verification_status: "Verified",
+          verification_checked_at: checkedAt,
+          verification_note: `Original URL could not be fetched; recovered current vacancy URL. ${replacement.note}`,
+          verification_url: replacement.url,
+          url: replacement.url
+        };
+      }
+    } catch {}
+
     return {
       verification_status: "Not verified",
       verification_checked_at: checkedAt,
       verification_note: error?.name === "AbortError"
-        ? "Verification timed out."
-        : `Could not fetch page: ${String(error?.message || error)}`,
+        ? "Verification timed out and URL repair failed."
+        : `Could not fetch page and URL repair failed: ${String(error?.message || error)}`,
       verification_url: normalizeURL(position.url)
     };
   }
@@ -316,17 +475,19 @@ async function verifyPosition(position) {
 
 async function verifyResults(results) {
   console.log(`Verifying ${results.length} results (informational only; no results will be removed)...`);
+  console.log(`Verification cache: ${VERIFICATION_CACHE_DAYS} days; Gemini URL repairs: max ${URL_REPAIR_LIMIT} per run.`);
   const verified = [];
-  for (let i = 0; i < results.length; i += 5) {
-    const batch = results.slice(i, i + 5);
-    const checked = await Promise.all(batch.map(verifyPosition));
-    for (let j = 0; j < batch.length; j++) {
-      verified.push({ ...batch[j], ...checked[j] });
-      console.log(
-        `${checked[j].verification_status === "Verified" ? "✓" : "?"} ${batch[j].title}`
-      );
-    }
+
+  // Sequential verification makes the Gemini repair budget deterministic and
+  // prevents a burst of repair requests when several URLs are broken.
+  for (const position of results) {
+    const checked = await verifyPosition(position);
+    verified.push({ ...position, ...checked });
+    console.log(
+      `${checked.verification_status === "Verified" ? "✓" : "?"} ${position.title}`
+    );
   }
+
   return verified;
 }
 
@@ -366,22 +527,169 @@ function saveJSON(file, value) {
   writeFileSync(file, JSON.stringify(value, null, 2) + "\n");
 }
 
+function attachSourcesToPositions(results, searchSources) {
+  const sources = Array.isArray(searchSources) ? searchSources : [];
+
+  return results.map(position => {
+    const positionURL = normalizeURL(position.url);
+    const positionURLs = new Set([
+      positionURL,
+      normalizeURL(position.verification_url),
+      normalizeURL(position.ielts_source_url),
+      normalizeURL(position.language_source_url)
+    ].filter(Boolean));
+
+    const titleWords = String(position.title || "")
+      .toLowerCase()
+      .split(/\W+/)
+      .filter(word => word.length >= 5);
+    const universityWords = String(position.university || "")
+      .toLowerCase()
+      .split(/\W+/)
+      .filter(word => word.length >= 5);
+
+    // Keep only sources that are genuinely additional to the clickable
+    // application URL. Never manufacture a "source" by copying position.url.
+    const modelSources = Array.isArray(position.sources)
+      ? position.sources
+          .map(source => ({
+            title: String(source?.title || "").trim(),
+            url: normalizeURL(source?.url)
+          }))
+          .filter(source => source.url && !positionURLs.has(source.url))
+      : [];
+
+    const matchedGrounding = sources.filter(source => {
+      const url = normalizeURL(source?.url);
+      if (!url || positionURLs.has(url)) return false;
+
+      const haystack = `${source?.title || ""} ${url}`.toLowerCase();
+      const titleHits = titleWords.filter(word => haystack.includes(word)).length;
+      const universityHit = universityWords.some(word => haystack.includes(word));
+
+      return universityHit && titleHits >= Math.min(2, titleWords.length || 2);
+    }).map(source => ({
+      title: String(source?.title || "").trim(),
+      url: normalizeURL(source?.url)
+    }));
+
+    const unique = Array.from(new Map(
+      [...modelSources, ...matchedGrounding]
+        .filter(source => source.url && !positionURLs.has(source.url))
+        .map(source => [source.url, source])
+    ).values());
+
+    return { ...position, sources: unique };
+  });
+}
+
+async function validateAdditionalSources(results) {
+  const validated = [];
+
+  for (const position of results) {
+    const applicationURL = normalizeURL(position.url);
+    const sources = Array.isArray(position.sources) ? position.sources : [];
+    const good = [];
+
+    for (const source of sources.slice(0, 6)) {
+      const url = normalizeURL(source?.url);
+      if (!url || url === applicationURL) continue;
+
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const response = await fetch(url, {
+          method: "GET",
+          redirect: "follow",
+          signal: controller.signal,
+          headers: { "User-Agent": "PhD-Radar/1.0 source-check" }
+        });
+        clearTimeout(timeout);
+
+        const finalURL = normalizeURL(response.url || url);
+        if (!response.ok || finalURL === applicationURL) continue;
+
+        const contentType = String(response.headers.get("content-type") || "");
+        if (!contentType || contentType.includes("text/") || contentType.includes("html")) {
+          good.push({
+            title: source.title || "Supporting source",
+            url: finalURL
+          });
+        }
+      } catch {}
+    }
+
+    validated.push({ ...position, sources: Array.from(
+      new Map(good.map(source => [source.url, source])).values()
+    )});
+  }
+
+  return validated;
+}
+
+async function enrichExistingSources(results) {
+  if (!GEMINI_API_KEY || geminiQuotaExhausted) return results;
+
+  const targets = results.filter(position => !Array.isArray(position.sources) || position.sources.length === 0).slice(0, 2);
+  if (!targets.length) return results;
+
+  const endpoint =
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+  const prompt = `
+For each of these CURRENT PhD vacancies, find 2-4 ADDITIONAL web pages that
+support or describe the exact vacancy/project. Do NOT return the application
+URL itself. Do NOT return a university homepage or generic doctoral programme.
+Use Google Search and return only URLs actually found in the search results.
+
+Return ONLY JSON in this format:
+[{"title":"position title","sources":[{"title":"source title","url":"https://..."}]}]
+
+Positions:
+${targets.map((p,i)=>`${i+1}. ${p.title} | ${p.university} | ${p.country} | deadline ${p.deadline} | application ${p.url}`).join("\n")}
+`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        tools: [{ google_search: {} }],
+        generationConfig: { temperature: 0 }
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      if (response.status === 429) geminiQuotaExhausted = true;
+      return results;
+    }
+    const text = data?.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("") || "";
+    if (!text) return results;
+    const found = extractJSON(text);
+    const byTitle = new Map((Array.isArray(found) ? found : []).map(x => [String(x.title || "").toLowerCase(), x.sources]));
+    return results.map(position => {
+      const extra = byTitle.get(String(position.title || "").toLowerCase());
+      return extra ? { ...position, sources: extra } : position;
+    });
+  } catch (error) {
+    console.warn("Existing-source enrichment failed:", String(error?.message || error));
+    return results;
+  }
+}
+
 function loadExisting() {
   return cleanResults(loadJSON(RESULTS_FILE, []));
 }
 
 async function callGemini() {
-  console.log(`AI provider selected: ${AI_PROVIDER}`);
-  if (AI_PROVIDER === "gemini") {
-    console.log(`AI model: ${GEMINI_MODEL}`);
-    console.log(`Gemini API key configured: ${Boolean(GEMINI_API_KEY)}`);
-  } else {
-    console.log(`AI model: ${APMIX_MODEL}`);
-    console.log(`APMix API key configured: ${Boolean(APMIX_API_KEY)}`);
-  }
+  console.log(`AI provider: Gemini`);
+  console.log(`AI model: ${GEMINI_MODEL}`);
+  console.log(`Gemini API key configured: ${Boolean(GEMINI_API_KEY)}`);
 
   const prompt = `
 You are an expert PhD opportunity researcher.
+
 Find currently open, fully funded PhD positions that are exceptionally
 well aligned with this candidate.
 
@@ -400,45 +708,57 @@ ${RULES}
 ================ OUTPUT ================
 ${OUTPUT_RULES}
 
-${AI_PROVIDER === "gemini"
-    ? `Use Google Search extensively. For IELTS and language information,
+${true
+  ? `Use Google Search extensively. For IELTS and language information,
 prefer official university sources. Search the position page and, when
 needed, the university's official admissions/doctoral English-language
 requirements page. Do not use third-party summaries for IELTS claims.
+
 Return only verified current opportunities.`
-    : `You are being tested through APMix using an OpenAI-compatible API.
+  : `You are being tested through APMix using an OpenAI-compatible API.
 There is no Google Search tool available in this request. Do not invent
 URLs, deadlines or positions. Use only information you actually know.
 If you cannot reliably identify a current vacancy, return fewer results
 rather than fabricating one.
+
 Return only opportunities you can identify with high confidence.`}
 `;
 
-  if (AI_PROVIDER === "gemini") {
+  {
     const endpoint =
       `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
     async function requestGemini(generationConfig) {
       const body = {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        tools: [{ googleSearch: {} }],
+        tools: [{ google_search: {} }],
         generationConfig
       };
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
+
       const data = await response.json();
+
       if (!response.ok) {
+        if (response.status === 429) {
+          geminiQuotaExhausted = true;
+          console.warn("Gemini quota exhausted (HTTP 429). Gemini will be skipped for the rest of this run.");
+        }
         throw new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
       }
+
       return data;
     }
 
     console.log("Gemini is searching Google...");
+
     let data = await requestGemini({ temperature: 0.2 });
     let groundingResponses = [data];
+
     let text = data?.candidates?.[0]?.content?.parts
       ?.map(part => part.text || "")
       .join("") || "";
@@ -457,11 +777,17 @@ Return only opportunities you can identify with high confidence.`}
           promptFeedback: data?.promptFeedback
         })
       );
+
+      if (geminiQuotaExhausted) {
+        throw new Error("Gemini quota exhausted; not retrying the request.");
+      }
+
       data = await requestGemini({
         temperature: 0.2,
         thinkingConfig: { thinkingBudget: 0 }
       });
       groundingResponses.push(data);
+
       text = data?.candidates?.[0]?.content?.parts
         ?.map(part => part.text || "")
         .join("") || "";
@@ -473,12 +799,9 @@ Return only opportunities you can identify with high confidence.`}
     }
 
     const results = extractJSON(text);
-
     const sources = groundingResponses
       .flatMap(response => response?.candidates || [])
       .flatMap(candidate => candidate?.groundingMetadata?.groundingChunks || [])
-      .map(chunk => chunk?.web)
-      .filter(web => web?.uri)
       .map(chunk => chunk?.web)
       .filter(web => web?.uri)
       .map(web => ({
@@ -486,17 +809,16 @@ Return only opportunities you can identify with high confidence.`}
         url: normalizeURL(web.uri)
       }))
       .filter(source => source.url);
-
     const uniqueSources = Array.from(
       new Map(sources.map(source => [source.url, source])).values()
     );
-
     console.log(`Gemini grounding sources captured: ${uniqueSources.length}`);
     return { results, sources: uniqueSources };
   }
 
   const endpoint = "https://api.apmix.ai/v1/chat/completions";
-  console.log(`APMix is testing model: ${APMIX_MODEL}`);
+
+  console.log(`APMix model: ${APMIX_MODEL}`);
   console.log("APMix test mode: no Google Search grounding is attached to this request.");
 
   const response = await fetch(endpoint, {
@@ -513,11 +835,13 @@ Return only opportunities you can identify with high confidence.`}
   });
 
   const data = await response.json();
+
   if (!response.ok) {
     throw new Error(`APMix API error ${response.status}: ${JSON.stringify(data)}`);
   }
 
   const text = data?.choices?.[0]?.message?.content || "";
+
   console.log("APMix request succeeded.");
   if (data?.usage) {
     console.log("APMix usage:", JSON.stringify(data.usage));
@@ -533,13 +857,158 @@ Return only opportunities you can identify with high confidence.`}
   return { results: extractJSON(text), sources: [] };
 }
 
+
+async function callAPMix() {
+  console.log("AI provider: APMix");
+  console.log(`APMix model: ${APMIX_MODEL}`);
+  console.log(`APMix API key configured: ${Boolean(APMIX_API_KEY)}`);
+
+  const prompt = buildPrompt("apmix");
+  const endpoint = "https://api.apmix.ai/v1/chat/completions";
+
+  console.log("APMix is searching its model knowledge (no Google Search grounding).");
+
+  console.log("APMix checking models available to this API key...");
+  try {
+    const modelsResponse = await fetch("https://api.apmix.ai/v1/models", {
+      headers: { "Authorization": "Bearer " + APMIX_API_KEY }
+    });
+    const modelsData = await modelsResponse.json();
+    console.log("APMix /v1/models HTTP status:", modelsResponse.status);
+    if (modelsResponse.ok) {
+      const models = Array.isArray(modelsData?.data) ? modelsData.data : [];
+      const ids = models.map(model => String(model?.id || "")).filter(Boolean);
+      console.log("APMix accessible models:", ids.length);
+      console.log("APMix target model available:", ids.includes(APMIX_MODEL));
+      if (ids.length > 0) console.log("APMix model IDs:", ids.join(", "));
+    } else {
+      console.error("APMix /v1/models error:", JSON.stringify(modelsData, null, 2));
+    }
+  } catch (error) {
+    console.error("APMix model availability check failed:", String(error?.message || error));
+  }
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${APMIX_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: APMIX_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2,
+      max_tokens: 12000
+    })
+  });
+
+  const requestId = response.headers.get("x-request-id") || response.headers.get("request-id") || "not provided";
+  console.log("APMix HTTP status:", response.status);
+  console.log("APMix request ID:", requestId);
+
+  const data = await response.json();
+  if (!response.ok) {
+    console.error("APMix API error body:", JSON.stringify(data, null, 2));
+    throw new Error(`APMix API error ${response.status}: ${JSON.stringify(data)}`);
+  }
+
+  const choice = data?.choices?.[0];
+  const text = choice?.message?.content || "";
+  console.log("APMix request succeeded at HTTP level.");
+  console.log("APMix response text length:", text.length);
+  if (text) console.log("APMix response preview:", text.slice(0, 1000));
+  console.log("APMix finish reason:", choice?.finish_reason || "unknown");
+  if (data?.usage) console.log("APMix usage:", JSON.stringify(data.usage));
+
+  if (!text) {
+    console.error("APMix returned no usable content. Full response:", JSON.stringify(data, null, 2));
+    return { results: [], sources: [], provider: "APMix" };
+  }
+
+  try {
+    return { results: extractJSON(text), sources: [], provider: "APMix" };
+  } catch (error) {
+    console.error("APMix returned non-JSON text:", text.slice(0, 2000));
+    console.error(error);
+    return { results: [], sources: [], provider: "APMix" };
+  }
+}
+
+function buildPrompt(provider) {
+  return `
+You are an expert PhD opportunity researcher.
+
+Find currently open, fully funded PhD positions that are exceptionally
+well aligned with this candidate.
+
+================ CANDIDATE ================
+${CANDIDATE_PROFILE}
+
+================ GEOGRAPHY ================
+${GEOGRAPHY}
+
+================ SEARCH STRATEGY ================
+${SEARCH_STRATEGY}
+
+================ RULES ================
+${RULES}
+
+================ OUTPUT ================
+${OUTPUT_RULES}
+
+${provider === "gemini"
+  ? `Use Google Search extensively. For IELTS and language information,
+prefer official university sources. Search the position page and, when
+needed, the university's official admissions/doctoral English-language
+requirements page. Do not use third-party summaries for IELTS claims.
+
+Return only verified current opportunities.`
+  : `There is no Google Search tool available in this APMix request.
+Do not invent URLs, deadlines or positions. Use only information you
+actually know. If you cannot reliably identify a current vacancy,
+return fewer results rather than fabricating one.
+
+Return only opportunities you can identify with high confidence.`}
+`;
+}
+
+async function callProviders() {
+  if (AI_PROVIDER === "gemini") return await callGemini();
+  if (AI_PROVIDER === "apmix") return await callAPMix();
+
+  console.log("Running BOTH AI providers.");
+  const [gemini, apmix] = await Promise.allSettled([callGemini(), callAPMix()]);
+  const results = [];
+  const sources = [];
+
+  if (gemini.status === "fulfilled") {
+    results.push(...gemini.value.results.map(x => ({ ...x, ai_provider: "Gemini" })));
+    sources.push(...gemini.value.sources);
+  } else {
+    console.error("Gemini failed:", gemini.reason);
+  }
+
+  if (apmix.status === "fulfilled") {
+    results.push(...apmix.value.results.map(x => ({ ...x, ai_provider: "APMix" })));
+  } else {
+    console.error("APMix failed:", apmix.reason);
+  }
+
+  return {
+    results,
+    sources: Array.from(new Map(sources.map(s => [s.url, s])).values()),
+    provider: "Both"
+  };
+}
 async function sendTelegramMessage(message) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.log("Telegram secrets are not configured. Skipping Telegram.");
     return false;
   }
+
   const endpoint =
     `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -549,11 +1018,13 @@ async function sendTelegramMessage(message) {
       disable_web_page_preview: false
     })
   });
+
   const data = await response.json();
   if (!data.ok) {
     console.error("Telegram API error:", JSON.stringify(data, null, 2));
     return false;
   }
+
   console.log("Telegram notification sent.");
   return true;
 }
@@ -562,15 +1033,6 @@ function formatTelegramMessage(position) {
   const languageLine = position.application_language === "Not English"
     ? "⚠️ Language: Not English"
     : `🗣️ Language: ${position.application_language || "Unknown"}`;
-
-  // NEW: surface both trust signals instead of hiding them.
-  const warnings = [];
-  if (position.verification_status !== "Verified") {
-    warnings.push("⚠️ URL could not be confirmed as a live PhD/vacancy page.");
-  }
-  if (position.url_grounded === false) {
-    warnings.push("⚠️ This URL's domain did not appear in the AI's search sources — double-check before applying.");
-  }
 
   return [
     `⭐ EXCEPTIONAL PhD MATCH — ${position.overall_score}/100`,
@@ -591,7 +1053,6 @@ function formatTelegramMessage(position) {
     "",
     "🧭 Strategic fit:",
     position.strategic_fit || "Strong alignment with your research trajectory.",
-    ...(warnings.length ? ["", ...warnings] : []),
     "",
     "🔗 Apply:",
     position.url
@@ -601,9 +1062,11 @@ function formatTelegramMessage(position) {
 async function notifyExceptionalMatches(results) {
   const notified = loadJSON(NOTIFIED_FILE, {});
   let changed = false;
+
   for (const position of results.filter(x => Number(x.overall_score) >= 90)) {
     const url = normalizeURL(position.url);
     const previousScore = Number(notified[url]?.score || 0);
+
     if (previousScore >= Number(position.overall_score)) continue;
 
     if (await sendTelegramMessage(formatTelegramMessage(position))) {
@@ -614,6 +1077,7 @@ async function notifyExceptionalMatches(results) {
       changed = true;
     }
   }
+
   if (changed) saveJSON(NOTIFIED_FILE, notified);
 }
 
@@ -624,27 +1088,33 @@ async function main() {
 
   const existingResults = loadExisting();
   console.log(`Existing active positions: ${existingResults.length}`);
-
   console.log("Running new search...");
-  const searchResponse = await callGemini();
-  const newSearchResults = cleanResults(searchResponse.results, searchResponse.sources).map(result => ({
-    ...result,
-    ai_provider: AI_PROVIDER === "gemini" ? "Gemini" : "APMix"
-  }));
 
+  console.log(`AI provider mode: ${AI_PROVIDER}`);
+  const searchResponse = await callProviders();
+  const newSearchResults = cleanResults(searchResponse.results);
   saveJSON(SOURCES_FILE, {
     searched_at: new Date().toISOString(),
-    ai_provider: AI_PROVIDER === "gemini" ? "Gemini" : "APMix",
-    model: AI_PROVIDER === "gemini" ? GEMINI_MODEL : APMIX_MODEL,
-    sources: Array.isArray(searchResponse.sources) ? searchResponse.sources : []
+    ai_provider: searchResponse.provider,
+    model: searchResponse.provider === "Gemini"
+      ? GEMINI_MODEL
+      : searchResponse.provider === "APMix"
+        ? APMIX_MODEL
+        : `${GEMINI_MODEL} + ${APMIX_MODEL}`,
+    sources: []
   });
-  console.log(`Saved ${Array.isArray(searchResponse.sources) ? searchResponse.sources.length : 0} search sources.`);
-  console.log(`${AI_PROVIDER} returned ${newSearchResults.length} valid positions.`);
+  console.log("Each position keeps the exact vacancy/application URL found by the search as its primary source.");
+  console.log(`${searchResponse.provider} returned ${newSearchResults.length} valid positions.`);
+  if (geminiQuotaExhausted) {
+    console.log("Gemini is quota-exhausted for this run; existing positions will be preserved and no further Gemini repair requests will be made.");
+  }
 
   const byURL = new Map(existingResults.map(result => [normalizeURL(result.url), result]));
+
   for (const result of newSearchResults) {
     const url = normalizeURL(result.url);
     const existing = byURL.get(url);
+
     if (!existing || Number(result.overall_score) >= Number(existing.overall_score)) {
       byURL.set(url, existing ? { ...existing, ...result } : result);
     }
@@ -652,28 +1122,19 @@ async function main() {
 
   const mergedResults = cleanResults(Array.from(byURL.values()));
   const verifiedResults = await verifyResults(mergedResults);
+  const resultsWithSources = verifiedResults;
+  saveJSON(RESULTS_FILE, resultsWithSources);
 
-  const flaggedCount = verifiedResults.filter(
-    r => r.verification_status !== "Verified" || r.url_grounded === false
-  ).length;
-
-  saveJSON(RESULTS_FILE, verifiedResults);
-  console.log(
-    `Saved ${verifiedResults.length} active positions ` +
-    `(${flaggedCount} flagged as unverified and/or ungrounded; none were removed).`
-  );
-
-  await notifyExceptionalMatches(verifiedResults);
+  console.log(`Saved ${resultsWithSources.length} active positions. Verification is informational only; no results were removed.`);
+  if (newSearchResults.length === 0 && existingResults.length > 0) {
+    console.log("No new positions were returned; existing active positions were retained.");
+  }
+  await notifyExceptionalMatches(resultsWithSources);
 
   console.log("\nTop matches:");
-  for (const result of mergedResults.slice(0, 10)) {
-    const flags = [
-      result.verification_status !== "Verified" ? "not verified" : null,
-      result.url_grounded === false ? "url not grounded" : null
-    ].filter(Boolean).join(", ");
+  for (const result of resultsWithSources.slice(0, 10)) {
     console.log(
-      `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country}` +
-      (flags ? ` | ⚠️ ${flags}` : "")
+      `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country}`
     );
   }
 
