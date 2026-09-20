@@ -4,27 +4,32 @@ import {
   writeFileSync
 } from "node:fs";
 
-const GEMINI_MODEL = "gemini-3.6-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 const RESULTS_FILE = "results.json";
 const NOTIFIED_FILE = "notified.json";
 const SOURCES_FILE = "sources.json";
 
 const AI_PROVIDER = String(process.env.AI_PROVIDER || "gemini").toLowerCase();
-
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const APMIX_API_KEY = process.env.APMIX_API_KEY;
-const APMIX_MODEL = process.env.APMIX_MODEL || "deepseek/deepseek-v4.1-flash";
+
+// Confirmed model string for ChatGPT on apmix.ai, per the account dashboard.
+const APMIX_MODEL = process.env.APMIX_MODEL || "gpt-5.6-luna-free";
+
+// Off by default. If you turn this on and apmix's endpoint doesn't support
+// a web-search tool on chat/completions, the code below catches the error
+// and silently retries without it — it will not break your run either way.
+const APMIX_USE_WEB_SEARCH = String(process.env.APMIX_USE_WEB_SEARCH || "false").toLowerCase() === "true";
+
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 if (AI_PROVIDER === "gemini" && !GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY is not configured.");
 }
-
 if (AI_PROVIDER === "apmix" && !APMIX_API_KEY) {
   throw new Error("APMIX_API_KEY is not configured.");
 }
-
 if (!["gemini", "apmix"].includes(AI_PROVIDER)) {
   throw new Error('AI_PROVIDER must be "gemini" or "apmix".');
 }
@@ -107,6 +112,18 @@ IMPORTANT LANGUAGE AND IELTS RULES:
     score or eligibility filtering.
 `;
 
+const URL_INTEGRITY_RULE = `
+CRITICAL URL RULE:
+The "url" field must be copied EXACTLY, character-for-character, from the
+specific search result / page you actually used for that listing. Do not
+"clean up", shorten, guess, reconstruct, or normalise it into what you
+think the university's vacancy page pattern usually looks like. Do not
+substitute the university's generic careers homepage if you are not
+certain it is the exact vacancy page. If you are not fully sure of the
+exact URL, lower your confidence in that result rather than inventing or
+tidying the URL.
+`;
+
 const OUTPUT_RULES = `
 Return ONLY a valid JSON array. Every object MUST contain:
 {
@@ -146,6 +163,14 @@ function normalizeURL(url) {
     return parsed.toString().replace(/\/$/, "");
   } catch {
     return String(url).trim().replace(/\/$/, "");
+  }
+}
+
+function hostOf(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
   }
 }
 
@@ -205,6 +230,12 @@ function cleanResults(results) {
       ai_provider: ["Gemini", "APMix"].includes(String(item.ai_provider || ""))
         ? String(item.ai_provider)
         : (AI_PROVIDER === "gemini" ? "Gemini" : "APMix"),
+      ai_model: String(item.ai_model || (AI_PROVIDER === "gemini" ? GEMINI_MODEL : APMIX_MODEL)),
+      // Informational only, same philosophy as verification below: this is
+      // a label for you to weigh, it never removes a result.
+      url_grounded: item.url_grounded === true
+        ? true
+        : (item.url_grounded === false ? false : null), // null = unknown (e.g. APMix has no grounding source list)
       verification_status: ["Verified", "Not verified"].includes(String(item.verification_status || ""))
         ? String(item.verification_status)
         : "Not verified",
@@ -222,13 +253,13 @@ function cleanResults(results) {
   return cleaned;
 }
 
-
+// Unchanged on purpose: verification stays informational-only. Nothing here
+// removes a result, it only labels it so you can judge for yourself.
 async function verifyPosition(position) {
   const checkedAt = new Date().toISOString();
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
-
     const response = await fetch(position.url, {
       method: "GET",
       redirect: "follow",
@@ -237,7 +268,6 @@ async function verifyPosition(position) {
         "User-Agent": "PhD-Radar/1.0 vacancy-check"
       }
     });
-
     clearTimeout(timeout);
 
     const finalURL = normalizeURL(response.url || position.url);
@@ -251,7 +281,7 @@ async function verifyPosition(position) {
     const vacancySignal = /vacancy|position|fellowship|scholarship|researcher|job opening|apply/.test(text);
     const titleWords = String(position.title || "")
       .toLowerCase()
-      .split(/\\W+/)
+      .split(/\W+/)
       .filter(word => word.length >= 5)
       .slice(0, 8);
     const titleSignal = titleWords.length === 0 ||
@@ -289,7 +319,6 @@ async function verifyPosition(position) {
 async function verifyResults(results) {
   console.log(`Verifying ${results.length} results (informational only; no results will be removed)...`);
   const verified = [];
-
   for (let i = 0; i < results.length; i += 5) {
     const batch = results.slice(i, i + 5);
     const checked = await Promise.all(batch.map(verifyPosition));
@@ -300,7 +329,6 @@ async function verifyResults(results) {
       );
     }
   }
-
   return verified;
 }
 
@@ -324,7 +352,7 @@ function extractJSON(text) {
     } catch {}
   }
 
-  throw new Error("Could not extract valid JSON from Gemini response.");
+  throw new Error("Could not extract valid JSON from AI response.");
 }
 
 function loadJSON(file, fallback) {
@@ -344,17 +372,8 @@ function loadExisting() {
   return cleanResults(loadJSON(RESULTS_FILE, []));
 }
 
-async function callGemini() {
-  console.log(`AI provider selected: ${AI_PROVIDER}`);
-  if (AI_PROVIDER === "gemini") {
-    console.log(`AI model: ${GEMINI_MODEL}`);
-    console.log(`Gemini API key configured: ${Boolean(GEMINI_API_KEY)}`);
-  } else {
-    console.log(`AI model: ${APMIX_MODEL}`);
-    console.log(`APMix API key configured: ${Boolean(APMIX_API_KEY)}`);
-  }
-
-  const prompt = `
+function buildPrompt() {
+  return `
 You are an expert PhD opportunity researcher.
 
 Find currently open, fully funded PhD positions that are exceptionally
@@ -372,6 +391,8 @@ ${SEARCH_STRATEGY}
 ================ RULES ================
 ${RULES}
 
+${URL_INTEGRITY_RULE}
+
 ================ OUTPUT ================
 ${OUTPUT_RULES}
 
@@ -380,122 +401,161 @@ ${AI_PROVIDER === "gemini"
 prefer official university sources. Search the position page and, when
 needed, the university's official admissions/doctoral English-language
 requirements page. Do not use third-party summaries for IELTS claims.
-
 Return only verified current opportunities.`
-  : `You are being tested through APMix using an OpenAI-compatible API.
-There is no Google Search tool available in this request. Do not invent
-URLs, deadlines or positions. Use only information you actually know.
-If you cannot reliably identify a current vacancy, return fewer results
-rather than fabricating one.
-
-Return only opportunities you can identify with high confidence.`}
+  : `You are being queried through apmix.ai as ChatGPT (${APMIX_MODEL}).
+${APMIX_USE_WEB_SEARCH
+    ? `A web-search tool may be available to you in this request — use it
+whenever you can to find and confirm real, currently open vacancy pages.`
+    : `There is no web-search tool attached to this request.`}
+Do not invent URLs, deadlines or positions. Use only information you
+actually know with high confidence, and prefer well-known, large,
+well-documented funding programmes where you are more likely to be
+right. If you cannot reliably identify a current vacancy and its exact
+URL, return fewer results rather than fabricating one.`}
 `;
+}
 
-  if (AI_PROVIDER === "gemini") {
-    const endpoint =
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+async function callGemini(prompt) {
+  const endpoint =
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
-    async function requestGemini(generationConfig) {
-      const body = {
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        tools: [{ googleSearch: {} }],
-        generationConfig
-      };
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
-      }
-
-      return data;
+  async function requestGemini(generationConfig) {
+    const body = {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      tools: [{ googleSearch: {} }],
+      generationConfig
+    };
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
     }
-
-    console.log("Gemini is searching Google...");
-
-    let data = await requestGemini({ temperature: 0.2 });
-
-    let text = data?.candidates?.[0]?.content?.parts
-      ?.map(part => part.text || "")
-      .join("") || "";
-
-    if (!text) {
-      const candidate = data?.candidates?.[0];
-      console.warn(
-        "Gemini returned no text on the first attempt.",
-        JSON.stringify({
-          finishReason: candidate?.finishReason,
-          finishMessage: candidate?.finishMessage,
-          tokenCount: candidate?.tokenCount,
-          hasGrounding: Boolean(candidate?.groundingMetadata),
-          promptFeedback: data?.promptFeedback
-        })
-      );
-
-      data = await requestGemini({
-        temperature: 0.2,
-        thinkingConfig: { thinkingBudget: 0 }
-      });
-
-      text = data?.candidates?.[0]?.content?.parts
-        ?.map(part => part.text || "")
-        .join("") || "";
-    }
-
-    if (!text) {
-      console.error(JSON.stringify(data, null, 2));
-      throw new Error("Gemini returned no usable text after retry.");
-    }
-
-    const results = extractJSON(text);
-    const groundingChunks = data?.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-    const sources = groundingChunks
-      .map(chunk => chunk?.web)
-      .filter(web => web?.uri)
-      .map(web => ({
-        title: String(web.title || "").trim(),
-        url: normalizeURL(web.uri)
-      }))
-      .filter(source => source.url);
-    const uniqueSources = Array.from(
-      new Map(sources.map(source => [source.url, source])).values()
-    );
-    console.log(`Gemini grounding sources captured: ${uniqueSources.length}`);
-    return { results, sources: uniqueSources };
+    return data;
   }
 
+  console.log("Gemini is searching Google...");
+  let data = await requestGemini({ temperature: 0.2 });
+  let groundingResponses = [data];
+  let text = data?.candidates?.[0]?.content?.parts
+    ?.map(part => part.text || "")
+    .join("") || "";
+
+  if (!text) {
+    const candidate = data?.candidates?.[0];
+    console.warn(
+      "Gemini returned no text on the first attempt.",
+      JSON.stringify({
+        finishReason: candidate?.finishReason,
+        finishMessage: candidate?.finishMessage,
+        tokenCount: candidate?.tokenCount,
+        hasGrounding: Boolean(candidate?.groundingMetadata),
+        groundingChunks: candidate?.groundingMetadata?.groundingChunks?.length || 0,
+        webSearchQueries: candidate?.groundingMetadata?.webSearchQueries || [],
+        promptFeedback: data?.promptFeedback
+      })
+    );
+    data = await requestGemini({
+      temperature: 0.2,
+      thinkingConfig: { thinkingBudget: 0 }
+    });
+    groundingResponses.push(data);
+    text = data?.candidates?.[0]?.content?.parts
+      ?.map(part => part.text || "")
+      .join("") || "";
+  }
+
+  if (!text) {
+    console.error(JSON.stringify(data, null, 2));
+    throw new Error("Gemini returned no usable text after retry.");
+  }
+
+  const results = extractJSON(text);
+
+  const sources = groundingResponses
+    .flatMap(response => response?.candidates || [])
+    .flatMap(candidate => candidate?.groundingMetadata?.groundingChunks || [])
+    .map(chunk => chunk?.web)
+    .filter(web => web?.uri)
+    .map(web => ({
+      title: String(web.title || "").trim(),
+      url: normalizeURL(web.uri)
+    }))
+    .filter(source => source.url);
+
+  const uniqueSources = Array.from(
+    new Map(sources.map(source => [source.url, source])).values()
+  );
+  console.log(`Gemini grounding sources captured: ${uniqueSources.length}`);
+
+  // NEW: label (do not remove) results whose URL doesn't trace back to an
+  // actual grounding source. Exact match, or same domain as a real hit,
+  // both count as grounded.
+  const sourceURLs = new Set(uniqueSources.map(s => s.url));
+  const sourceHosts = new Set(uniqueSources.map(s => hostOf(s.url)).filter(Boolean));
+
+  const labeledResults = (Array.isArray(results) ? results : []).map(r => {
+    const url = normalizeURL(r.url);
+    const grounded = sourceURLs.has(url) || sourceHosts.has(hostOf(url));
+    return { ...r, url_grounded: grounded, ai_model: GEMINI_MODEL };
+  });
+
+  const groundedCount = labeledResults.filter(r => r.url_grounded).length;
+  console.log(`URLs matching a real grounding source: ${groundedCount}/${labeledResults.length} (informational only, nothing removed)`);
+
+  return { results: labeledResults, sources: uniqueSources };
+}
+
+async function callApmix(prompt) {
   const endpoint = "https://api.apmix.ai/v1/chat/completions";
+  console.log(`APMix is querying model: ${APMIX_MODEL}`);
+  console.log(`APMix web-search tool requested: ${APMIX_USE_WEB_SEARCH}`);
 
-  console.log(`APMix is testing model: ${APMIX_MODEL}`);
-  console.log("APMix test mode: no Google Search grounding is attached to this request.");
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${APMIX_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
+  async function requestApmix(withTools) {
+    const body = {
       model: APMIX_MODEL,
       messages: [{ role: "user", content: prompt }],
       temperature: 0.2
-    })
-  });
+    };
+    if (withTools) {
+      // Experimental: OpenAI-style web_search tool. Whether apmix actually
+      // supports this on /v1/chat/completions is unconfirmed — check their
+      // docs. If it's rejected, we fall back to a plain request below.
+      body.tools = [{ type: "web_search" }];
+    }
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${APMIX_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      const err = new Error(`APMix API error ${response.status}: ${JSON.stringify(data)}`);
+      err.status = response.status;
+      throw err;
+    }
+    return data;
+  }
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(`APMix API error ${response.status}: ${JSON.stringify(data)}`);
+  let data;
+  if (APMIX_USE_WEB_SEARCH) {
+    try {
+      data = await requestApmix(true);
+    } catch (error) {
+      console.warn(`APMix rejected the web_search tool (${error.message}). Retrying without it.`);
+      data = await requestApmix(false);
+    }
+  } else {
+    data = await requestApmix(false);
   }
 
   const text = data?.choices?.[0]?.message?.content || "";
-
   console.log("APMix request succeeded.");
   if (data?.usage) {
     console.log("APMix usage:", JSON.stringify(data.usage));
@@ -508,7 +568,32 @@ Return only opportunities you can identify with high confidence.`}
     throw new Error("APMix returned no usable text.");
   }
 
-  return { results: extractJSON(text), sources: [] };
+  const parsed = extractJSON(text);
+  const labeledResults = (Array.isArray(parsed) ? parsed : []).map(r => ({
+    ...r,
+    // APMix has no grounding-chunk list to check against, so we leave this
+    // as null ("unknown") rather than pretending we verified it — the HTTP
+    // verification step below still runs on every result regardless.
+    url_grounded: null,
+    ai_model: APMIX_MODEL
+  }));
+
+  return { results: labeledResults, sources: [] };
+}
+
+async function callAI() {
+  console.log(`AI provider selected: ${AI_PROVIDER}`);
+  if (AI_PROVIDER === "gemini") {
+    console.log(`AI model: ${GEMINI_MODEL}`);
+    console.log(`Gemini API key configured: ${Boolean(GEMINI_API_KEY)}`);
+  } else {
+    console.log(`AI model: ${APMIX_MODEL}`);
+    console.log(`APMix API key configured: ${Boolean(APMIX_API_KEY)}`);
+  }
+
+  const prompt = buildPrompt();
+
+  return AI_PROVIDER === "gemini" ? callGemini(prompt) : callApmix(prompt);
 }
 
 async function sendTelegramMessage(message) {
@@ -516,10 +601,8 @@ async function sendTelegramMessage(message) {
     console.log("Telegram secrets are not configured. Skipping Telegram.");
     return false;
   }
-
   const endpoint =
     `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -529,13 +612,11 @@ async function sendTelegramMessage(message) {
       disable_web_page_preview: false
     })
   });
-
   const data = await response.json();
   if (!data.ok) {
     console.error("Telegram API error:", JSON.stringify(data, null, 2));
     return false;
   }
-
   console.log("Telegram notification sent.");
   return true;
 }
@@ -544,6 +625,10 @@ function formatTelegramMessage(position) {
   const languageLine = position.application_language === "Not English"
     ? "⚠️ Language: Not English"
     : `🗣️ Language: ${position.application_language || "Unknown"}`;
+
+  const groundingLine = position.url_grounded === false
+    ? "⚠️ URL not confirmed in search results — double-check before applying\n"
+    : "";
 
   return [
     `⭐ EXCEPTIONAL PhD MATCH — ${position.overall_score}/100`,
@@ -565,7 +650,7 @@ function formatTelegramMessage(position) {
     "🧭 Strategic fit:",
     position.strategic_fit || "Strong alignment with your research trajectory.",
     "",
-    "🔗 Apply:",
+    groundingLine + "🔗 Apply:",
     position.url
   ].join("\n");
 }
@@ -577,7 +662,6 @@ async function notifyExceptionalMatches(results) {
   for (const position of results.filter(x => Number(x.overall_score) >= 90)) {
     const url = normalizeURL(position.url);
     const previousScore = Number(notified[url]?.score || 0);
-
     if (previousScore >= Number(position.overall_score)) continue;
 
     if (await sendTelegramMessage(formatTelegramMessage(position))) {
@@ -599,13 +683,15 @@ async function main() {
 
   const existingResults = loadExisting();
   console.log(`Existing active positions: ${existingResults.length}`);
-  console.log("Running new search...");
 
-  const searchResponse = await callGemini();
+  console.log("Running new search...");
+  const searchResponse = await callAI();
+
   const newSearchResults = cleanResults(searchResponse.results).map(result => ({
     ...result,
     ai_provider: AI_PROVIDER === "gemini" ? "Gemini" : "APMix"
   }));
+
   saveJSON(SOURCES_FILE, {
     searched_at: new Date().toISOString(),
     ai_provider: AI_PROVIDER === "gemini" ? "Gemini" : "APMix",
@@ -616,27 +702,30 @@ async function main() {
   console.log(`${AI_PROVIDER} returned ${newSearchResults.length} valid positions.`);
 
   const byURL = new Map(existingResults.map(result => [normalizeURL(result.url), result]));
-
   for (const result of newSearchResults) {
     const url = normalizeURL(result.url);
     const existing = byURL.get(url);
-
     if (!existing || Number(result.overall_score) >= Number(existing.overall_score)) {
       byURL.set(url, existing ? { ...existing, ...result } : result);
     }
   }
 
   const mergedResults = cleanResults(Array.from(byURL.values()));
+
+  // Verification stays exactly as informational-only as before: nothing is
+  // ever removed from results.json based on verification_status or
+  // url_grounded. Both are labels for you (and the site UI) to weigh.
   const verifiedResults = await verifyResults(mergedResults);
   saveJSON(RESULTS_FILE, verifiedResults);
+  console.log(`Saved ${verifiedResults.length} active positions. Verification and grounding checks are informational only; no results were removed.`);
 
-  console.log(`Saved ${verifiedResults.length} active positions. Verification is informational only; no results were removed.`);
   await notifyExceptionalMatches(verifiedResults);
 
   console.log("\nTop matches:");
   for (const result of mergedResults.slice(0, 10)) {
+    const groundFlag = result.url_grounded === false ? " [ungrounded]" : "";
     console.log(
-      `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country}`
+      `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country}${groundFlag}`
     );
   }
 
