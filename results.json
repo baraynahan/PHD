@@ -20,8 +20,8 @@
     "ielts_source_url": "https://www.tudelft.nl/en/education/doctorate/admission",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:22:27.731Z",
-    "verification_note": "HTTP 404",
+    "verification_checked_at": "2026-09-20T20:41:59.378Z",
+    "verification_note": "HTTP 404 Gemini quota is exhausted, so URL repair was skipped.",
     "verification_url": "https://www.tudelft.nl/en/jobs/vacancies/phd/phd-position-transition-pathways-and-innovation-for-circular-consumption-of-e-bikes-and-electronics"
   },
   {
@@ -45,8 +45,8 @@
     "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/msc-programmes/admission-requirements/language-requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:22:49.680Z",
-    "verification_note": "HTTP 404",
+    "verification_checked_at": "2026-09-20T20:42:00.234Z",
+    "verification_note": "HTTP 404 Gemini quota is exhausted, so URL repair was skipped.",
     "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=8403"
   },
   {
@@ -70,8 +70,8 @@
     "ielts_source_url": "https://www.maastrichtuniversity.nl/about-um/faculties/maastricht-sustainability-institute/phd-programme/admission-requirements",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:22:55.675Z",
-    "verification_note": "HTTP 404 URL repair limit (2) reached for this run.",
+    "verification_checked_at": "2026-09-20T20:42:00.679Z",
+    "verification_note": "HTTP 404 Gemini quota is exhausted, so URL repair was skipped.",
     "verification_url": "https://www.maastrichtuniversity.nl/about-um/faculties/maastricht-sustainability-institute/phd-programme/better-not-more-business-strategies-enable-sufficient-consumption"
   },
   {
@@ -95,8 +95,8 @@
     "ielts_source_url": "https://www.uni-due.de/international/en/study/admission/language.php",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:22:56.584Z",
-    "verification_note": "HTTP 404 URL repair limit (2) reached for this run.",
+    "verification_checked_at": "2026-09-20T20:42:01.667Z",
+    "verification_note": "HTTP 404 Gemini quota is exhausted, so URL repair was skipped.",
     "verification_url": "https://www.uni-due.de/soziooekonomie/en/phd-programme-political-economy-social-ecological-transformation.php"
   },
   {
@@ -120,8 +120,8 @@
     "ielts_source_url": "https://www.tudelft.nl/en/education/admission/phd/phd-admission-requirements",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:22:57.286Z",
-    "verification_note": "HTTP 404 URL repair limit (2) reached for this run.",
+    "verification_checked_at": "2026-09-20T20:42:02.380Z",
+    "verification_note": "HTTP 404 Gemini quota is exhausted, so URL repair was skipped.",
     "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=123456"
   },
   {
@@ -145,8 +145,8 @@
     "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/phd-and-engd/admission",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:22:57.851Z",
-    "verification_note": "HTTP 404 URL repair limit (2) reached for this run.",
+    "verification_checked_at": "2026-09-20T20:42:02.786Z",
+    "verification_note": "HTTP 404 Gemini quota is exhausted, so URL repair was skipped.",
     "verification_url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760"
   },
   {
@@ -170,8 +170,8 @@
     "ielts_source_url": "",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:22:58.136Z",
-    "verification_note": "Page is reachable, but the automated content check could not confirm the exact PhD vacancy. URL repair limit (2) reached for this run.",
+    "verification_checked_at": "2026-09-20T20:42:03.004Z",
+    "verification_note": "Page is reachable, but the automated content check could not confirm the exact PhD vacancy. Gemini quota is exhausted, so URL repair was skipped.",
     "verification_url": "https://secretaria.uvigo.gal/uv/web/convocatoria/public"
   },
   {
@@ -195,8 +195,8 @@
     "ielts_source_url": "https://arts.au.dk/en/research/phd-studies/applicants/english-language-requirements",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:23:00.833Z",
-    "verification_note": "HTTP 404 URL repair limit (2) reached for this run.",
+    "verification_checked_at": "2026-09-20T20:42:03.961Z",
+    "verification_note": "HTTP 404 Gemini quota is exhausted, so URL repair was skipped.",
     "verification_url": "https://www.applykite.com/phd-in-universal-design-and-inclusive-design-research-kolding-school-of-design-in-denmark"
   },
   {
@@ -220,8 +220,8 @@
     "ielts_source_url": "https://www.leeds.ac.uk/info/130500/admissions/143/entry_requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:23:01.274Z",
-    "verification_note": "HTTP 404 URL repair limit (2) reached for this run.",
+    "verification_checked_at": "2026-09-20T20:42:04.311Z",
+    "verification_note": "HTTP 404 Gemini quota is exhausted, so URL repair was skipped.",
     "verification_url": "https://phd.leeds.ac.uk/project/1897-justice-implications-of-the-uk-s-net-zero-carbon-policies"
   },
   {
@@ -295,8 +295,8 @@
     "ielts_source_url": "https://www.uib.no/en/matnat/54728/admission-requirements-phd-programme-faculty-science-and-technology",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:23:01.844Z",
-    "verification_note": "HTTP 404 URL repair limit (2) reached for this run.",
+    "verification_checked_at": "2026-09-20T20:42:04.926Z",
+    "verification_note": "HTTP 404 Gemini quota is exhausted, so URL repair was skipped.",
     "verification_url": "https://www.jobbnorge.no/en/available-jobs/job/237083/personvernombud"
   },
   {
@@ -320,8 +320,8 @@
     "ielts_source_url": "https://www.lunduniversity.lu.se/admissions/english-language-requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:23:03.236Z",
-    "verification_note": "HTTP 404 URL repair limit (2) reached for this run.",
+    "verification_checked_at": "2026-09-20T20:42:06.244Z",
+    "verification_note": "HTTP 404 Gemini quota is exhausted, so URL repair was skipped.",
     "verification_url": "https://www.lu.se/vacancies/phd-position-in-sustainability-science-just-energy-transitions"
   },
   {
@@ -345,7 +345,7 @@
     "ielts_source_url": "",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:23:04.050Z",
+    "verification_checked_at": "2026-09-20T20:42:07.571Z",
     "verification_note": "Verification request failed. URL repair was skipped because Gemini is unavailable or the repair limit was reached.",
     "verification_url": "https://applicationspub.unil.ch/interne/fiches-postes/phd-positions-in-public-economics-and-political-economy-idheap"
   },
@@ -370,7 +370,7 @@
     "ielts_source_url": "",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:23:04.473Z",
+    "verification_checked_at": "2026-09-20T20:42:08.000Z",
     "verification_note": "Verification request failed. URL repair was skipped because Gemini is unavailable or the repair limit was reached.",
     "verification_url": "https://www.kulturpraxis-reparation.de/en/fellowships/call-for-fellowships-2027-2028"
   },
@@ -395,8 +395,8 @@
     "ielts_source_url": "https://www.uni-flensburg.de/en/sustainable-energy-and-development/admission/admission-requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:23:04.722Z",
-    "verification_note": "HTTP 404 URL repair limit (2) reached for this run.",
+    "verification_checked_at": "2026-09-20T20:42:08.221Z",
+    "verification_note": "HTTP 404 Gemini quota is exhausted, so URL repair was skipped.",
     "verification_url": "https://www.uni-flensburg.de/fileadmin/content/europa-universitaet/organisation/einrichtungen/wasatia-graduate-school/dokumente/Call_for_PhD_Candidates_Wasatia_Graduate_School_2026.pdf"
   },
   {
@@ -420,8 +420,8 @@
     "ielts_source_url": "https://ethz.ch/en/studies/doctoral-degree/faq.html",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T20:23:05.261Z",
-    "verification_note": "Page is reachable, but the automated content check could not confirm the exact PhD vacancy. URL repair limit (2) reached for this run.",
+    "verification_checked_at": "2026-09-20T20:42:08.801Z",
+    "verification_note": "Page is reachable, but the automated content check could not confirm the exact PhD vacancy. Gemini quota is exhausted, so URL repair was skipped.",
     "verification_url": "https://www.refline.io/index.html"
   }
 ]
