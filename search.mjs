@@ -4,16 +4,18 @@ import {
   writeFileSync
 } from "node:fs";
 
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const RESULTS_FILE = "results.json";
 const NOTIFIED_FILE = "notified.json";
 const SOURCES_FILE = "sources.json";
 
-const AI_PROVIDER = String(process.env.AI_PROVIDER || "gemini").toLowerCase();
+// "both" (default) runs Gemini and ChatGPT at the same time and keeps both
+// sets of results. "gemini" or "apmix" run just one provider (handy for testing).
+const AI_PROVIDER = String(process.env.AI_PROVIDER || "both").toLowerCase();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const APMIX_API_KEY = process.env.APMIX_API_KEY;
 
-// Confirmed model string for ChatGPT on apmix.ai, per the account dashboard.
+// ChatGPT is reached through the apmix.ai API provider.
 const APMIX_MODEL = process.env.APMIX_MODEL || "gpt-5.6-luna-free";
 
 // Off by default. If you turn this on and apmix's endpoint doesn't support
@@ -24,26 +26,26 @@ const APMIX_USE_WEB_SEARCH = String(process.env.APMIX_USE_WEB_SEARCH || "false")
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// If Gemini fails (quota, outage, bad response) and this is true, fall back
-// to ChatGPT via apmix for that run instead of failing the whole radar.
-// Defaults to on whenever an apmix key is configured; set
-// AI_FALLBACK_TO_APMIX=false to disable and fail hard instead.
-const AI_FALLBACK_TO_APMIX = process.env.AI_FALLBACK_TO_APMIX
-  ? String(process.env.AI_FALLBACK_TO_APMIX).toLowerCase() === "true"
-  : Boolean(APMIX_API_KEY);
+// Labels stored in results.json / shown on the dashboard.
+const LABEL_GEMINI = "Gemini";
+const LABEL_CHATGPT = "ChatGPT";
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-if (AI_PROVIDER === "gemini" && !GEMINI_API_KEY) {
-  throw new Error("GEMINI_API_KEY is not configured.");
+if (!["both", "gemini", "apmix"].includes(AI_PROVIDER)) {
+  throw new Error('AI_PROVIDER must be "both", "gemini" or "apmix".');
 }
-if (AI_PROVIDER === "apmix" && !APMIX_API_KEY) {
-  throw new Error("APMIX_API_KEY is not configured.");
-}
-if (!["gemini", "apmix"].includes(AI_PROVIDER)) {
-  throw new Error('AI_PROVIDER must be "gemini" or "apmix".');
+
+// Error text ends up in sources.json, which is published on GitHub Pages,
+// so never let an API key or a wall of response JSON leak into it.
+function safeErrorMessage(error) {
+  let message = String(error?.message || error || "Unknown error");
+  for (const secret of [GEMINI_API_KEY, APMIX_API_KEY, TELEGRAM_BOT_TOKEN]) {
+    if (secret) message = message.split(secret).join("***");
+  }
+  return message.length > 300 ? `${message.slice(0, 300)}…` : message;
 }
 
 const CANDIDATE_PROFILE = `
@@ -153,7 +155,7 @@ Return ONLY a valid JSON array. Every object MUST contain:
   "language_source_url": "...",
   "ielts_requirement": "...",
   "ielts_source_url": "...",
-  "ai_provider": "Gemini | APMix"
+  "ai_provider": "Gemini | ChatGPT"
 }
 
 Use an empty string for source URLs when no official source was found.
@@ -192,9 +194,20 @@ function isFutureDeadline(deadline) {
   return Number.isFinite(date.getTime()) && date.getTime() > Date.now();
 }
 
+// Maps any provider spelling (including the old "APMix" label already stored
+// in results.json) to one of the two dashboard labels. "" = unknown/legacy.
+function providerLabelOf(value) {
+  const v = String(value || "").trim().toLowerCase();
+  if (v === "gemini") return LABEL_GEMINI;
+  if (["chatgpt", "apmix", "openai", "gpt"].includes(v)) return LABEL_CHATGPT;
+  return "";
+}
+
 function cleanResults(results) {
   if (!Array.isArray(results)) return [];
-  const byURL = new Map();
+  // Keyed by provider + URL: if Gemini and ChatGPT both find the same
+  // vacancy, each provider keeps its own entry so both results are shown.
+  const byKey = new Map();
 
   for (const item of results) {
     if (!item || typeof item !== "object") continue;
@@ -214,6 +227,8 @@ function cleanResults(results) {
     const language = ["English", "Not English", "Unknown"].includes(
       String(item.application_language || "")
     ) ? String(item.application_language) : "Unknown";
+
+    const provider = providerLabelOf(item.ai_provider) || "Unknown";
 
     const candidate = {
       title,
@@ -236,23 +251,29 @@ function cleanResults(results) {
         item.ielts_requirement || "Not specified on official university website"
       ).trim(),
       ielts_source_url: normalizeURL(item.ielts_source_url),
-      ai_provider: ["Gemini", "APMix"].includes(String(item.ai_provider || ""))
-        ? String(item.ai_provider)
-        : (AI_PROVIDER === "gemini" ? "Gemini" : "APMix"),
-      ai_model: String(item.ai_model || (AI_PROVIDER === "gemini" ? GEMINI_MODEL : APMIX_MODEL)),
+      ai_provider: provider,
+      // Left empty for older entries that never recorded a model.
+      ai_model: String(item.ai_model || "").trim(),
       // Informational only, same philosophy as verification below: this is
       // a label for you to weigh, it never removes a result.
       url_grounded: item.url_grounded === true
         ? true
-        : (item.url_grounded === false ? false : null), // null = unknown (e.g. APMix has no grounding source list)
+        : (item.url_grounded === false ? false : null), // null = unknown (ChatGPT has no grounding source list)
       verification_status: ["Verified", "Not verified"].includes(String(item.verification_status || ""))
         ? String(item.verification_status)
         : "Not verified",
       verification_checked_at: String(item.verification_checked_at || "").trim(),
       verification_note: String(item.verification_note || "").trim(),
       verification_url: normalizeURL(item.verification_url)
-    });
+    };
+
+    const key = `${provider}|${url}`;
+    const previous = byKey.get(key);
+    if (previous && previous.overall_score >= candidate.overall_score) continue;
+    byKey.set(key, candidate);
   }
+
+  const cleaned = Array.from(byKey.values());
 
   cleaned.sort((a, b) =>
     b.overall_score - a.overall_score ||
@@ -381,7 +402,24 @@ function loadExisting() {
   return cleanResults(loadJSON(RESULTS_FILE, []));
 }
 
-function buildPrompt() {
+function buildPrompt(provider) {
+  const providerInstructions = provider === "gemini"
+    ? `Use Google Search extensively. For IELTS and language information,
+prefer official university sources. Search the position page and, when
+needed, the university's official admissions/doctoral English-language
+requirements page. Do not use third-party summaries for IELTS claims.
+Return only verified current opportunities.`
+    : `You are being queried through apmix.ai as ChatGPT (${APMIX_MODEL}).
+${APMIX_USE_WEB_SEARCH
+    ? `A web-search tool may be available to you in this request — use it
+whenever you can to find and confirm real, currently open vacancy pages.`
+    : `There is no web-search tool attached to this request.`}
+Do not invent URLs, deadlines or positions. Use only information you
+actually know with high confidence, and prefer well-known, large,
+well-documented funding programmes where you are more likely to be
+right. If you cannot reliably identify a current vacancy and its exact
+URL, return fewer results rather than fabricating one.`;
+
   return `
 You are an expert PhD opportunity researcher.
 
@@ -405,28 +443,15 @@ ${URL_INTEGRITY_RULE}
 ================ OUTPUT ================
 ${OUTPUT_RULES}
 
-${AI_PROVIDER === "gemini"
-  ? `Use Google Search extensively. For IELTS and language information,
-prefer official university sources. Search the position page and, when
-needed, the university's official admissions/doctoral English-language
-requirements page. Do not use third-party summaries for IELTS claims.
-Return only verified current opportunities.`
-  : `You are being queried through apmix.ai as ChatGPT (${APMIX_MODEL}).
-${APMIX_USE_WEB_SEARCH
-    ? `A web-search tool may be available to you in this request — use it
-whenever you can to find and confirm real, currently open vacancy pages.`
-    : `There is no web-search tool attached to this request.`}
-Do not invent URLs, deadlines or positions. Use only information you
-actually know with high confidence, and prefer well-known, large,
-well-documented funding programmes where you are more likely to be
-right. If you cannot reliably identify a current vacancy and its exact
-URL, return fewer results rather than fabricating one.`}
+${providerInstructions}
+
+Today's date is ${new Date().toISOString().slice(0, 10)}. Only return positions whose deadline is after this date.
 `;
 }
 
 async function callGemini(prompt) {
   const endpoint =
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
   async function requestGemini(generationConfig, isRetry = false) {
     const body = {
@@ -436,7 +461,10 @@ async function callGemini(prompt) {
     };
     const response = await fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": GEMINI_API_KEY
+      },
       body: JSON.stringify(body)
     });
     const data = await response.json();
@@ -603,45 +631,75 @@ async function callApmix(prompt) {
   return { results: labeledResults, sources: [] };
 }
 
-async function callAI() {
-  console.log(`AI provider selected: ${AI_PROVIDER}`);
-  if (AI_PROVIDER === "gemini") {
-    console.log(`AI model: ${GEMINI_MODEL}`);
-    console.log(`Gemini API key configured: ${Boolean(GEMINI_API_KEY)}`);
-  } else {
-    console.log(`AI model: ${APMIX_MODEL}`);
-    console.log(`APMix API key configured: ${Boolean(APMIX_API_KEY)}`);
+const PROVIDERS = [
+  {
+    id: "gemini",
+    label: LABEL_GEMINI,
+    model: GEMINI_MODEL,
+    apiKey: GEMINI_API_KEY,
+    call: callGemini
+  },
+  {
+    id: "apmix",
+    label: LABEL_CHATGPT,
+    model: APMIX_MODEL,
+    apiKey: APMIX_API_KEY,
+    call: callApmix
+  }
+];
+
+// Runs one provider and never throws: a failure is recorded on the returned
+// object so the other provider's results are still kept.
+async function runProvider(provider) {
+  const run = {
+    id: provider.id,
+    label: provider.label,
+    model: provider.model,
+    status: "ok",
+    error: "",
+    returned: 0,
+    results: [],
+    sources: []
+  };
+
+  if (!provider.apiKey) {
+    run.status = "skipped";
+    run.error = "API key not configured";
+    console.warn(`[${provider.label}] skipped: ${run.error}`);
+    return run;
   }
 
-  const prompt = buildPrompt();
-
-  if (AI_PROVIDER !== "gemini") {
-    const result = await callApmix(prompt);
-    return { ...result, providerUsed: "apmix", modelUsed: APMIX_MODEL };
-  }
-
+  console.log(`[${provider.label}] starting (model: ${provider.model})`);
   try {
-    const result = await callGemini(prompt);
-    return { ...result, providerUsed: "gemini", modelUsed: GEMINI_MODEL };
-  } catch (error) {
-    if (!AI_FALLBACK_TO_APMIX || !APMIX_API_KEY) {
-      throw error;
-    }
-    console.warn(`Gemini failed (${error.message}). Falling back to ChatGPT via apmix for this run.`);
-    // Rebuild the prompt with apmix-specific instructions instead of the
-    // Gemini-specific ones (see buildPrompt's AI_PROVIDER branch), by
-    // temporarily reusing callApmix directly with an apmix-worded prompt.
-    const apmixPrompt = buildPrompt().replace(
-      /Use Google Search extensively[\s\S]*?Return only verified current opportunities\./,
-      `You are being queried through apmix.ai as ChatGPT (${APMIX_MODEL}) because Gemini was unavailable for this run.
-${APMIX_USE_WEB_SEARCH
-  ? `A web-search tool may be available to you in this request — use it whenever you can to find and confirm real, currently open vacancy pages.`
-  : `There is no web-search tool attached to this request.`}
-Do not invent URLs, deadlines or positions. Use only information you actually know with high confidence, and prefer well-known, large, well-documented funding programmes where you are more likely to be right. If you cannot reliably identify a current vacancy and its exact URL, return fewer results rather than fabricating one.`
+    const response = await provider.call(buildPrompt(provider.id));
+    const rawResults = Array.isArray(response.results) ? response.results : [];
+    run.returned = rawResults.length;
+    run.sources = Array.isArray(response.sources) ? response.sources : [];
+    run.results = cleanResults(
+      rawResults.map(result => ({ ...result, ai_provider: provider.label }))
     );
-    const result = await callApmix(apmixPrompt);
-    return { ...result, providerUsed: "apmix", modelUsed: APMIX_MODEL, usedAsFallback: true };
+    console.log(`[${provider.label}] returned ${run.returned} results, ${run.results.length} passed validation.`);
+  } catch (error) {
+    run.status = "failed";
+    run.error = safeErrorMessage(error);
+    console.error(`[${provider.label}] FAILED: ${run.error}`);
   }
+  return run;
+}
+
+// Runs the selected providers at the same time.
+async function callAllProviders() {
+  const selected = PROVIDERS.filter(p => AI_PROVIDER === "both" || p.id === AI_PROVIDER);
+  console.log(`AI providers: ${selected.map(p => `${p.label} (${p.model})`).join(" + ")}`);
+  const runs = await Promise.all(selected.map(runProvider));
+
+  if (!runs.some(run => run.status === "ok")) {
+    throw new Error(
+      "No AI provider succeeded: " +
+      runs.map(run => `${run.label}: ${run.error || run.status}`).join(" | ")
+    );
+  }
+  return runs;
 }
 
 async function sendTelegramMessage(message) {
@@ -669,7 +727,7 @@ async function sendTelegramMessage(message) {
   return true;
 }
 
-function formatTelegramMessage(position) {
+function formatTelegramMessage(position, foundBy = [position.ai_provider]) {
   const languageLine = position.application_language === "Not English"
     ? "⚠️ Language: Not English"
     : `🗣️ Language: ${position.application_language || "Unknown"}`;
@@ -685,6 +743,7 @@ function formatTelegramMessage(position) {
     "",
     `🏛️ ${position.university}`,
     `🌍 ${position.country}${position.city ? ` · ${position.city}` : ""}`,
+    `🤖 Found by: ${foundBy.filter(Boolean).join(" + ") || "Unknown"}`,
     languageLine,
     `📚 IELTS: ${position.ielts_requirement || "Not specified"}`,
     `📅 Deadline: ${position.deadline || "Not specified"}`,
@@ -707,14 +766,23 @@ async function notifyExceptionalMatches(results) {
   const notified = loadJSON(NOTIFIED_FILE, {});
   let changed = false;
 
+  // Same vacancy found by both Gemini and ChatGPT -> one message, listing both.
+  const byURL = new Map();
   for (const position of results.filter(x => Number(x.overall_score) >= 90)) {
     const url = normalizeURL(position.url);
-    const previousScore = Number(notified[url]?.score || 0);
-    if (previousScore >= Number(position.overall_score)) continue;
+    const entry = byURL.get(url) || { best: position, providers: [] };
+    if (Number(position.overall_score) > Number(entry.best.overall_score)) entry.best = position;
+    if (!entry.providers.includes(position.ai_provider)) entry.providers.push(position.ai_provider);
+    byURL.set(url, entry);
+  }
 
-    if (await sendTelegramMessage(formatTelegramMessage(position))) {
+  for (const [url, { best, providers }] of byURL) {
+    const previousScore = Number(notified[url]?.score || 0);
+    if (previousScore >= Number(best.overall_score)) continue;
+
+    if (await sendTelegramMessage(formatTelegramMessage(best, providers))) {
       notified[url] = {
-        score: Number(position.overall_score),
+        score: Number(best.overall_score),
         notified_at: new Date().toISOString()
       };
       changed = true;
@@ -732,54 +800,66 @@ async function main() {
   const existingResults = loadExisting();
   console.log(`Existing active positions: ${existingResults.length}`);
 
-  console.log("Running new search...");
-  const searchResponse = await callAI();
-  const providerLabel = searchResponse.providerUsed === "gemini" ? "Gemini" : "APMix";
-  if (searchResponse.usedAsFallback) {
-    console.warn("NOTE: this run used the ChatGPT/apmix fallback because Gemini failed.");
-  }
+  console.log("Running new search (all providers at the same time)...");
+  const runs = await callAllProviders();
 
-  const newSearchResults = cleanResults(searchResponse.results).map(result => ({
-    ...result,
-    ai_provider: providerLabel
-  }));
+  // Grounding sources only exist for Gemini (Google Search). ChatGPT has none.
+  const geminiSources = runs.find(run => run.id === "gemini")?.sources || [];
 
   saveJSON(SOURCES_FILE, {
     searched_at: new Date().toISOString(),
-    ai_provider: providerLabel,
-    model: searchResponse.modelUsed,
-    used_as_fallback: Boolean(searchResponse.usedAsFallback),
-    sources: Array.isArray(searchResponse.sources) ? searchResponse.sources : []
+    runs: runs.map(run => ({
+      provider: run.label,
+      model: run.model,
+      status: run.status,
+      error: run.error,
+      returned: run.returned,
+      valid: run.results.length
+    })),
+    sources: geminiSources
   });
-  console.log(`Saved ${Array.isArray(searchResponse.sources) ? searchResponse.sources.length : 0} search sources.`);
-  console.log(`${providerLabel} returned ${newSearchResults.length} valid positions.`);
+  console.log(`Saved ${geminiSources.length} Gemini search sources.`);
 
-  const byURL = new Map(existingResults.map(result => [normalizeURL(result.url), result]));
-  for (const result of newSearchResults) {
-    const url = normalizeURL(result.url);
-    const existing = byURL.get(url);
-    if (!existing || Number(result.overall_score) >= Number(existing.overall_score)) {
-      byURL.set(url, existing ? { ...existing, ...result } : result);
+  // Merge existing + new, keyed by provider + URL so both providers' results
+  // are kept side by side. Within one provider, the higher score wins.
+  const keyOf = result => `${result.ai_provider}|${normalizeURL(result.url)}`;
+  const merged = new Map(existingResults.map(result => [keyOf(result), result]));
+  for (const run of runs) {
+    for (const result of run.results) {
+      const key = keyOf(result);
+      const existing = merged.get(key);
+      if (!existing || Number(result.overall_score) >= Number(existing.overall_score)) {
+        merged.set(key, existing ? { ...existing, ...result } : result);
+      }
     }
   }
 
-  const mergedResults = cleanResults(Array.from(byURL.values()));
+  const mergedResults = cleanResults(Array.from(merged.values()));
 
-  // Verification stays exactly as informational-only as before: nothing is
-  // ever removed from results.json based on verification_status or
-  // url_grounded. Both are labels for you (and the site UI) to weigh.
+  // Verification stays informational-only: nothing is ever removed from
+  // results.json based on verification_status or url_grounded. Both are
+  // labels for you (and the site UI) to weigh.
   const verifiedResults = await verifyResults(mergedResults);
   saveJSON(RESULTS_FILE, verifiedResults);
   console.log(`Saved ${verifiedResults.length} active positions. Verification and grounding checks are informational only; no results were removed.`);
 
   await notifyExceptionalMatches(verifiedResults);
 
-  console.log("\nTop matches:");
-  for (const result of mergedResults.slice(0, 10)) {
-    const groundFlag = result.url_grounded === false ? " [ungrounded]" : "";
-    console.log(
-      `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country}${groundFlag}`
-    );
+  for (const label of [LABEL_GEMINI, LABEL_CHATGPT]) {
+    const mine = verifiedResults.filter(result => result.ai_provider === label);
+    if (!mine.length && !runs.some(run => run.label === label)) continue;
+    console.log(`\nTop matches — ${label}:`);
+    for (const result of mine.slice(0, 10)) {
+      const groundFlag = result.url_grounded === false ? " [ungrounded]" : "";
+      console.log(
+        `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country}${groundFlag}`
+      );
+    }
+  }
+
+  const failed = runs.filter(run => run.status !== "ok");
+  if (failed.length) {
+    console.warn(`\nNOTE: ${failed.map(run => `${run.label} ${run.status} (${run.error})`).join("; ")}`);
   }
 
   console.log("\nRadar complete.");
