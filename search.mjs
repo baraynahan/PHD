@@ -225,7 +225,15 @@ function cleanResults(results) {
         : "Not verified",
       verification_checked_at: String(item.verification_checked_at || "").trim(),
       verification_note: String(item.verification_note || "").trim(),
-      verification_url: normalizeURL(item.verification_url)
+      verification_url: normalizeURL(item.verification_url),
+      sources: Array.isArray(item.sources)
+        ? item.sources
+            .map(source => ({
+              title: String(source?.title || "").trim(),
+              url: normalizeURL(source?.url)
+            }))
+            .filter(source => source.url)
+        : []
     });
   }
 
@@ -468,6 +476,62 @@ function loadJSON(file, fallback) {
 
 function saveJSON(file, value) {
   writeFileSync(file, JSON.stringify(value, null, 2) + "\n");
+}
+
+function attachSourcesToPositions(results, searchSources) {
+  const sources = Array.isArray(searchSources) ? searchSources : [];
+
+  return results.map(position => {
+    const positionURLs = new Set([
+      normalizeURL(position.url),
+      normalizeURL(position.verification_url),
+      normalizeURL(position.ielts_source_url),
+      normalizeURL(position.language_source_url)
+    ].filter(Boolean));
+
+    const titleWords = String(position.title || "")
+      .toLowerCase()
+      .split(/\W+/)
+      .filter(word => word.length >= 5);
+    const universityWords = String(position.university || "")
+      .toLowerCase()
+      .split(/\W+/)
+      .filter(word => word.length >= 5);
+
+    const matched = sources.filter(source => {
+      const url = normalizeURL(source?.url);
+      if (!url) return false;
+      if (positionURLs.has(url)) return true;
+
+      const haystack = `${source?.title || ""} ${url}`.toLowerCase();
+      const titleHits = titleWords.filter(word => haystack.includes(word)).length;
+      const universityHit = universityWords.some(word => haystack.includes(word));
+
+      return universityHit && titleHits >= Math.min(2, titleWords.length || 2);
+    });
+
+    const ownSources = [
+      { title: "PhD vacancy / application page", url: normalizeURL(position.url) },
+      position.verification_url && position.verification_url !== position.url
+        ? { title: "Verified vacancy URL", url: normalizeURL(position.verification_url) }
+        : null,
+      position.ielts_source_url
+        ? { title: "Official IELTS / English requirement source", url: normalizeURL(position.ielts_source_url) }
+        : null,
+      position.language_source_url
+        ? { title: "Official language source", url: normalizeURL(position.language_source_url) }
+        : null
+    ].filter(Boolean);
+
+    const combined = [...ownSources, ...matched];
+    const unique = Array.from(new Map(
+      combined
+        .filter(source => source.url)
+        .map(source => [source.url, source])
+    ).values());
+
+    return { ...position, sources: unique };
+  });
 }
 
 function loadExisting() {
@@ -903,13 +967,17 @@ async function main() {
 
   const mergedResults = cleanResults(Array.from(byURL.values()));
   const verifiedResults = await verifyResults(mergedResults);
-  saveJSON(RESULTS_FILE, verifiedResults);
+  const resultsWithSources = attachSourcesToPositions(
+    verifiedResults,
+    searchResponse.sources
+  );
+  saveJSON(RESULTS_FILE, resultsWithSources);
 
-  console.log(`Saved ${verifiedResults.length} active positions. Verification is informational only; no results were removed.`);
-  await notifyExceptionalMatches(verifiedResults);
+  console.log(`Saved ${resultsWithSources.length} active positions. Verification is informational only; no results were removed.`);
+  await notifyExceptionalMatches(resultsWithSources);
 
   console.log("\nTop matches:");
-  for (const result of mergedResults.slice(0, 10)) {
+  for (const result of resultsWithSources.slice(0, 10)) {
     console.log(
       `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country}`
     );
