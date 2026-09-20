@@ -20,7 +20,7 @@
     "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/msc-programmes/admission-requirements/language-requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T22:10:47.271Z",
+    "verification_checked_at": "2026-09-20T22:13:25.012Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=8403"
   },
@@ -45,7 +45,7 @@
     "ielts_source_url": "https://www.maastrichtuniversity.nl/about-um/faculties/maastricht-sustainability-institute/phd-programme/admission-requirements",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T22:10:47.271Z",
+    "verification_checked_at": "2026-09-20T22:13:25.012Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.maastrichtuniversity.nl/about-um/faculties/maastricht-sustainability-institute/phd-programme/better-not-more-business-strategies-enable-sufficient-consumption"
   },
@@ -70,7 +70,7 @@
     "ielts_source_url": "https://www.uni-due.de/international/en/study/admission/language.php",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T22:10:47.271Z",
+    "verification_checked_at": "2026-09-20T22:13:25.012Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.uni-due.de/soziooekonomie/en/phd-programme-political-economy-social-ecological-transformation.php"
   },
@@ -95,7 +95,7 @@
     "ielts_source_url": "https://www.tudelft.nl/en/education/admission/phd/phd-admission-requirements",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T22:10:47.271Z",
+    "verification_checked_at": "2026-09-20T22:13:25.012Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=123456"
   },
@@ -120,7 +120,7 @@
     "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/phd-and-engd/admission",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T22:10:47.271Z",
+    "verification_checked_at": "2026-09-20T22:13:25.013Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760"
   },
@@ -145,34 +145,9 @@
     "ielts_source_url": "",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T22:10:48.434Z",
+    "verification_checked_at": "2026-09-20T22:13:26.276Z",
     "verification_note": "Page is reachable, but the automated content check could not confirm the exact PhD vacancy.",
     "verification_url": "https://secretaria.uvigo.gal/uv/web/convocatoria/public"
-  },
-  {
-    "title": "PhD Scholarships: Justice Dimensions of Sustainability-Oriented Transformation Processes in Rural Areas (PK 060)",
-    "university": "University of Vechta",
-    "country": "Germany",
-    "city": "Vechta",
-    "deadline": "2026-11-02",
-    "url": "https://www.uni-vechta.de/en/vistra/doctoral-college-pk-060",
-    "funding": "Fully funded (stipend of €1,650 per month, plus health insurance contribution and possible family allowances)",
-    "overall_score": 95,
-    "why_it_matches": "This opportunity aligns exceptionally well with the candidate's interests in degrowth, post-growth, political economy, sustainable consumption, social practices, ecological/social transformation, transition design, social design, design justice, governance, and policy. The focus on 'justice dimensions of sustainability-oriented transformation processes in rural areas' directly addresses the candidate's trajectory towards social and political transformation, with a strong emphasis on equity and societal impact. The project explicitly welcomes qualitative, quantitative, and mixed-method approaches, which suits the candidate's methodological comfort. The themes of energy affordability, spatial justice, equitable livelihoods, local resilience, and socio-technical transitions are highly relevant. The position avoids technical optimisation, materials science, or pure technical LCA.",
-    "strategic_fit": "The candidate's background as an Industrial Design graduate, university lecturer, sustainability educator, and design researcher provides a unique interdisciplinary perspective to the 'justice dimensions' of sustainability transformations. Their expertise in sustainable consumption, product longevity, and consumption systems offers a practical lens to analyze the social and economic consequences of transitions. The emphasis on 'design justice' and 'participatory/co-design' aligns with the program's goal of understanding how transformation processes can be designed for greater equity. The focus on 'political economy' and 'governance' directly matches the candidate's advanced interests.",
-    "why_it_is_not_perfect": "",
-    "supervisor": "",
-    "classification": "",
-    "research_area": "",
-    "application_language": "English",
-    "language_source_url": "https://www.uni-vechta.de/en/vistra/doctoral-college-pk-060",
-    "ielts_requirement": "English C1, German B2",
-    "ielts_source_url": "https://www.uni-vechta.de/en/vistra/doctoral-college-pk-060",
-    "ai_provider": "Gemini",
-    "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T22:10:48.434Z",
-    "verification_note": "HTTP 404",
-    "verification_url": "https://www.uni-vechta.de/en/vistra/doctoral-college-pk-060"
   },
   {
     "title": "PhD Project: Justice implications of the UK's net zero carbon policies",
@@ -195,7 +170,7 @@
     "ielts_source_url": "https://www.leeds.ac.uk/info/130500/admissions/143/entry_requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T22:10:48.434Z",
+    "verification_checked_at": "2026-09-20T22:13:26.277Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://phd.leeds.ac.uk/project/1897-justice-implications-of-the-uk-s-net-zero-carbon-policies"
   },
@@ -220,7 +195,7 @@
     "ielts_source_url": "https://www.wur.nl/en/education/phd/admission-requirements/required-documents-for-phd-admission.htm",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T22:10:48.434Z",
+    "verification_checked_at": "2026-09-20T22:13:26.277Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.wur.nl/en/vacancy/phd-position-landscape-governance.htm"
   },
@@ -245,7 +220,7 @@
     "ielts_source_url": "https://www.uib.no/en/matnat/54728/admission-requirements-phd-programme-faculty-science-and-technology",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T22:10:48.434Z",
+    "verification_checked_at": "2026-09-20T22:13:26.277Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.jobbnorge.no/en/available-jobs/job/237083/personvernombud"
   },
@@ -270,8 +245,8 @@
     "ielts_source_url": "https://www.lunduniversity.lu.se/admissions/english-language-requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T22:10:50.458Z",
-    "verification_note": "HTTP 404",
+    "verification_checked_at": "2026-09-20T22:13:26.277Z",
+    "verification_note": "Verification timed out and URL repair failed.",
     "verification_url": "https://www.lu.se/vacancies/phd-position-in-sustainability-science-just-energy-transitions"
   },
   {
@@ -295,7 +270,7 @@
     "ielts_source_url": "",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T22:10:50.458Z",
+    "verification_checked_at": "2026-09-20T22:13:41.357Z",
     "verification_note": "Could not fetch page and URL repair failed: The socket connection was closed unexpectedly. For more information, pass `verbose: true` in the second argument to fetch()",
     "verification_url": "https://applicationspub.unil.ch/interne/fiches-postes/phd-positions-in-public-economics-and-political-economy-idheap"
   },
@@ -320,7 +295,7 @@
     "ielts_source_url": "",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T22:10:50.458Z",
+    "verification_checked_at": "2026-09-20T22:13:41.357Z",
     "verification_note": "Could not fetch page and URL repair failed: getaddrinfo ENOTFOUND www.kulturpraxis-reparation.de",
     "verification_url": "https://www.kulturpraxis-reparation.de/en/fellowships/call-for-fellowships-2027-2028"
   },
@@ -345,7 +320,7 @@
     "ielts_source_url": "https://www.uni-flensburg.de/en/sustainable-energy-and-development/admission/admission-requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T22:10:50.458Z",
+    "verification_checked_at": "2026-09-20T22:13:41.357Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.uni-flensburg.de/fileadmin/content/europa-universitaet/organisation/einrichtungen/wasatia-graduate-school/dokumente/Call_for_PhD_Candidates_Wasatia_Graduate_School_2026.pdf"
   }
