@@ -526,6 +526,26 @@ async function callAPMix() {
 
   console.log("APMix is searching its model knowledge (no Google Search grounding).");
 
+  console.log("APMix checking models available to this API key...");
+  try {
+    const modelsResponse = await fetch("https://api.apmix.ai/v1/models", {
+      headers: { "Authorization": "Bearer " + APMIX_API_KEY }
+    });
+    const modelsData = await modelsResponse.json();
+    console.log("APMix /v1/models HTTP status:", modelsResponse.status);
+    if (modelsResponse.ok) {
+      const models = Array.isArray(modelsData?.data) ? modelsData.data : [];
+      const ids = models.map(model => String(model?.id || "")).filter(Boolean);
+      console.log("APMix accessible models:", ids.length);
+      console.log("APMix target model available:", ids.includes(APMIX_MODEL));
+      if (ids.length > 0) console.log("APMix model IDs:", ids.join(", "));
+    } else {
+      console.error("APMix /v1/models error:", JSON.stringify(modelsData, null, 2));
+    }
+  } catch (error) {
+    console.error("APMix model availability check failed:", String(error?.message || error));
+  }
+
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
@@ -540,19 +560,26 @@ async function callAPMix() {
     })
   });
 
+  const requestId = response.headers.get("x-request-id") || response.headers.get("request-id") || "not provided";
+  console.log("APMix HTTP status:", response.status);
+  console.log("APMix request ID:", requestId);
+
   const data = await response.json();
   if (!response.ok) {
+    console.error("APMix API error body:", JSON.stringify(data, null, 2));
     throw new Error(`APMix API error ${response.status}: ${JSON.stringify(data)}`);
   }
 
   const choice = data?.choices?.[0];
   const text = choice?.message?.content || "";
-  console.log("APMix request succeeded.");
+  console.log("APMix request succeeded at HTTP level.");
+  console.log("APMix response text length:", text.length);
+  if (text) console.log("APMix response preview:", text.slice(0, 1000));
   console.log("APMix finish reason:", choice?.finish_reason || "unknown");
   if (data?.usage) console.log("APMix usage:", JSON.stringify(data.usage));
 
   if (!text) {
-    console.error("APMix returned no usable content:", JSON.stringify(data, null, 2));
+    console.error("APMix returned no usable content. Full response:", JSON.stringify(data, null, 2));
     return { results: [], sources: [], provider: "APMix" };
   }
 
