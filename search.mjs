@@ -17,9 +17,10 @@ const APMIX_MODEL = process.env.APMIX_MODEL || "deepseek-v4.1-flash-free";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// Keep the daily radar resilient to Gemini free-tier limits and avoid spending
-// Gemini requests repeatedly repairing old vacancy URLs.
-const URL_REPAIR_LIMIT = 2;
+// URL repair is disabled. The model was fabricating plausible-looking
+// university URLs when asked to "fix" a broken link. We now only accept
+// URLs that appear in Gemini's Google Search grounding metadata.
+const URL_REPAIR_LIMIT = 0;
 const VERIFICATION_CACHE_DAYS = 7;
 let geminiQuotaExhausted = false;
 let urlRepairsUsed = 0;
@@ -180,6 +181,50 @@ function normalizeURL(url) {
   }
 }
 
+// Try to find a real URL from Gemini's Google Search grounding chunks
+// that corresponds to this position. This is the key defense against the
+// model inventing a plausible-looking university URL.
+function resolveURLFromGrounding(position, groundingSources) {
+  const sources = Array.isArray(groundingSources) ? groundingSources : [];
+  if (!sources.length) return null;
+
+  const titleWords = String(position.title || "")
+    .toLowerCase().split(/\W+/).filter(w => w.length >= 5);
+  const uniWords = String(position.university || "")
+    .toLowerCase().split(/\W+/).filter(w => w.length >= 4);
+  const country = String(position.country || "").toLowerCase();
+
+  let best = null;
+  let bestScore = 0;
+
+  for (const source of sources) {
+    const url = normalizeURL(source.url);
+    if (!url) continue;
+
+    const haystack = `${source.title || ""} ${url}`.toLowerCase();
+    let score = 0;
+    score += titleWords.filter(w => haystack.includes(w)).length * 2;
+    score += uniWords.filter(w => haystack.includes(w)).length * 3;
+    if (country && haystack.includes(country)) score += 1;
+
+    // Prefer URLs with a real path (not a bare homepage)
+    try {
+      const parsed = new URL(url);
+      if (parsed.pathname && parsed.pathname !== "/" && parsed.pathname.length > 1) {
+        score += 2;
+      }
+    } catch {}
+
+    if (score > bestScore) {
+      bestScore = score;
+      best = url;
+    }
+  }
+
+  // Require a meaningful match so we don't attach a random source.
+  return bestScore >= 4 ? best : null;
+}
+
 function isFutureDeadline(deadline) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(deadline || ""))) return false;
   const date = new Date(`${deadline}T23:59:59`);
@@ -219,6 +264,9 @@ function cleanResults(results) {
       city,
       deadline,
       url,
+      url_source: ["model_verbatim", "grounding"].includes(String(item.url_source || ""))
+        ? String(item.url_source)
+        : "unknown",
       funding: String(item.funding || "").trim(),
       overall_score: Math.round(score),
       why_it_matches: String(item.why_it_matches || item.fit_reason || "").trim(),
@@ -306,69 +354,12 @@ async function inspectVacancyURL(url, position) {
   }
 }
 
+// URL repair is intentionally disabled. The old implementation asked the
+// model to "find the current working URL" for a position, which caused it
+// to construct plausible-looking university URLs that did not exist.
+// We now only trust URLs that appear in Gemini's Google Search grounding.
 async function findReplacementURL(position) {
-  if (!GEMINI_API_KEY || geminiQuotaExhausted || urlRepairsUsed >= URL_REPAIR_LIMIT) return null;
-  urlRepairsUsed += 1;
-
-  const endpoint =
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-
-  const prompt = `
-Find the CURRENT working vacancy/application URL for this exact PhD position.
-
-Title: ${position.title}
-University/organisation: ${position.university}
-Country: ${position.country}
-City: ${position.city || "unknown"}
-Deadline: ${position.deadline}
-
-Search the web extensively. The vacancy may be hosted by a university,
-EURAXESS, a research institute, a national research portal, AcademicJobs,
-FindAPhD, or another reputable vacancy platform.
-
-Return ONLY JSON:
-{"url":"...","reason":"..."}
-
-Rules:
-- The URL must be a real, currently accessible page for THIS exact vacancy.
-- Do not return a university homepage, generic PhD programme page, search
-  results page, or guessed URL.
-- Do not return an expired/archived vacancy.
-- If you cannot find a reliable working URL, return {"url":"","reason":"not found"}.
-`;
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      tools: [{ google_search: {} }],
-      generationConfig: { temperature: 0 }
-    })
-  });
-
-  if (!response.ok) return null;
-  const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts
-    ?.map(part => part.text || "").join("") || "";
-
-  let candidate = null;
-  try {
-    candidate = extractJSON(text);
-  } catch {
-    return null;
-  }
-
-  const url = normalizeURL(candidate?.url);
-  if (!url || url === normalizeURL(position.url)) return null;
-
-  try {
-    const inspected = await inspectVacancyURL(url, position);
-    if (!inspected.verified) return null;
-    return { url: inspected.finalURL, note: inspected.note };
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 async function verifyPosition(position) {
@@ -402,84 +393,33 @@ async function verifyPosition(position) {
       };
     }
 
-    console.log(`↻ URL needs repair: ${position.title}`);
-    if (geminiQuotaExhausted) {
-      return {
-        verification_status: "Not verified",
-        verification_checked_at: checkedAt,
-        verification_note: `${inspected.note} Gemini quota is exhausted, so URL repair was skipped.`,
-        verification_url: inspected.finalURL
-      };
-    }
-    if (urlRepairsUsed >= URL_REPAIR_LIMIT) {
-      return {
-        verification_status: "Not verified",
-        verification_checked_at: checkedAt,
-        verification_note: `${inspected.note} URL repair limit (${URL_REPAIR_LIMIT}) reached for this run.`,
-        verification_url: inspected.finalURL
-      };
-    }
-    const replacement = await findReplacementURL(position);
-
-    if (replacement) {
-      console.log(`✓ Recovered working vacancy URL: ${replacement.url}`);
-      return {
-        verification_status: "Verified",
-        verification_checked_at: checkedAt,
-        verification_note: `Original URL was invalid or mismatched; recovered current vacancy URL. ${replacement.note}`,
-        verification_url: replacement.url,
-        url: replacement.url
-      };
-    }
-
+    console.log(`↻ URL not verified (repair disabled): ${position.title}`);
     return {
       verification_status: "Not verified",
       verification_checked_at: checkedAt,
-      verification_note: inspected.note,
-      verification_url: inspected.finalURL
+      verification_note: `${inspected.note} URL repair is disabled; only grounding-sourced URLs are trusted.`,
+      verification_url: inspected.finalURL,
+      url: position.url
     };
   } catch (error) {
-    console.log(`↻ URL check failed; attempting repair: ${position.title}`);
-    if (geminiQuotaExhausted || urlRepairsUsed >= URL_REPAIR_LIMIT) {
-      return {
-        verification_status: "Not verified",
-        verification_checked_at: checkedAt,
-        verification_note: `${error?.name === "AbortError" ? "Verification timed out." : "Verification request failed."} URL repair was skipped because Gemini is unavailable or the repair limit was reached.`,
-        verification_url: normalizeURL(position.url)
-      };
-    }
-    try {
-      const replacement = await findReplacementURL(position);
-      if (replacement) {
-        console.log(`✓ Recovered working vacancy URL: ${replacement.url}`);
-        return {
-          verification_status: "Verified",
-          verification_checked_at: checkedAt,
-          verification_note: `Original URL could not be fetched; recovered current vacancy URL. ${replacement.note}`,
-          verification_url: replacement.url,
-          url: replacement.url
-        };
-      }
-    } catch {}
-
+    console.log(`↻ URL check failed (repair disabled): ${position.title}`);
     return {
       verification_status: "Not verified",
       verification_checked_at: checkedAt,
       verification_note: error?.name === "AbortError"
-        ? "Verification timed out and URL repair failed."
-        : `Could not fetch page and URL repair failed: ${String(error?.message || error)}`,
-      verification_url: normalizeURL(position.url)
+        ? "Verification timed out. URL repair is disabled."
+        : `Could not fetch page: ${String(error?.message || error)}. URL repair is disabled.`,
+      verification_url: normalizeURL(position.url),
+      url: position.url
     };
   }
 }
 
 async function verifyResults(results) {
   console.log(`Verifying ${results.length} results (informational only; no results will be removed)...`);
-  console.log(`Verification cache: ${VERIFICATION_CACHE_DAYS} days; Gemini URL repairs: max ${URL_REPAIR_LIMIT} per run.`);
+  console.log(`Verification cache: ${VERIFICATION_CACHE_DAYS} days; AI URL repair is disabled.`);
   const verified = [];
 
-  // Sequential verification makes the Gemini repair budget deterministic and
-  // prevents a burst of repair requests when several URLs are broken.
   for (const position of results) {
     const checked = await verifyPosition(position);
     verified.push({ ...position, ...checked });
@@ -708,153 +648,153 @@ ${RULES}
 ================ OUTPUT ================
 ${OUTPUT_RULES}
 
-${true
-  ? `Use Google Search extensively. For IELTS and language information,
+Use Google Search extensively. For IELTS and language information,
 prefer official university sources. Search the position page and, when
 needed, the university's official admissions/doctoral English-language
 requirements page. Do not use third-party summaries for IELTS claims.
 
-Return only verified current opportunities.`
-  : `You are being tested through APMix using an OpenAI-compatible API.
-There is no Google Search tool available in this request. Do not invent
-URLs, deadlines or positions. Use only information you actually know.
-If you cannot reliably identify a current vacancy, return fewer results
-rather than fabricating one.
-
-Return only opportunities you can identify with high confidence.`}
+Return only verified current opportunities.
 `;
 
-  {
-    const endpoint =
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+  const endpoint =
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
-    async function requestGemini(generationConfig) {
-      const body = {
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        tools: [{ google_search: {} }],
-        generationConfig
-      };
+  async function requestGemini(generationConfig) {
+    const body = {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      tools: [{ google_search: {} }],
+      generationConfig
+    };
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-      });
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
 
-      const data = await response.json();
+    const data = await response.json();
 
-      if (!response.ok) {
-        if (response.status === 429) {
-          geminiQuotaExhausted = true;
-          console.warn("Gemini quota exhausted (HTTP 429). Gemini will be skipped for the rest of this run.");
-        }
-        throw new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
+    if (!response.ok) {
+      if (response.status === 429) {
+        geminiQuotaExhausted = true;
+        console.warn("Gemini quota exhausted (HTTP 429). Gemini will be skipped for the rest of this run.");
       }
-
-      return data;
+      throw new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
     }
 
-    console.log("Gemini is searching Google...");
+    return data;
+  }
 
-    let data = await requestGemini({ temperature: 0.2 });
-    let groundingResponses = [data];
+  console.log("Gemini is searching Google...");
 
-    let text = data?.candidates?.[0]?.content?.parts
+  let data = await requestGemini({ temperature: 0.2 });
+  let groundingResponses = [data];
+
+  let text = data?.candidates?.[0]?.content?.parts
+    ?.map(part => part.text || "")
+    .join("") || "";
+
+  if (!text) {
+    const candidate = data?.candidates?.[0];
+    console.warn(
+      "Gemini returned no text on the first attempt.",
+      JSON.stringify({
+        finishReason: candidate?.finishReason,
+        finishMessage: candidate?.finishMessage,
+        tokenCount: candidate?.tokenCount,
+        hasGrounding: Boolean(candidate?.groundingMetadata),
+        groundingChunks: candidate?.groundingMetadata?.groundingChunks?.length || 0,
+        webSearchQueries: candidate?.groundingMetadata?.webSearchQueries || [],
+        promptFeedback: data?.promptFeedback
+      })
+    );
+
+    if (geminiQuotaExhausted) {
+      throw new Error("Gemini quota exhausted; not retrying the request.");
+    }
+
+    data = await requestGemini({
+      temperature: 0.2,
+      thinkingConfig: { thinkingBudget: 0 }
+    });
+    groundingResponses.push(data);
+
+    text = data?.candidates?.[0]?.content?.parts
       ?.map(part => part.text || "")
       .join("") || "";
-
-    if (!text) {
-      const candidate = data?.candidates?.[0];
-      console.warn(
-        "Gemini returned no text on the first attempt.",
-        JSON.stringify({
-          finishReason: candidate?.finishReason,
-          finishMessage: candidate?.finishMessage,
-          tokenCount: candidate?.tokenCount,
-          hasGrounding: Boolean(candidate?.groundingMetadata),
-          groundingChunks: candidate?.groundingMetadata?.groundingChunks?.length || 0,
-          webSearchQueries: candidate?.groundingMetadata?.webSearchQueries || [],
-          promptFeedback: data?.promptFeedback
-        })
-      );
-
-      if (geminiQuotaExhausted) {
-        throw new Error("Gemini quota exhausted; not retrying the request.");
-      }
-
-      data = await requestGemini({
-        temperature: 0.2,
-        thinkingConfig: { thinkingBudget: 0 }
-      });
-      groundingResponses.push(data);
-
-      text = data?.candidates?.[0]?.content?.parts
-        ?.map(part => part.text || "")
-        .join("") || "";
-    }
-
-    if (!text) {
-      console.error(JSON.stringify(data, null, 2));
-      throw new Error("Gemini returned no usable text after retry.");
-    }
-
-    const results = extractJSON(text);
-    const sources = groundingResponses
-      .flatMap(response => response?.candidates || [])
-      .flatMap(candidate => candidate?.groundingMetadata?.groundingChunks || [])
-      .map(chunk => chunk?.web)
-      .filter(web => web?.uri)
-      .map(web => ({
-        title: String(web.title || "").trim(),
-        url: normalizeURL(web.uri)
-      }))
-      .filter(source => source.url);
-    const uniqueSources = Array.from(
-      new Map(sources.map(source => [source.url, source])).values()
-    );
-    console.log(`Gemini grounding sources captured: ${uniqueSources.length}`);
-    return { results, sources: uniqueSources };
-  }
-
-  const endpoint = "https://api.apmix.ai/v1/chat/completions";
-
-  console.log(`APMix model: ${APMIX_MODEL}`);
-  console.log("APMix test mode: no Google Search grounding is attached to this request.");
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${APMIX_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: APMIX_MODEL,
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.2
-    })
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(`APMix API error ${response.status}: ${JSON.stringify(data)}`);
-  }
-
-  const text = data?.choices?.[0]?.message?.content || "";
-
-  console.log("APMix request succeeded.");
-  if (data?.usage) {
-    console.log("APMix usage:", JSON.stringify(data.usage));
-  } else {
-    console.log("APMix did not return a usage object.");
   }
 
   if (!text) {
     console.error(JSON.stringify(data, null, 2));
-    throw new Error("APMix returned no usable text.");
+    throw new Error("Gemini returned no usable text after retry.");
   }
 
-  return { results: extractJSON(text), sources: [] };
+  const results = extractJSON(text);
+
+  // Collect URLs that Google Search actually returned to Gemini during
+  // this request. These are factual — the model cannot fabricate them.
+  const sources = groundingResponses
+    .flatMap(response => response?.candidates || [])
+    .flatMap(candidate => candidate?.groundingMetadata?.groundingChunks || [])
+    .map(chunk => chunk?.web)
+    .filter(web => web?.uri)
+    .map(web => ({
+      title: String(web.title || "").trim(),
+      url: normalizeURL(web.uri)
+    }))
+    .filter(source => source.url);
+
+  const uniqueSources = Array.from(
+    new Map(sources.map(source => [source.url, source])).values()
+  );
+  console.log(`Gemini grounding sources captured: ${uniqueSources.length}`);
+
+  // Resolve each result's URL against the grounding sources. Only URLs
+  // that Google Search actually returned are accepted.
+  const groundingSourceSet = new Set(uniqueSources.map(s => normalizeURL(s.url)));
+
+  const resolvedResults = (Array.isArray(results) ? results : [])
+    .map(position => {
+      const modelURL = normalizeURL(position.url);
+      const modelURLIsReal = modelURL && groundingSourceSet.has(modelURL);
+
+      // 1. The model's URL matches a real grounding URL → keep it verbatim.
+      if (modelURLIsReal) {
+        return {
+          ...position,
+          url: modelURL,
+          url_source: "model_verbatim"
+        };
+      }
+
+      // 2. Otherwise, try to pull a real URL from the grounding chunks.
+      const groundingURL = resolveURLFromGrounding(position, uniqueSources);
+      if (groundingURL) {
+        return {
+          ...position,
+          url: groundingURL,
+          url_source: "grounding",
+          // Penalize slightly because we had to substitute the URL.
+          overall_score: Math.max(0, Number(position.overall_score || 0) - 5)
+        };
+      }
+
+      // 3. No grounding evidence at all → drop it. This is the main
+      //    defense against fabricated university URLs.
+      console.log(`✗ Dropping position (no grounding URL): ${position.title}`);
+      return null;
+    })
+    .filter(Boolean);
+
+  const groundedCount = resolvedResults.filter(r => r.url_source === "grounding").length;
+  const verbatimCount = resolvedResults.filter(r => r.url_source === "model_verbatim").length;
+  console.log(
+    `URL resolution: ${groundedCount} from grounding, ` +
+    `${verbatimCount} verbatim, ` +
+    `${(Array.isArray(results) ? results.length : 0) - resolvedResults.length} dropped.`
+  );
+
+  return { results: resolvedResults, sources: uniqueSources };
 }
 
 
@@ -1000,6 +940,7 @@ async function callProviders() {
     provider: "Both"
   };
 }
+
 async function sendTelegramMessage(message) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.log("Telegram secrets are not configured. Skipping Telegram.");
@@ -1034,7 +975,13 @@ function formatTelegramMessage(position) {
     ? "⚠️ Language: Not English"
     : `🗣️ Language: ${position.application_language || "Unknown"}`;
 
-  return [
+  const sourceLine = position.url_source === "grounding"
+    ? "🧷 (link taken from Google Search results)"
+    : position.url_source === "model_verbatim"
+      ? "🧷 (link copied verbatim by the model)"
+      : null;
+
+  const lines = [
     `⭐ EXCEPTIONAL PhD MATCH — ${position.overall_score}/100`,
     "",
     `🎓 ${position.title}`,
@@ -1056,7 +1003,11 @@ function formatTelegramMessage(position) {
     "",
     "🔗 Apply:",
     position.url
-  ].join("\n");
+  ];
+
+  if (sourceLine) lines.push(sourceLine);
+
+  return lines.join("\n");
 }
 
 async function notifyExceptionalMatches(results) {
