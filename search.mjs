@@ -17,6 +17,13 @@ const APMIX_MODEL = process.env.APMIX_MODEL || "deepseek-v4.1-flash-free";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
+// Keep the daily radar resilient to Gemini free-tier limits and avoid spending
+// Gemini requests repeatedly repairing old vacancy URLs.
+const URL_REPAIR_LIMIT = 2;
+const VERIFICATION_CACHE_DAYS = 7;
+let geminiQuotaExhausted = false;
+let urlRepairsUsed = 0;
+
 if (AI_PROVIDER === "gemini" && !GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY is not configured.");
 }
@@ -309,7 +316,8 @@ async function inspectVacancyURL(url, position) {
 }
 
 async function findReplacementURL(position) {
-  if (!GEMINI_API_KEY) return null;
+  if (!GEMINI_API_KEY || geminiQuotaExhausted || urlRepairsUsed >= URL_REPAIR_LIMIT) return null;
+  urlRepairsUsed += 1;
 
   const endpoint =
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
@@ -374,6 +382,22 @@ Rules:
 
 async function verifyPosition(position) {
   const checkedAt = new Date().toISOString();
+
+  // Existing positions do not need an expensive network/AI verification on
+  // every daily run. Reuse a recent successful verification for 7 days.
+  if (position.verification_status === "Verified" && position.verification_checked_at) {
+    const checkedAtMs = Date.parse(position.verification_checked_at);
+    const cacheAgeMs = Date.now() - checkedAtMs;
+    if (Number.isFinite(checkedAtMs) && cacheAgeMs >= 0 && cacheAgeMs < VERIFICATION_CACHE_DAYS * 86400000) {
+      return {
+        verification_status: "Verified",
+        verification_checked_at: position.verification_checked_at,
+        verification_note: position.verification_note || "Recently verified; reused cached verification.",
+        verification_url: position.verification_url || position.url,
+        url: position.url
+      };
+    }
+  }
   try {
     const inspected = await inspectVacancyURL(position.url, position);
 
@@ -388,6 +412,22 @@ async function verifyPosition(position) {
     }
 
     console.log(`↻ URL needs repair: ${position.title}`);
+    if (geminiQuotaExhausted) {
+      return {
+        verification_status: "Not verified",
+        verification_checked_at: checkedAt,
+        verification_note: `${inspected.note} Gemini quota is exhausted, so URL repair was skipped.`,
+        verification_url: inspected.finalURL
+      };
+    }
+    if (urlRepairsUsed >= URL_REPAIR_LIMIT) {
+      return {
+        verification_status: "Not verified",
+        verification_checked_at: checkedAt,
+        verification_note: `${inspected.note} URL repair limit (${URL_REPAIR_LIMIT}) reached for this run.`,
+        verification_url: inspected.finalURL
+      };
+    }
     const replacement = await findReplacementURL(position);
 
     if (replacement) {
@@ -409,6 +449,14 @@ async function verifyPosition(position) {
     };
   } catch (error) {
     console.log(`↻ URL check failed; attempting repair: ${position.title}`);
+    if (geminiQuotaExhausted || urlRepairsUsed >= URL_REPAIR_LIMIT) {
+      return {
+        verification_status: "Not verified",
+        verification_checked_at: checkedAt,
+        verification_note: `${error?.name === "AbortError" ? "Verification timed out." : "Verification request failed."} URL repair was skipped because Gemini is unavailable or the repair limit was reached.`,
+        verification_url: normalizeURL(position.url)
+      };
+    }
     try {
       const replacement = await findReplacementURL(position);
       if (replacement) {
@@ -436,17 +484,17 @@ async function verifyPosition(position) {
 
 async function verifyResults(results) {
   console.log(`Verifying ${results.length} results (informational only; no results will be removed)...`);
+  console.log(`Verification cache: ${VERIFICATION_CACHE_DAYS} days; Gemini URL repairs: max ${URL_REPAIR_LIMIT} per run.`);
   const verified = [];
 
-  for (let i = 0; i < results.length; i += 5) {
-    const batch = results.slice(i, i + 5);
-    const checked = await Promise.all(batch.map(verifyPosition));
-    for (let j = 0; j < batch.length; j++) {
-      verified.push({ ...batch[j], ...checked[j] });
-      console.log(
-        `${checked[j].verification_status === "Verified" ? "✓" : "?"} ${batch[j].title}`
-      );
-    }
+  // Sequential verification makes the Gemini repair budget deterministic and
+  // prevents a burst of repair requests when several URLs are broken.
+  for (const position of results) {
+    const checked = await verifyPosition(position);
+    verified.push({ ...position, ...checked });
+    console.log(
+      `${checked.verification_status === "Verified" ? "✓" : "?"} ${position.title}`
+    );
   }
 
   return verified;
@@ -610,6 +658,10 @@ Return only opportunities you can identify with high confidence.`}
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 429) {
+          geminiQuotaExhausted = true;
+          console.warn("Gemini quota exhausted (HTTP 429). Gemini will be skipped for the rest of this run.");
+        }
         throw new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
       }
 
@@ -639,6 +691,10 @@ Return only opportunities you can identify with high confidence.`}
           promptFeedback: data?.promptFeedback
         })
       );
+
+      if (geminiQuotaExhausted) {
+        throw new Error("Gemini quota exhausted; not retrying the request.");
+      }
 
       data = await requestGemini({
         temperature: 0.2,
@@ -963,6 +1019,9 @@ async function main() {
   });
   console.log(`Saved ${Array.isArray(searchResponse.sources) ? searchResponse.sources.length : 0} search sources.`);
   console.log(`${searchResponse.provider} returned ${newSearchResults.length} valid positions.`);
+  if (geminiQuotaExhausted) {
+    console.log("Gemini is quota-exhausted for this run; existing positions will be preserved and no further Gemini repair requests will be made.");
+  }
 
   const byURL = new Map(existingResults.map(result => [normalizeURL(result.url), result]));
 
@@ -984,6 +1043,9 @@ async function main() {
   saveJSON(RESULTS_FILE, resultsWithSources);
 
   console.log(`Saved ${resultsWithSources.length} active positions. Verification is informational only; no results were removed.`);
+  if (newSearchResults.length === 0 && existingResults.length > 0) {
+    console.log("No new positions were returned; existing active positions were retained.");
+  }
   await notifyExceptionalMatches(resultsWithSources);
 
   console.log("\nTop matches:");
