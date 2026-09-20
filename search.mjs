@@ -137,14 +137,24 @@ Return ONLY a valid JSON array. Every object MUST contain:
   "ielts_source_url": "...",
   "ai_provider": "Gemini | APMix"
 }
-
 Use an empty string for source URLs when no official source was found.
-The application/vacancy URL must be a working page for the exact vacancy,
-or a trusted current listing that clearly identifies the exact vacancy and
-provides an application route. The source domain does not matter. Never
-invent or guess a URL. If a discovered URL is broken or generic, find the
-current working vacancy/application URL instead of substituting a university
-homepage or generic programme page.
+The application/vacancy URL must be the real position page. Do not invent
+information, dates, IELTS scores, language status or URLs.
+
+STRICT URL RULE:
+The "url" field must be copied character-for-character from a URL you
+actually retrieved via Google Search in this session. Never type a URL
+from memory, guess one, shorten one, or construct one by pattern
+(e.g. guessing a "/vacancies/12345" style path). Never normalize,
+"clean up", or simplify a URL you found.
+If your search results do not contain an exact application-page URL for
+a position, use the closest URL you actually retrieved that leads to
+that vacancy (e.g. a listing or search-result page) and lower
+overall_score by 15 points to reflect the uncertainty. If you have no
+retrieved URL at all for a position, omit that position entirely rather
+than inventing a URL.
+The same verbatim-copy rule applies to language_source_url and
+ielts_source_url.
 `;
 
 function normalizeURL(url) {
