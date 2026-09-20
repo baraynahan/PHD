@@ -142,20 +142,8 @@ Return ONLY a valid JSON array. Every object MUST contain:
   "language_source_url": "...",
   "ielts_requirement": "...",
   "ielts_source_url": "...",
-  "sources": [
-    {"title": "...", "url": "..."}
-  ],
   "ai_provider": "Gemini | APMix"
 }
-Use an empty string for source URLs when no official source was found.
-"sources" must contain the useful web pages that support THIS SPECIFIC
-position, in addition to the application/vacancy URL. Do not repeat the
-application/vacancy URL in "sources".
-Prefer pages actually found through Google Search in this session, such as
-the exact project description, research group/project page, funding call,
-official project announcement, or reputable vacancy listing.
-Do not use a university homepage, generic PhD programme page, or unrelated
-page as a source.
 The application/vacancy URL must be the real position page. Do not invent
 information, dates, IELTS scores, language status or URLs.
 
@@ -253,15 +241,7 @@ function cleanResults(results) {
         : "Not verified",
       verification_checked_at: String(item.verification_checked_at || "").trim(),
       verification_note: String(item.verification_note || "").trim(),
-      verification_url: normalizeURL(item.verification_url),
-      sources: Array.isArray(item.sources)
-        ? item.sources
-            .map(source => ({
-              title: String(source?.title || "").trim(),
-              url: normalizeURL(source?.url)
-            }))
-            .filter(source => source.url && source.url !== url)
-        : []
+      verification_url: normalizeURL(item.verification_url)
     });
   }
 
@@ -1121,9 +1101,9 @@ async function main() {
       : searchResponse.provider === "APMix"
         ? APMIX_MODEL
         : `${GEMINI_MODEL} + ${APMIX_MODEL}`,
-    sources: Array.isArray(searchResponse.sources) ? searchResponse.sources : []
+    sources: []
   });
-  console.log(`Saved ${Array.isArray(searchResponse.sources) ? searchResponse.sources.length : 0} search sources.`);
+  console.log("Each position keeps the exact vacancy/application URL found by the search as its primary source.");
   console.log(`${searchResponse.provider} returned ${newSearchResults.length} valid positions.`);
   if (geminiQuotaExhausted) {
     console.log("Gemini is quota-exhausted for this run; existing positions will be preserved and no further Gemini repair requests will be made.");
@@ -1142,12 +1122,7 @@ async function main() {
 
   const mergedResults = cleanResults(Array.from(byURL.values()));
   const verifiedResults = await verifyResults(mergedResults);
-  let resultsWithSources = attachSourcesToPositions(
-    verifiedResults,
-    searchResponse.sources
-  );
-  resultsWithSources = await enrichExistingSources(resultsWithSources);
-  resultsWithSources = await validateAdditionalSources(resultsWithSources);
+  const resultsWithSources = verifiedResults;
   saveJSON(RESULTS_FILE, resultsWithSources);
 
   console.log(`Saved ${resultsWithSources.length} active positions. Verification is informational only; no results were removed.`);
