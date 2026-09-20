@@ -1,6 +1,39 @@
 {
-  "searched_at": "2026-09-20T14:31:47.822Z",
+  "searched_at": "2026-09-20T14:34:57.606Z",
   "ai_provider": "Both",
   "model": "gemini-2.5-flash + gpt-5.6-luna-free",
-  "sources": []
+  "sources": [
+    {
+      "title": "qub.ac.uk",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFZrt1A-8SBc-HNMlaOxZFT1Wzd2UmrOTF6cOKXj1WhaHNwO-aGNJQlHuYXfo4XHJH8ZVDv7IuyAWN16h6f3OzUGxtvsPOZkUSxAfL0qyA_yf_eKwr0Se1cKtF4_ONirWcVvQHQ2_93qwhieHtPuRbkh1cKMqsesjyaN4uOOyo6nQj9ZAOcJw=="
+    },
+    {
+      "title": "qub.ac.uk",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHfKc3iaioeyTC9Q8Fs6fHKyPiIGjPee15UIST3AQUSJUuzQitMb4XHMtiFla8e4CbPn7U0xmU30JhfrmDhyQvXa6WOQm3gxitT5dnU2bbf1B3VOBxmZJyA0NmUjrFE44qPPaVcOucPWtEM7TUV5maDHhAoDq4mtQYPPupf8gTW"
+    },
+    {
+      "title": "agristok.net",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFxCwir-r84XJJm04-H4Pczy6Zt6m0bHWAAgvxx49fCo2zHMVCzIrsoxCR2iVZXNH-4VgY6tYkLpaqX6Epr5A6vwhPhhrNkQVJRZS6WkxKYrFYOW5c1fOjE9hlsJaqHdwwJLI20A80QbqSPWAR394CRMZLttp24UIouWCrQtFqIFRllilnf3bvJCCvJ7DDr5t-FDtnFPMaU3NlieA=="
+    },
+    {
+      "title": "ku.dk",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHhTy5zWLYYk6N2UXwDo5R646kXoX5zvzBHZA4Q7I5L1Dbm34LUPbyOvplPcTqoJpda33-Q1RiE7nyXXTYv4BVSpmvoIXMTICvqmThvXSqaMElyiU5PiykLzxBoor4qUQnxghD6"
+    },
+    {
+      "title": "jobleads.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFlfTmdupV62ELA5y2qUFjiUzyZvdmfPudI7EwxSdrMfVacyvYGVhSxm_qHrYXTObF-1LNqeQuJAx5t_WmUO68ugGnmvYNzBM0Q3Rl64KBo8jKjUE29-k2TvoQff42AeaDQIbOK5BmhOdQ1UIyzB8tjmSiI_5DJfKFxbeXaGxqmuUF-KU165Bltb0BWMFJtIxYaN4bPnRl4XM58ED2ovRtEX4f-6yjC8dlHERtSoCZcN5gt7AZjSyZYnbAKjQ6ST3NToa2ejpUs"
+    },
+    {
+      "title": "applykite.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQH0_nzf0qf4tHNPd8Qi0i4abjuHiR0E-0k86YXiLyY1KIcRkQWDMyPRd7k5Bcu30cU1fmU_-jeHcDnHcBGZw-Tb14XFynzZUH7ZkHDvYBQFPCa90owBiBWt0OCmvaxqwTiEOEXNtZcq_5pNeXvntBLoYUlVECYZbt5chlbs1GnPC5J2lqtQNe1_V7qC-7y8D5VV3G8cpwsH4O18LFclschzqWZTU7z-KJY="
+    },
+    {
+      "title": "bebee.com",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEstYwUn6yJg0k3LfmNPL0D20QidOLckCNs4XHtI4_uIoXUNiiKtqXTy8PoO82g19U56fQ5vhhDSVQ5-H_aXLTdcqLE3pLHwQGg_m-PSXooagd3auy96U0MEPa1Ajq7yVj4kBXPsSNb2BhRYW0ls4cQdOaqLy21CIgVQkZFg6PhdB_o6yYpQ9WEZDeuqkDJyw6CN2ZxE1EPXuo1lpxG8FK85548CJvL4e7HMC1auvncJvlRxopsvCNEmvShtxBJKK7q4QlXO3BTg_pNwiHuoPwOTG-TdM-WnPVstB5rTR-13506DutnQGLKDEw0tfYolgJwJM2JJ5qqibQ9uWmFVICMYy7CanpD5g=="
+    },
+    {
+      "title": "lu.se",
+      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGhxe2obJr538CHYLEFMnRNn_uFG-V9P3-7FT_-gpGXW-EGvvvHZpnsROXKe_YSjN6-gP4jLhTAbWVt-gHqTiuOlfiZT6rg5ClUBR30-eHCcnTWt_EDaAD31NLEGfhF1DzC512PfEXMDI_AIy0J8SBOk-QR0S0zHxiugzeY9kyMqbVCMng0Iy80-MKC5hLdVGVGs3Afk8s="
+    }
+  ]
 }
