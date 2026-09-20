@@ -21,12 +21,16 @@ if (AI_PROVIDER === "gemini" && !GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY is not configured.");
 }
 
-if (AI_PROVIDER === "apmix" && !APMIX_API_KEY) {
+if (["apmix", "both"].includes(AI_PROVIDER) && !APMIX_API_KEY) {
   throw new Error("APMIX_API_KEY is not configured.");
 }
 
-if (!["gemini", "apmix"].includes(AI_PROVIDER)) {
-  throw new Error('AI_PROVIDER must be "gemini" or "apmix".');
+if (["gemini", "both"].includes(AI_PROVIDER) && !GEMINI_API_KEY) {
+  throw new Error("GEMINI_API_KEY is not configured.");
+}
+
+if (!["gemini", "apmix", "both"].includes(AI_PROVIDER)) {
+  throw new Error('AI_PROVIDER must be "gemini", "apmix", or "both".');
 }
 
 const CANDIDATE_PROFILE = `
@@ -204,7 +208,7 @@ function cleanResults(results) {
       ielts_source_url: normalizeURL(item.ielts_source_url),
       ai_provider: ["Gemini", "APMix"].includes(String(item.ai_provider || ""))
         ? String(item.ai_provider)
-        : (AI_PROVIDER === "gemini" ? "Gemini" : "APMix"),
+        : "Gemini",
       verification_status: ["Verified", "Not verified"].includes(String(item.verification_status || ""))
         ? String(item.verification_status)
         : "Not verified",
@@ -345,14 +349,9 @@ function loadExisting() {
 }
 
 async function callGemini() {
-  console.log(`AI provider selected: ${AI_PROVIDER}`);
-  if (AI_PROVIDER === "gemini") {
-    console.log(`AI model: ${GEMINI_MODEL}`);
-    console.log(`Gemini API key configured: ${Boolean(GEMINI_API_KEY)}`);
-  } else {
-    console.log(`AI model: ${APMIX_MODEL}`);
-    console.log(`APMix API key configured: ${Boolean(APMIX_API_KEY)}`);
-  }
+  console.log(`AI provider: Gemini`);
+  console.log(`AI model: ${GEMINI_MODEL}`);
+  console.log(`Gemini API key configured: ${Boolean(GEMINI_API_KEY)}`);
 
   const prompt = `
 You are an expert PhD opportunity researcher.
@@ -375,7 +374,7 @@ ${RULES}
 ================ OUTPUT ================
 ${OUTPUT_RULES}
 
-${AI_PROVIDER === "gemini"
+${true
   ? `Use Google Search extensively. For IELTS and language information,
 prefer official university sources. Search the position page and, when
 needed, the university's official admissions/doctoral English-language
@@ -463,8 +462,6 @@ Return only opportunities you can identify with high confidence.`}
       .flatMap(candidate => candidate?.groundingMetadata?.groundingChunks || [])
       .map(chunk => chunk?.web)
       .filter(web => web?.uri)
-      .map(chunk => chunk?.web)
-      .filter(web => web?.uri)
       .map(web => ({
         title: String(web.title || "").trim(),
         url: normalizeURL(web.uri)
@@ -518,6 +515,122 @@ Return only opportunities you can identify with high confidence.`}
   return { results: extractJSON(text), sources: [] };
 }
 
+
+async function callAPMix() {
+  console.log("AI provider: APMix");
+  console.log(`APMix model: ${APMIX_MODEL}`);
+  console.log(`APMix API key configured: ${Boolean(APMIX_API_KEY)}`);
+
+  const prompt = buildPrompt("apmix");
+  const endpoint = "https://api.apmix.ai/v1/chat/completions";
+
+  console.log("APMix is searching its model knowledge (no Google Search grounding).");
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${APMIX_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: APMIX_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2,
+      max_tokens: 12000
+    })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(`APMix API error ${response.status}: ${JSON.stringify(data)}`);
+  }
+
+  const choice = data?.choices?.[0];
+  const text = choice?.message?.content || "";
+  console.log("APMix request succeeded.");
+  console.log("APMix finish reason:", choice?.finish_reason || "unknown");
+  if (data?.usage) console.log("APMix usage:", JSON.stringify(data.usage));
+
+  if (!text) {
+    console.error("APMix returned no usable content:", JSON.stringify(data, null, 2));
+    return { results: [], sources: [], provider: "APMix" };
+  }
+
+  try {
+    return { results: extractJSON(text), sources: [], provider: "APMix" };
+  } catch (error) {
+    console.error("APMix returned non-JSON text:", text.slice(0, 2000));
+    console.error(error);
+    return { results: [], sources: [], provider: "APMix" };
+  }
+}
+
+function buildPrompt(provider) {
+  return `
+You are an expert PhD opportunity researcher.
+
+Find currently open, fully funded PhD positions that are exceptionally
+well aligned with this candidate.
+
+================ CANDIDATE ================
+${CANDIDATE_PROFILE}
+
+================ GEOGRAPHY ================
+${GEOGRAPHY}
+
+================ SEARCH STRATEGY ================
+${SEARCH_STRATEGY}
+
+================ RULES ================
+${RULES}
+
+================ OUTPUT ================
+${OUTPUT_RULES}
+
+${provider === "gemini"
+  ? `Use Google Search extensively. For IELTS and language information,
+prefer official university sources. Search the position page and, when
+needed, the university's official admissions/doctoral English-language
+requirements page. Do not use third-party summaries for IELTS claims.
+
+Return only verified current opportunities.`
+  : `There is no Google Search tool available in this APMix request.
+Do not invent URLs, deadlines or positions. Use only information you
+actually know. If you cannot reliably identify a current vacancy,
+return fewer results rather than fabricating one.
+
+Return only opportunities you can identify with high confidence.`}
+`;
+}
+
+async function callProviders() {
+  if (AI_PROVIDER === "gemini") return await callGemini();
+  if (AI_PROVIDER === "apmix") return await callAPMix();
+
+  console.log("Running BOTH AI providers.");
+  const [gemini, apmix] = await Promise.allSettled([callGemini(), callAPMix()]);
+  const results = [];
+  const sources = [];
+
+  if (gemini.status === "fulfilled") {
+    results.push(...gemini.value.results.map(x => ({ ...x, ai_provider: "Gemini" })));
+    sources.push(...gemini.value.sources);
+  } else {
+    console.error("Gemini failed:", gemini.reason);
+  }
+
+  if (apmix.status === "fulfilled") {
+    results.push(...apmix.value.results.map(x => ({ ...x, ai_provider: "APMix" })));
+  } else {
+    console.error("APMix failed:", apmix.reason);
+  }
+
+  return {
+    results,
+    sources: Array.from(new Map(sources.map(s => [s.url, s])).values()),
+    provider: "Both"
+  };
+}
 async function sendTelegramMessage(message) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.log("Telegram secrets are not configured. Skipping Telegram.");
@@ -608,19 +721,21 @@ async function main() {
   console.log(`Existing active positions: ${existingResults.length}`);
   console.log("Running new search...");
 
-  const searchResponse = await callGemini();
-  const newSearchResults = cleanResults(searchResponse.results).map(result => ({
-    ...result,
-    ai_provider: AI_PROVIDER === "gemini" ? "Gemini" : "APMix"
-  }));
+  console.log(`AI provider mode: ${AI_PROVIDER}`);
+  const searchResponse = await callProviders();
+  const newSearchResults = cleanResults(searchResponse.results);
   saveJSON(SOURCES_FILE, {
     searched_at: new Date().toISOString(),
-    ai_provider: AI_PROVIDER === "gemini" ? "Gemini" : "APMix",
-    model: AI_PROVIDER === "gemini" ? GEMINI_MODEL : APMIX_MODEL,
+    ai_provider: searchResponse.provider,
+    model: searchResponse.provider === "Gemini"
+      ? GEMINI_MODEL
+      : searchResponse.provider === "APMix"
+        ? APMIX_MODEL
+        : `${GEMINI_MODEL} + ${APMIX_MODEL}`,
     sources: Array.isArray(searchResponse.sources) ? searchResponse.sources : []
   });
   console.log(`Saved ${Array.isArray(searchResponse.sources) ? searchResponse.sources.length : 0} search sources.`);
-  console.log(`${AI_PROVIDER} returned ${newSearchResults.length} valid positions.`);
+  console.log(`${searchResponse.provider} returned ${newSearchResults.length} valid positions.`);
 
   const byURL = new Map(existingResults.map(result => [normalizeURL(result.url), result]));
 
