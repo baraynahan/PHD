@@ -46,10 +46,10 @@ jobs:
       # ----------------------------------------
       - name: Run PhD search
         env:
-          AI_PROVIDER: ${{ vars.AI_PROVIDER || 'both' }}
+          AI_PROVIDER: ${{ vars.AI_PROVIDER || 'gemini' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           APMIX_API_KEY: ${{ secrets.APMIX_API_KEY }}
-          APMIX_MODEL: ${{ vars.APMIX_MODEL || 'gpt-5.6-luna-free' }}
+          APMIX_MODEL: ${{ vars.APMIX_MODEL || 'deepseek/deepseek-v4.1-flash' }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
@@ -63,7 +63,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add results.json notified.json sources.json
+          git add results.json notified.json
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
@@ -79,8 +79,8 @@ jobs:
 
               if ! git rebase origin/main; then
                 echo "Rebase conflict detected. Resolving generated result files..."
-                git checkout --theirs results.json notified.json sources.json
-                git add results.json notified.json sources.json
+                git checkout --theirs results.json notified.json
+                git add results.json notified.json
                 GIT_EDITOR=true git rebase --continue
               fi
 
