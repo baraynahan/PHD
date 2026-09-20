@@ -17,14 +17,6 @@ const APMIX_MODEL = process.env.APMIX_MODEL || "deepseek-v4.1-flash-free";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// URL repair is disabled. The model was fabricating plausible-looking
-// university URLs when asked to "fix" a broken link. We now only accept
-// URLs that appear in Gemini's Google Search grounding metadata.
-const URL_REPAIR_LIMIT = 0;
-const VERIFICATION_CACHE_DAYS = 7;
-let geminiQuotaExhausted = false;
-let urlRepairsUsed = 0;
-
 if (AI_PROVIDER === "gemini" && !GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY is not configured.");
 }
@@ -145,23 +137,14 @@ Return ONLY a valid JSON array. Every object MUST contain:
   "ielts_source_url": "...",
   "ai_provider": "Gemini | APMix"
 }
-The application/vacancy URL must be the real position page. Do not invent
-information, dates, IELTS scores, language status or URLs.
 
-STRICT URL RULE:
-The "url" field must be copied character-for-character from a URL you
-actually retrieved via Google Search in this session. Never type a URL
-from memory, guess one, shorten one, or construct one by pattern
-(e.g. guessing a "/vacancies/12345" style path). Never normalize,
-"clean up", or simplify a URL you found.
-If your search results do not contain an exact application-page URL for
-a position, use the closest URL you actually retrieved that leads to
-that vacancy (e.g. a listing or search-result page) and lower
-overall_score by 15 points to reflect the uncertainty. If you have no
-retrieved URL at all for a position, omit that position entirely rather
-than inventing a URL.
-The same verbatim-copy rule applies to language_source_url and
-ielts_source_url.
+Use an empty string for source URLs when no official source was found.
+The application/vacancy URL must be a working page for the exact vacancy,
+or a trusted current listing that clearly identifies the exact vacancy and
+provides an application route. The source domain does not matter. Never
+invent or guess a URL. If a discovered URL is broken or generic, find the
+current working vacancy/application URL instead of substituting a university
+homepage or generic programme page.
 `;
 
 function normalizeURL(url) {
@@ -179,50 +162,6 @@ function normalizeURL(url) {
   } catch {
     return String(url).trim().replace(/\/$/, "");
   }
-}
-
-// Try to find a real URL from Gemini's Google Search grounding chunks
-// that corresponds to this position. This is the key defense against the
-// model inventing a plausible-looking university URL.
-function resolveURLFromGrounding(position, groundingSources) {
-  const sources = Array.isArray(groundingSources) ? groundingSources : [];
-  if (!sources.length) return null;
-
-  const titleWords = String(position.title || "")
-    .toLowerCase().split(/\W+/).filter(w => w.length >= 5);
-  const uniWords = String(position.university || "")
-    .toLowerCase().split(/\W+/).filter(w => w.length >= 4);
-  const country = String(position.country || "").toLowerCase();
-
-  let best = null;
-  let bestScore = 0;
-
-  for (const source of sources) {
-    const url = normalizeURL(source.url);
-    if (!url) continue;
-
-    const haystack = `${source.title || ""} ${url}`.toLowerCase();
-    let score = 0;
-    score += titleWords.filter(w => haystack.includes(w)).length * 2;
-    score += uniWords.filter(w => haystack.includes(w)).length * 3;
-    if (country && haystack.includes(country)) score += 1;
-
-    // Prefer URLs with a real path (not a bare homepage)
-    try {
-      const parsed = new URL(url);
-      if (parsed.pathname && parsed.pathname !== "/" && parsed.pathname.length > 1) {
-        score += 2;
-      }
-    } catch {}
-
-    if (score > bestScore) {
-      bestScore = score;
-      best = url;
-    }
-  }
-
-  // Require a meaningful match so we don't attach a random source.
-  return bestScore >= 4 ? best : null;
 }
 
 function isFutureDeadline(deadline) {
@@ -264,9 +203,6 @@ function cleanResults(results) {
       city,
       deadline,
       url,
-      url_source: ["model_verbatim", "grounding"].includes(String(item.url_source || ""))
-        ? String(item.url_source)
-        : "unknown",
       funding: String(item.funding || "").trim(),
       overall_score: Math.round(score),
       why_it_matches: String(item.why_it_matches || item.fit_reason || "").trim(),
@@ -354,32 +290,72 @@ async function inspectVacancyURL(url, position) {
   }
 }
 
-// URL repair is intentionally disabled. The old implementation asked the
-// model to "find the current working URL" for a position, which caused it
-// to construct plausible-looking university URLs that did not exist.
-// We now only trust URLs that appear in Gemini's Google Search grounding.
 async function findReplacementURL(position) {
-  return null;
+  if (!GEMINI_API_KEY) return null;
+
+  const endpoint =
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+  const prompt = `
+Find the CURRENT working vacancy/application URL for this exact PhD position.
+
+Title: ${position.title}
+University/organisation: ${position.university}
+Country: ${position.country}
+City: ${position.city || "unknown"}
+Deadline: ${position.deadline}
+
+Search the web extensively. The vacancy may be hosted by a university,
+EURAXESS, a research institute, a national research portal, AcademicJobs,
+FindAPhD, or another reputable vacancy platform.
+
+Return ONLY JSON:
+{"url":"...","reason":"..."}
+
+Rules:
+- The URL must be a real, currently accessible page for THIS exact vacancy.
+- Do not return a university homepage, generic PhD programme page, search
+  results page, or guessed URL.
+- Do not return an expired/archived vacancy.
+- If you cannot find a reliable working URL, return {"url":"","reason":"not found"}.
+`;
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      tools: [{ google_search: {} }],
+      generationConfig: { temperature: 0 }
+    })
+  });
+
+  if (!response.ok) return null;
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts
+    ?.map(part => part.text || "").join("") || "";
+
+  let candidate = null;
+  try {
+    candidate = extractJSON(text);
+  } catch {
+    return null;
+  }
+
+  const url = normalizeURL(candidate?.url);
+  if (!url || url === normalizeURL(position.url)) return null;
+
+  try {
+    const inspected = await inspectVacancyURL(url, position);
+    if (!inspected.verified) return null;
+    return { url: inspected.finalURL, note: inspected.note };
+  } catch {
+    return null;
+  }
 }
 
 async function verifyPosition(position) {
   const checkedAt = new Date().toISOString();
-
-  // Existing positions do not need an expensive network/AI verification on
-  // every daily run. Reuse a recent successful verification for 7 days.
-  if (position.verification_status === "Verified" && position.verification_checked_at) {
-    const checkedAtMs = Date.parse(position.verification_checked_at);
-    const cacheAgeMs = Date.now() - checkedAtMs;
-    if (Number.isFinite(checkedAtMs) && cacheAgeMs >= 0 && cacheAgeMs < VERIFICATION_CACHE_DAYS * 86400000) {
-      return {
-        verification_status: "Verified",
-        verification_checked_at: position.verification_checked_at,
-        verification_note: position.verification_note || "Recently verified; reused cached verification.",
-        verification_url: position.verification_url || position.url,
-        url: position.url
-      };
-    }
-  }
   try {
     const inspected = await inspectVacancyURL(position.url, position);
 
@@ -393,39 +369,66 @@ async function verifyPosition(position) {
       };
     }
 
-    console.log(`↻ URL not verified (repair disabled): ${position.title}`);
+    console.log(`↻ URL needs repair: ${position.title}`);
+    const replacement = await findReplacementURL(position);
+
+    if (replacement) {
+      console.log(`✓ Recovered working vacancy URL: ${replacement.url}`);
+      return {
+        verification_status: "Verified",
+        verification_checked_at: checkedAt,
+        verification_note: `Original URL was invalid or mismatched; recovered current vacancy URL. ${replacement.note}`,
+        verification_url: replacement.url,
+        url: replacement.url
+      };
+    }
+
     return {
       verification_status: "Not verified",
       verification_checked_at: checkedAt,
-      verification_note: `${inspected.note} URL repair is disabled; only grounding-sourced URLs are trusted.`,
-      verification_url: inspected.finalURL,
-      url: position.url
+      verification_note: inspected.note,
+      verification_url: inspected.finalURL
     };
   } catch (error) {
-    console.log(`↻ URL check failed (repair disabled): ${position.title}`);
+    console.log(`↻ URL check failed; attempting repair: ${position.title}`);
+    try {
+      const replacement = await findReplacementURL(position);
+      if (replacement) {
+        console.log(`✓ Recovered working vacancy URL: ${replacement.url}`);
+        return {
+          verification_status: "Verified",
+          verification_checked_at: checkedAt,
+          verification_note: `Original URL could not be fetched; recovered current vacancy URL. ${replacement.note}`,
+          verification_url: replacement.url,
+          url: replacement.url
+        };
+      }
+    } catch {}
+
     return {
       verification_status: "Not verified",
       verification_checked_at: checkedAt,
       verification_note: error?.name === "AbortError"
-        ? "Verification timed out. URL repair is disabled."
-        : `Could not fetch page: ${String(error?.message || error)}. URL repair is disabled.`,
-      verification_url: normalizeURL(position.url),
-      url: position.url
+        ? "Verification timed out and URL repair failed."
+        : `Could not fetch page and URL repair failed: ${String(error?.message || error)}`,
+      verification_url: normalizeURL(position.url)
     };
   }
 }
 
 async function verifyResults(results) {
   console.log(`Verifying ${results.length} results (informational only; no results will be removed)...`);
-  console.log(`Verification cache: ${VERIFICATION_CACHE_DAYS} days; AI URL repair is disabled.`);
   const verified = [];
 
-  for (const position of results) {
-    const checked = await verifyPosition(position);
-    verified.push({ ...position, ...checked });
-    console.log(
-      `${checked.verification_status === "Verified" ? "✓" : "?"} ${position.title}`
-    );
+  for (let i = 0; i < results.length; i += 5) {
+    const batch = results.slice(i, i + 5);
+    const checked = await Promise.all(batch.map(verifyPosition));
+    for (let j = 0; j < batch.length; j++) {
+      verified.push({ ...batch[j], ...checked[j] });
+      console.log(
+        `${checked[j].verification_status === "Verified" ? "✓" : "?"} ${batch[j].title}`
+      );
+    }
   }
 
   return verified;
@@ -467,157 +470,6 @@ function saveJSON(file, value) {
   writeFileSync(file, JSON.stringify(value, null, 2) + "\n");
 }
 
-function attachSourcesToPositions(results, searchSources) {
-  const sources = Array.isArray(searchSources) ? searchSources : [];
-
-  return results.map(position => {
-    const positionURL = normalizeURL(position.url);
-    const positionURLs = new Set([
-      positionURL,
-      normalizeURL(position.verification_url),
-      normalizeURL(position.ielts_source_url),
-      normalizeURL(position.language_source_url)
-    ].filter(Boolean));
-
-    const titleWords = String(position.title || "")
-      .toLowerCase()
-      .split(/\W+/)
-      .filter(word => word.length >= 5);
-    const universityWords = String(position.university || "")
-      .toLowerCase()
-      .split(/\W+/)
-      .filter(word => word.length >= 5);
-
-    // Keep only sources that are genuinely additional to the clickable
-    // application URL. Never manufacture a "source" by copying position.url.
-    const modelSources = Array.isArray(position.sources)
-      ? position.sources
-          .map(source => ({
-            title: String(source?.title || "").trim(),
-            url: normalizeURL(source?.url)
-          }))
-          .filter(source => source.url && !positionURLs.has(source.url))
-      : [];
-
-    const matchedGrounding = sources.filter(source => {
-      const url = normalizeURL(source?.url);
-      if (!url || positionURLs.has(url)) return false;
-
-      const haystack = `${source?.title || ""} ${url}`.toLowerCase();
-      const titleHits = titleWords.filter(word => haystack.includes(word)).length;
-      const universityHit = universityWords.some(word => haystack.includes(word));
-
-      return universityHit && titleHits >= Math.min(2, titleWords.length || 2);
-    }).map(source => ({
-      title: String(source?.title || "").trim(),
-      url: normalizeURL(source?.url)
-    }));
-
-    const unique = Array.from(new Map(
-      [...modelSources, ...matchedGrounding]
-        .filter(source => source.url && !positionURLs.has(source.url))
-        .map(source => [source.url, source])
-    ).values());
-
-    return { ...position, sources: unique };
-  });
-}
-
-async function validateAdditionalSources(results) {
-  const validated = [];
-
-  for (const position of results) {
-    const applicationURL = normalizeURL(position.url);
-    const sources = Array.isArray(position.sources) ? position.sources : [];
-    const good = [];
-
-    for (const source of sources.slice(0, 6)) {
-      const url = normalizeURL(source?.url);
-      if (!url || url === applicationURL) continue;
-
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
-        const response = await fetch(url, {
-          method: "GET",
-          redirect: "follow",
-          signal: controller.signal,
-          headers: { "User-Agent": "PhD-Radar/1.0 source-check" }
-        });
-        clearTimeout(timeout);
-
-        const finalURL = normalizeURL(response.url || url);
-        if (!response.ok || finalURL === applicationURL) continue;
-
-        const contentType = String(response.headers.get("content-type") || "");
-        if (!contentType || contentType.includes("text/") || contentType.includes("html")) {
-          good.push({
-            title: source.title || "Supporting source",
-            url: finalURL
-          });
-        }
-      } catch {}
-    }
-
-    validated.push({ ...position, sources: Array.from(
-      new Map(good.map(source => [source.url, source])).values()
-    )});
-  }
-
-  return validated;
-}
-
-async function enrichExistingSources(results) {
-  if (!GEMINI_API_KEY || geminiQuotaExhausted) return results;
-
-  const targets = results.filter(position => !Array.isArray(position.sources) || position.sources.length === 0).slice(0, 2);
-  if (!targets.length) return results;
-
-  const endpoint =
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-
-  const prompt = `
-For each of these CURRENT PhD vacancies, find 2-4 ADDITIONAL web pages that
-support or describe the exact vacancy/project. Do NOT return the application
-URL itself. Do NOT return a university homepage or generic doctoral programme.
-Use Google Search and return only URLs actually found in the search results.
-
-Return ONLY JSON in this format:
-[{"title":"position title","sources":[{"title":"source title","url":"https://..."}]}]
-
-Positions:
-${targets.map((p,i)=>`${i+1}. ${p.title} | ${p.university} | ${p.country} | deadline ${p.deadline} | application ${p.url}`).join("\n")}
-`;
-
-  try {
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        tools: [{ google_search: {} }],
-        generationConfig: { temperature: 0 }
-      })
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      if (response.status === 429) geminiQuotaExhausted = true;
-      return results;
-    }
-    const text = data?.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("") || "";
-    if (!text) return results;
-    const found = extractJSON(text);
-    const byTitle = new Map((Array.isArray(found) ? found : []).map(x => [String(x.title || "").toLowerCase(), x.sources]));
-    return results.map(position => {
-      const extra = byTitle.get(String(position.title || "").toLowerCase());
-      return extra ? { ...position, sources: extra } : position;
-    });
-  } catch (error) {
-    console.warn("Existing-source enrichment failed:", String(error?.message || error));
-    return results;
-  }
-}
-
 function loadExisting() {
   return cleanResults(loadJSON(RESULTS_FILE, []));
 }
@@ -648,153 +500,145 @@ ${RULES}
 ================ OUTPUT ================
 ${OUTPUT_RULES}
 
-Use Google Search extensively. For IELTS and language information,
+${true
+  ? `Use Google Search extensively. For IELTS and language information,
 prefer official university sources. Search the position page and, when
 needed, the university's official admissions/doctoral English-language
 requirements page. Do not use third-party summaries for IELTS claims.
 
-Return only verified current opportunities.
+Return only verified current opportunities.`
+  : `You are being tested through APMix using an OpenAI-compatible API.
+There is no Google Search tool available in this request. Do not invent
+URLs, deadlines or positions. Use only information you actually know.
+If you cannot reliably identify a current vacancy, return fewer results
+rather than fabricating one.
+
+Return only opportunities you can identify with high confidence.`}
 `;
 
-  const endpoint =
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+  {
+    const endpoint =
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
-  async function requestGemini(generationConfig) {
-    const body = {
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      tools: [{ google_search: {} }],
-      generationConfig
-    };
+    async function requestGemini(generationConfig) {
+      const body = {
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        tools: [{ google_search: {} }],
+        generationConfig
+      };
 
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        geminiQuotaExhausted = true;
-        console.warn("Gemini quota exhausted (HTTP 429). Gemini will be skipped for the rest of this run.");
+      if (!response.ok) {
+        throw new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
       }
-      throw new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
+
+      return data;
     }
 
-    return data;
-  }
+    console.log("Gemini is searching Google...");
 
-  console.log("Gemini is searching Google...");
+    let data = await requestGemini({ temperature: 0.2 });
+    let groundingResponses = [data];
 
-  let data = await requestGemini({ temperature: 0.2 });
-  let groundingResponses = [data];
-
-  let text = data?.candidates?.[0]?.content?.parts
-    ?.map(part => part.text || "")
-    .join("") || "";
-
-  if (!text) {
-    const candidate = data?.candidates?.[0];
-    console.warn(
-      "Gemini returned no text on the first attempt.",
-      JSON.stringify({
-        finishReason: candidate?.finishReason,
-        finishMessage: candidate?.finishMessage,
-        tokenCount: candidate?.tokenCount,
-        hasGrounding: Boolean(candidate?.groundingMetadata),
-        groundingChunks: candidate?.groundingMetadata?.groundingChunks?.length || 0,
-        webSearchQueries: candidate?.groundingMetadata?.webSearchQueries || [],
-        promptFeedback: data?.promptFeedback
-      })
-    );
-
-    if (geminiQuotaExhausted) {
-      throw new Error("Gemini quota exhausted; not retrying the request.");
-    }
-
-    data = await requestGemini({
-      temperature: 0.2,
-      thinkingConfig: { thinkingBudget: 0 }
-    });
-    groundingResponses.push(data);
-
-    text = data?.candidates?.[0]?.content?.parts
+    let text = data?.candidates?.[0]?.content?.parts
       ?.map(part => part.text || "")
       .join("") || "";
+
+    if (!text) {
+      const candidate = data?.candidates?.[0];
+      console.warn(
+        "Gemini returned no text on the first attempt.",
+        JSON.stringify({
+          finishReason: candidate?.finishReason,
+          finishMessage: candidate?.finishMessage,
+          tokenCount: candidate?.tokenCount,
+          hasGrounding: Boolean(candidate?.groundingMetadata),
+          groundingChunks: candidate?.groundingMetadata?.groundingChunks?.length || 0,
+          webSearchQueries: candidate?.groundingMetadata?.webSearchQueries || [],
+          promptFeedback: data?.promptFeedback
+        })
+      );
+
+      data = await requestGemini({
+        temperature: 0.2,
+        thinkingConfig: { thinkingBudget: 0 }
+      });
+      groundingResponses.push(data);
+
+      text = data?.candidates?.[0]?.content?.parts
+        ?.map(part => part.text || "")
+        .join("") || "";
+    }
+
+    if (!text) {
+      console.error(JSON.stringify(data, null, 2));
+      throw new Error("Gemini returned no usable text after retry.");
+    }
+
+    const results = extractJSON(text);
+    const sources = groundingResponses
+      .flatMap(response => response?.candidates || [])
+      .flatMap(candidate => candidate?.groundingMetadata?.groundingChunks || [])
+      .map(chunk => chunk?.web)
+      .filter(web => web?.uri)
+      .map(web => ({
+        title: String(web.title || "").trim(),
+        url: normalizeURL(web.uri)
+      }))
+      .filter(source => source.url);
+    const uniqueSources = Array.from(
+      new Map(sources.map(source => [source.url, source])).values()
+    );
+    console.log(`Gemini grounding sources captured: ${uniqueSources.length}`);
+    return { results, sources: uniqueSources };
+  }
+
+  const endpoint = "https://api.apmix.ai/v1/chat/completions";
+
+  console.log(`APMix model: ${APMIX_MODEL}`);
+  console.log("APMix test mode: no Google Search grounding is attached to this request.");
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${APMIX_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: APMIX_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.2
+    })
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(`APMix API error ${response.status}: ${JSON.stringify(data)}`);
+  }
+
+  const text = data?.choices?.[0]?.message?.content || "";
+
+  console.log("APMix request succeeded.");
+  if (data?.usage) {
+    console.log("APMix usage:", JSON.stringify(data.usage));
+  } else {
+    console.log("APMix did not return a usage object.");
   }
 
   if (!text) {
     console.error(JSON.stringify(data, null, 2));
-    throw new Error("Gemini returned no usable text after retry.");
+    throw new Error("APMix returned no usable text.");
   }
 
-  const results = extractJSON(text);
-
-  // Collect URLs that Google Search actually returned to Gemini during
-  // this request. These are factual — the model cannot fabricate them.
-  const sources = groundingResponses
-    .flatMap(response => response?.candidates || [])
-    .flatMap(candidate => candidate?.groundingMetadata?.groundingChunks || [])
-    .map(chunk => chunk?.web)
-    .filter(web => web?.uri)
-    .map(web => ({
-      title: String(web.title || "").trim(),
-      url: normalizeURL(web.uri)
-    }))
-    .filter(source => source.url);
-
-  const uniqueSources = Array.from(
-    new Map(sources.map(source => [source.url, source])).values()
-  );
-  console.log(`Gemini grounding sources captured: ${uniqueSources.length}`);
-
-  // Resolve each result's URL against the grounding sources. Only URLs
-  // that Google Search actually returned are accepted.
-  const groundingSourceSet = new Set(uniqueSources.map(s => normalizeURL(s.url)));
-
-  const resolvedResults = (Array.isArray(results) ? results : [])
-    .map(position => {
-      const modelURL = normalizeURL(position.url);
-      const modelURLIsReal = modelURL && groundingSourceSet.has(modelURL);
-
-      // 1. The model's URL matches a real grounding URL → keep it verbatim.
-      if (modelURLIsReal) {
-        return {
-          ...position,
-          url: modelURL,
-          url_source: "model_verbatim"
-        };
-      }
-
-      // 2. Otherwise, try to pull a real URL from the grounding chunks.
-      const groundingURL = resolveURLFromGrounding(position, uniqueSources);
-      if (groundingURL) {
-        return {
-          ...position,
-          url: groundingURL,
-          url_source: "grounding",
-          // Penalize slightly because we had to substitute the URL.
-          overall_score: Math.max(0, Number(position.overall_score || 0) - 5)
-        };
-      }
-
-      // 3. No grounding evidence at all → drop it. This is the main
-      //    defense against fabricated university URLs.
-      console.log(`✗ Dropping position (no grounding URL): ${position.title}`);
-      return null;
-    })
-    .filter(Boolean);
-
-  const groundedCount = resolvedResults.filter(r => r.url_source === "grounding").length;
-  const verbatimCount = resolvedResults.filter(r => r.url_source === "model_verbatim").length;
-  console.log(
-    `URL resolution: ${groundedCount} from grounding, ` +
-    `${verbatimCount} verbatim, ` +
-    `${(Array.isArray(results) ? results.length : 0) - resolvedResults.length} dropped.`
-  );
-
-  return { results: resolvedResults, sources: uniqueSources };
+  return { results: extractJSON(text), sources: [] };
 }
 
 
@@ -940,7 +784,6 @@ async function callProviders() {
     provider: "Both"
   };
 }
-
 async function sendTelegramMessage(message) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.log("Telegram secrets are not configured. Skipping Telegram.");
@@ -975,13 +818,7 @@ function formatTelegramMessage(position) {
     ? "⚠️ Language: Not English"
     : `🗣️ Language: ${position.application_language || "Unknown"}`;
 
-  const sourceLine = position.url_source === "grounding"
-    ? "🧷 (link taken from Google Search results)"
-    : position.url_source === "model_verbatim"
-      ? "🧷 (link copied verbatim by the model)"
-      : null;
-
-  const lines = [
+  return [
     `⭐ EXCEPTIONAL PhD MATCH — ${position.overall_score}/100`,
     "",
     `🎓 ${position.title}`,
@@ -1003,11 +840,7 @@ function formatTelegramMessage(position) {
     "",
     "🔗 Apply:",
     position.url
-  ];
-
-  if (sourceLine) lines.push(sourceLine);
-
-  return lines.join("\n");
+  ].join("\n");
 }
 
 async function notifyExceptionalMatches(results) {
@@ -1052,13 +885,10 @@ async function main() {
       : searchResponse.provider === "APMix"
         ? APMIX_MODEL
         : `${GEMINI_MODEL} + ${APMIX_MODEL}`,
-    sources: []
+    sources: Array.isArray(searchResponse.sources) ? searchResponse.sources : []
   });
-  console.log("Each position keeps the exact vacancy/application URL found by the search as its primary source.");
+  console.log(`Saved ${Array.isArray(searchResponse.sources) ? searchResponse.sources.length : 0} search sources.`);
   console.log(`${searchResponse.provider} returned ${newSearchResults.length} valid positions.`);
-  if (geminiQuotaExhausted) {
-    console.log("Gemini is quota-exhausted for this run; existing positions will be preserved and no further Gemini repair requests will be made.");
-  }
 
   const byURL = new Map(existingResults.map(result => [normalizeURL(result.url), result]));
 
@@ -1073,17 +903,13 @@ async function main() {
 
   const mergedResults = cleanResults(Array.from(byURL.values()));
   const verifiedResults = await verifyResults(mergedResults);
-  const resultsWithSources = verifiedResults;
-  saveJSON(RESULTS_FILE, resultsWithSources);
+  saveJSON(RESULTS_FILE, verifiedResults);
 
-  console.log(`Saved ${resultsWithSources.length} active positions. Verification is informational only; no results were removed.`);
-  if (newSearchResults.length === 0 && existingResults.length > 0) {
-    console.log("No new positions were returned; existing active positions were retained.");
-  }
-  await notifyExceptionalMatches(resultsWithSources);
+  console.log(`Saved ${verifiedResults.length} active positions. Verification is informational only; no results were removed.`);
+  await notifyExceptionalMatches(verifiedResults);
 
   console.log("\nTop matches:");
-  for (const result of resultsWithSources.slice(0, 10)) {
+  for (const result of mergedResults.slice(0, 10)) {
     console.log(
       `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country}`
     );
