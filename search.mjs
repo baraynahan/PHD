@@ -257,18 +257,18 @@ async function inspectVacancyURL(url, position) {
       : "";
     const text = body.toLowerCase();
 
-    const phdSignal = /phd|ph\\.d|doctoral|doctorate/.test(text);
+    const phdSignal = /phd|ph\.d|doctoral|doctorate/.test(text);
     const vacancySignal = /vacancy|position|fellowship|scholarship|researcher|job opening|apply/.test(text);
     const titleWords = String(position.title || "")
       .toLowerCase()
-      .split(/\\W+/)
+      .split(/\W+/)
       .filter(word => word.length >= 5)
       .slice(0, 10);
     const titleHits = titleWords.filter(word => text.includes(word)).length;
     const titleSignal = titleWords.length === 0 || titleHits >= Math.min(2, titleWords.length);
     const universitySignal = String(position.university || "")
       .toLowerCase()
-      .split(/\\W+/)
+      .split(/\W+/)
       .filter(word => word.length >= 5)
       .some(word => text.includes(word));
 
