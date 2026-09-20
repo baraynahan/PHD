@@ -20,7 +20,7 @@
     "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/msc-programmes/admission-requirements/language-requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T14:34:57.607Z",
+    "verification_checked_at": "2026-09-20T14:37:20.942Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=8403",
     "sources": [
@@ -55,7 +55,7 @@
     "ielts_source_url": "https://www.maastrichtuniversity.nl/about-um/faculties/maastricht-sustainability-institute/phd-programme/admission-requirements",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T14:34:57.608Z",
+    "verification_checked_at": "2026-09-20T14:37:20.943Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.maastrichtuniversity.nl/about-um/faculties/maastricht-sustainability-institute/phd-programme/better-not-more-business-strategies-enable-sufficient-consumption",
     "sources": [
@@ -90,7 +90,7 @@
     "ielts_source_url": "https://www.uni-due.de/international/en/study/admission/language.php",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T14:34:57.608Z",
+    "verification_checked_at": "2026-09-20T14:37:20.943Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.uni-due.de/soziooekonomie/en/phd-programme-political-economy-social-ecological-transformation.php",
     "sources": [
@@ -125,7 +125,7 @@
     "ielts_source_url": "https://www.tudelft.nl/en/education/admission/phd/phd-admission-requirements",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T14:34:57.608Z",
+    "verification_checked_at": "2026-09-20T14:37:20.943Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=123456",
     "sources": [
@@ -160,7 +160,7 @@
     "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/phd-and-engd/admission",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T14:34:57.608Z",
+    "verification_checked_at": "2026-09-20T14:37:20.943Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760",
     "sources": [
@@ -195,7 +195,7 @@
     "ielts_source_url": "",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T14:34:58.644Z",
+    "verification_checked_at": "2026-09-20T14:37:51.230Z",
     "verification_note": "Page is reachable, but the automated content check could not confirm the exact PhD vacancy.",
     "verification_url": "https://secretaria.uvigo.gal/uv/web/convocatoria/public",
     "sources": [
@@ -210,6 +210,45 @@
       {
         "title": "Official language source",
         "url": "https://postgrowth-lab.uvigo.es/team/job-offers"
+      }
+    ]
+  },
+  {
+    "title": "PhD in Universal Design and Inclusive Design Research",
+    "university": "Kolding School of Design",
+    "country": "Denmark",
+    "city": "Kolding",
+    "deadline": "2026-10-18",
+    "url": "https://applykite.com/phd-in-universal-design-and-inclusive-design-research-kolding-school-of-design-in-denmark",
+    "funding": "Fully funded (full-time PhD position with salary and employment conditions according to the relevant Danish academic staff agreement)",
+    "overall_score": 95,
+    "why_it_matches": "This position is an exceptional match for the candidate. It directly aligns with their industrial design background, design researcher role, and strong interests in social design, design justice, participatory/co-design, and social transformation. The focus on Universal Design, Inclusive Design, and 'design for all' to reflect diverse needs and promote social inclusion is highly relevant to the candidate's trajectory.",
+    "strategic_fit": "Housed within a design school, this opportunity perfectly leverages the candidate's design expertise while addressing critical social and ethical dimensions of design. The project's emphasis on human rights-based thinking and contributing to full social inclusion aligns perfectly with the candidate's ultimate goal of social and political transformation.",
+    "why_it_is_not_perfect": "",
+    "supervisor": "",
+    "classification": "",
+    "research_area": "",
+    "application_language": "English",
+    "language_source_url": "https://arts.au.dk/en/research/phd-studies/applicants/english-language-requirements",
+    "ielts_requirement": "IELTS Academic: 6.5 overall",
+    "ielts_source_url": "https://arts.au.dk/en/research/phd-studies/applicants/english-language-requirements",
+    "ai_provider": "Gemini",
+    "verification_status": "Not verified",
+    "verification_checked_at": "2026-09-20T14:37:51.231Z",
+    "verification_note": "HTTP 404",
+    "verification_url": "https://www.applykite.com/phd-in-universal-design-and-inclusive-design-research-kolding-school-of-design-in-denmark",
+    "sources": [
+      {
+        "title": "PhD vacancy / application page",
+        "url": "https://applykite.com/phd-in-universal-design-and-inclusive-design-research-kolding-school-of-design-in-denmark"
+      },
+      {
+        "title": "Verified vacancy URL",
+        "url": "https://www.applykite.com/phd-in-universal-design-and-inclusive-design-research-kolding-school-of-design-in-denmark"
+      },
+      {
+        "title": "Official language source",
+        "url": "https://arts.au.dk/en/research/phd-studies/applicants/english-language-requirements"
       }
     ]
   },
@@ -234,7 +273,7 @@
     "ielts_source_url": "https://www.leeds.ac.uk/info/130500/admissions/143/entry_requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T14:34:58.644Z",
+    "verification_checked_at": "2026-09-20T14:37:51.231Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://phd.leeds.ac.uk/project/1897-justice-implications-of-the-uk-s-net-zero-carbon-policies",
     "sources": [
@@ -269,7 +308,7 @@
     "ielts_source_url": "https://studies.ku.dk/masters/admission-requirements/english-language-requirements",
     "ai_provider": "Gemini",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-20T14:34:58.645Z",
+    "verification_checked_at": "2026-09-20T14:37:51.231Z",
     "verification_note": "HTTP 200; page identifies a PhD/doctoral vacancy",
     "verification_url": "https://employment.ku.dk/phd/?show=165039",
     "sources": [
@@ -304,7 +343,7 @@
     "ielts_source_url": "https://www.wur.nl/en/education/phd/admission-requirements/required-documents-for-phd-admission.htm",
     "ai_provider": "Gemini",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-20T14:34:58.645Z",
+    "verification_checked_at": "2026-09-20T14:37:51.231Z",
     "verification_note": "HTTP 200; page identifies a PhD/doctoral vacancy",
     "verification_url": "https://www.wur.nl/en/vacancy/phd-position-landscape-governance",
     "sources": [
@@ -343,7 +382,7 @@
     "ielts_source_url": "https://www.uib.no/en/matnat/54728/admission-requirements-phd-programme-faculty-science-and-technology",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T14:34:58.645Z",
+    "verification_checked_at": "2026-09-20T14:37:52.333Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.jobbnorge.no/en/available-jobs/job/237083/personvernombud",
     "sources": [
@@ -382,7 +421,7 @@
     "ielts_source_url": "https://www.lunduniversity.lu.se/admissions/english-language-requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T14:34:59.859Z",
+    "verification_checked_at": "2026-09-20T14:37:52.333Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.lu.se/vacancies/phd-position-in-sustainability-science-just-energy-transitions",
     "sources": [
@@ -417,7 +456,7 @@
     "ielts_source_url": "",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T14:34:59.859Z",
+    "verification_checked_at": "2026-09-20T14:37:52.334Z",
     "verification_note": "Could not fetch page and URL repair failed: The socket connection was closed unexpectedly. For more information, pass `verbose: true` in the second argument to fetch()",
     "verification_url": "https://applicationspub.unil.ch/interne/fiches-postes/phd-positions-in-public-economics-and-political-economy-idheap",
     "sources": [
@@ -448,7 +487,7 @@
     "ielts_source_url": "",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T14:34:59.859Z",
+    "verification_checked_at": "2026-09-20T14:37:52.334Z",
     "verification_note": "Could not fetch page and URL repair failed: getaddrinfo ENOTFOUND www.kulturpraxis-reparation.de",
     "verification_url": "https://www.kulturpraxis-reparation.de/en/fellowships/call-for-fellowships-2027-2028",
     "sources": [
@@ -479,7 +518,7 @@
     "ielts_source_url": "https://www.uni-flensburg.de/en/sustainable-energy-and-development/admission/admission-requirements",
     "ai_provider": "APMix",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T14:34:59.859Z",
+    "verification_checked_at": "2026-09-20T14:37:52.334Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.uni-flensburg.de/fileadmin/content/europa-universitaet/organisation/einrichtungen/wasatia-graduate-school/dokumente/Call_for_PhD_Candidates_Wasatia_Graduate_School_2026.pdf",
     "sources": [
@@ -514,7 +553,7 @@
     "ielts_source_url": "https://ethz.ch/en/studies/doctoral-degree/faq.html",
     "ai_provider": "Gemini",
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-20T14:34:59.859Z",
+    "verification_checked_at": "2026-09-20T14:37:53.926Z",
     "verification_note": "Page is reachable, but the automated content check could not confirm the exact PhD vacancy.",
     "verification_url": "https://www.refline.io/index.html",
     "sources": [
