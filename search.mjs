@@ -397,7 +397,7 @@ Return only opportunities you can identify with high confidence.`}
     async function requestGemini(generationConfig) {
       const body = {
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        tools: [{ googleSearch: {} }],
+        tools: [{ google_search: {} }],
         generationConfig
       };
 
