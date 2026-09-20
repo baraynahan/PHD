@@ -13,7 +13,7 @@ const AI_PROVIDER = String(process.env.AI_PROVIDER || "gemini").toLowerCase();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const APMIX_API_KEY = process.env.APMIX_API_KEY;
-const APMIX_MODEL = process.env.APMIX_MODEL || "deepseek/deepseek-v4.1-flash";
+const APMIX_MODEL = process.env.APMIX_MODEL || "deepseek-v4.1-flash-free";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
@@ -390,7 +390,7 @@ rather than fabricating one.
 Return only opportunities you can identify with high confidence.`}
 `;
 
-  if (AI_PROVIDER === "gemini") {
+  {
     const endpoint =
       `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
@@ -476,7 +476,7 @@ Return only opportunities you can identify with high confidence.`}
 
   const endpoint = "https://api.apmix.ai/v1/chat/completions";
 
-  console.log(`APMix is testing model: ${APMIX_MODEL}`);
+  console.log(`APMix model: ${APMIX_MODEL}`);
   console.log("APMix test mode: no Google Search grounding is attached to this request.");
 
   const response = await fetch(endpoint, {
