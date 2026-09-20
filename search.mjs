@@ -77,9 +77,16 @@ systems, service systems, product longevity, repair/reuse, sustainable
 lifestyles, social practices, circular economy and societal/ecological
 transformation.
 
-Prioritise official university career/vacancy pages and official doctoral
-position pages. The result must be a specific open PhD/doctoral vacancy,
-not a generic programme.
+Search the entire web for real current vacancies. Prefer primary/official
+sources when available, but do NOT require the URL to be on a university
+domain. Valid sources can include university vacancy systems, research
+institutes, EURAXESS, national research portals, AcademicJobs, FindAPhD,
+or other reputable vacancy platforms, provided the page identifies the
+specific vacancy and gives a usable application route.
+
+Never replace a useful vacancy URL with a guessed university homepage,
+generic doctoral programme page, or another page just because it is on an
+official university domain. The URL must correspond to the exact vacancy.
 `;
 
 const RULES = `
@@ -132,8 +139,12 @@ Return ONLY a valid JSON array. Every object MUST contain:
 }
 
 Use an empty string for source URLs when no official source was found.
-The application/vacancy URL must be the real position page. Do not invent
-information, dates, IELTS scores, language status or URLs.
+The application/vacancy URL must be a working page for the exact vacancy,
+or a trusted current listing that clearly identifies the exact vacancy and
+provides an application route. The source domain does not matter. Never
+invent or guess a URL. If a discovered URL is broken or generic, find the
+current working vacancy/application URL instead of substituting a university
+homepage or generic programme page.
 `;
 
 function normalizeURL(url) {
@@ -227,64 +238,179 @@ function cleanResults(results) {
 }
 
 
-async function verifyPosition(position) {
-  const checkedAt = new Date().toISOString();
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+async function inspectVacancyURL(url, position) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
-    const response = await fetch(position.url, {
+  try {
+    const response = await fetch(url, {
       method: "GET",
       redirect: "follow",
       signal: controller.signal,
-      headers: {
-        "User-Agent": "PhD-Radar/1.0 vacancy-check"
-      }
+      headers: { "User-Agent": "PhD-Radar/1.0 vacancy-check" }
     });
 
-    clearTimeout(timeout);
-
-    const finalURL = normalizeURL(response.url || position.url);
+    const finalURL = normalizeURL(response.url || url);
     const contentType = String(response.headers.get("content-type") || "");
     const body = contentType.includes("text/")
       ? (await response.text()).slice(0, 250000)
       : "";
     const text = body.toLowerCase();
 
-    const phdSignal = /phd|ph\.d|doctoral|doctorate/.test(text);
+    const phdSignal = /phd|ph\\.d|doctoral|doctorate/.test(text);
     const vacancySignal = /vacancy|position|fellowship|scholarship|researcher|job opening|apply/.test(text);
     const titleWords = String(position.title || "")
       .toLowerCase()
       .split(/\\W+/)
       .filter(word => word.length >= 5)
-      .slice(0, 8);
-    const titleSignal = titleWords.length === 0 ||
-      titleWords.filter(word => text.includes(word)).length >= Math.min(2, titleWords.length);
+      .slice(0, 10);
+    const titleHits = titleWords.filter(word => text.includes(word)).length;
+    const titleSignal = titleWords.length === 0 || titleHits >= Math.min(2, titleWords.length);
+    const universitySignal = String(position.university || "")
+      .toLowerCase()
+      .split(/\\W+/)
+      .filter(word => word.length >= 5)
+      .some(word => text.includes(word));
 
-    if (response.ok && phdSignal && vacancySignal && titleSignal) {
+    const verified = response.ok && phdSignal && vacancySignal &&
+      (titleSignal || universitySignal);
+
+    return {
+      verified,
+      status: response.status,
+      finalURL,
+      note: verified
+        ? `HTTP ${response.status}; page identifies a PhD/doctoral vacancy`
+        : response.ok
+          ? "Page is reachable, but the automated content check could not confirm the exact PhD vacancy."
+          : `HTTP ${response.status}`
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function findReplacementURL(position) {
+  if (!GEMINI_API_KEY) return null;
+
+  const endpoint =
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+
+  const prompt = `
+Find the CURRENT working vacancy/application URL for this exact PhD position.
+
+Title: ${position.title}
+University/organisation: ${position.university}
+Country: ${position.country}
+City: ${position.city || "unknown"}
+Deadline: ${position.deadline}
+
+Search the web extensively. The vacancy may be hosted by a university,
+EURAXESS, a research institute, a national research portal, AcademicJobs,
+FindAPhD, or another reputable vacancy platform.
+
+Return ONLY JSON:
+{"url":"...","reason":"..."}
+
+Rules:
+- The URL must be a real, currently accessible page for THIS exact vacancy.
+- Do not return a university homepage, generic PhD programme page, search
+  results page, or guessed URL.
+- Do not return an expired/archived vacancy.
+- If you cannot find a reliable working URL, return {"url":"","reason":"not found"}.
+`;
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      tools: [{ google_search: {} }],
+      generationConfig: { temperature: 0 }
+    })
+  });
+
+  if (!response.ok) return null;
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts
+    ?.map(part => part.text || "").join("") || "";
+
+  let candidate = null;
+  try {
+    candidate = extractJSON(text);
+  } catch {
+    return null;
+  }
+
+  const url = normalizeURL(candidate?.url);
+  if (!url || url === normalizeURL(position.url)) return null;
+
+  try {
+    const inspected = await inspectVacancyURL(url, position);
+    if (!inspected.verified) return null;
+    return { url: inspected.finalURL, note: inspected.note };
+  } catch {
+    return null;
+  }
+}
+
+async function verifyPosition(position) {
+  const checkedAt = new Date().toISOString();
+  try {
+    const inspected = await inspectVacancyURL(position.url, position);
+
+    if (inspected.verified) {
       return {
         verification_status: "Verified",
         verification_checked_at: checkedAt,
-        verification_note: `HTTP ${response.status}; page contains PhD/doctoral and vacancy/position signals`,
-        verification_url: finalURL
+        verification_note: inspected.note,
+        verification_url: inspected.finalURL,
+        url: inspected.finalURL
+      };
+    }
+
+    console.log(`↻ URL needs repair: ${position.title}`);
+    const replacement = await findReplacementURL(position);
+
+    if (replacement) {
+      console.log(`✓ Recovered working vacancy URL: ${replacement.url}`);
+      return {
+        verification_status: "Verified",
+        verification_checked_at: checkedAt,
+        verification_note: `Original URL was invalid or mismatched; recovered current vacancy URL. ${replacement.note}`,
+        verification_url: replacement.url,
+        url: replacement.url
       };
     }
 
     return {
       verification_status: "Not verified",
       verification_checked_at: checkedAt,
-      verification_note: response.ok
-        ? "Page is reachable, but the automated content check could not confirm that it is a PhD vacancy page."
-        : `HTTP ${response.status}`,
-      verification_url: finalURL
+      verification_note: inspected.note,
+      verification_url: inspected.finalURL
     };
   } catch (error) {
+    console.log(`↻ URL check failed; attempting repair: ${position.title}`);
+    try {
+      const replacement = await findReplacementURL(position);
+      if (replacement) {
+        console.log(`✓ Recovered working vacancy URL: ${replacement.url}`);
+        return {
+          verification_status: "Verified",
+          verification_checked_at: checkedAt,
+          verification_note: `Original URL could not be fetched; recovered current vacancy URL. ${replacement.note}`,
+          verification_url: replacement.url,
+          url: replacement.url
+        };
+      }
+    } catch {}
+
     return {
       verification_status: "Not verified",
       verification_checked_at: checkedAt,
       verification_note: error?.name === "AbortError"
-        ? "Verification timed out."
-        : `Could not fetch page: ${String(error?.message || error)}`,
+        ? "Verification timed out and URL repair failed."
+        : `Could not fetch page and URL repair failed: ${String(error?.message || error)}`,
       verification_url: normalizeURL(position.url)
     };
   }
