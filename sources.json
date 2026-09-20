@@ -1,19 +1,6 @@
 {
-  "searched_at": "2026-09-20T14:37:20.941Z",
+  "searched_at": "2026-09-20T14:49:00.107Z",
   "ai_provider": "Both",
   "model": "gemini-2.5-flash + gpt-5.6-luna-free",
-  "sources": [
-    {
-      "title": "vacancyedu.com",
-      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFspRCqTHcgxEkW5e414-agl3rXbusHmBCHNAQidRqBLUTvPYOiPs7goqGm3cOao4Gy_3GNVjPTU2K9kIPoWOwsGSFKK1dM-ucxiPQFu1F-vOc-NE2qV68msecprpVlJggXIJH_RSFi3dB27juxi37Cuxd9pOlfY5J3cqsTDWa0hNM8YOnsXNet0y6p0OpIStlyD9hflQ=="
-    },
-    {
-      "title": "aau.dk",
-      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQE6Uh1i6XPipxSzxb3fTy_MbKuzZHzJKiIe2OwFvY4-uEaHLHUo21sD6p5DEda-DTYhZYg9nr5VJEUo-SFfRJYjrUIaWQ0POd0Lgq_ZSv938iwXhgOyYMhBsUW4-SdcBY2f7RQ8EbDb_ddVlFTH0kDuqDZNo-MbHM2SoQHEUQ=="
-    },
-    {
-      "title": "aau.dk",
-      "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFmEWe-NDBtXz1GikI1ptyRHGgYOlhFi4i-3W2u7kXd5jClftgHfF7AJCury0S95IqnPf32Avyao5HS3HqecyL_coTX0EtYSGI2V28ZP6kl-aLDLLNEGcE97jtO80OIOef3XJe4tgQqECoMV1HY8YRI-Cv0f-ofpv99yYFveSpr-0J6byToB48xrtR3A-7nnQ0d6E88E9LQizLtBWhsnr64TOAf-QEz6gra7i2o-nyLHHTETui1wZ0tN-Gf6A=="
-    }
-  ]
+  "sources": []
 }
