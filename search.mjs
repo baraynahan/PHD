@@ -24,6 +24,18 @@ const APMIX_USE_WEB_SEARCH = String(process.env.APMIX_USE_WEB_SEARCH || "false")
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
+// If Gemini fails (quota, outage, bad response) and this is true, fall back
+// to ChatGPT via apmix for that run instead of failing the whole radar.
+// Defaults to on whenever an apmix key is configured; set
+// AI_FALLBACK_TO_APMIX=false to disable and fail hard instead.
+const AI_FALLBACK_TO_APMIX = process.env.AI_FALLBACK_TO_APMIX
+  ? String(process.env.AI_FALLBACK_TO_APMIX).toLowerCase() === "true"
+  : Boolean(APMIX_API_KEY);
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 if (AI_PROVIDER === "gemini" && !GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY is not configured.");
 }
@@ -182,8 +194,7 @@ function isFutureDeadline(deadline) {
 
 function cleanResults(results) {
   if (!Array.isArray(results)) return [];
-  const seen = new Set();
-  const cleaned = [];
+  const byURL = new Map();
 
   for (const item of results) {
     if (!item || typeof item !== "object") continue;
@@ -199,14 +210,12 @@ function cleanResults(results) {
     if (!title || !university || !country || !url) continue;
     if (!isFutureDeadline(deadline)) continue;
     if (!Number.isFinite(score) || score < 60) continue;
-    if (seen.has(url)) continue;
-    seen.add(url);
 
     const language = ["English", "Not English", "Unknown"].includes(
       String(item.application_language || "")
     ) ? String(item.application_language) : "Unknown";
 
-    cleaned.push({
+    const candidate = {
       title,
       university,
       country,
@@ -419,7 +428,7 @@ async function callGemini(prompt) {
   const endpoint =
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
-  async function requestGemini(generationConfig) {
+  async function requestGemini(generationConfig, isRetry = false) {
     const body = {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       tools: [{ googleSearch: {} }],
@@ -431,8 +440,21 @@ async function callGemini(prompt) {
       body: JSON.stringify(body)
     });
     const data = await response.json();
+
     if (!response.ok) {
-      throw new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
+      if (response.status === 429 && !isRetry) {
+        const retryInfo = data?.error?.details?.find(
+          d => d["@type"] === "type.googleapis.com/google.rpc.RetryInfo"
+        );
+        const match = String(retryInfo?.retryDelay || "").match(/^(\d+(?:\.\d+)?)s?$/);
+        const waitMs = Math.min(match ? Number(match[1]) * 1000 : 15000, 60000) + 1000;
+        console.warn(`Gemini 429 (rate/quota limited). Waiting ${Math.round(waitMs / 1000)}s and retrying once...`);
+        await sleep(waitMs);
+        return requestGemini(generationConfig, true);
+      }
+      const err = new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
+      err.status = response.status;
+      throw err;
     }
     return data;
   }
@@ -593,7 +615,33 @@ async function callAI() {
 
   const prompt = buildPrompt();
 
-  return AI_PROVIDER === "gemini" ? callGemini(prompt) : callApmix(prompt);
+  if (AI_PROVIDER !== "gemini") {
+    const result = await callApmix(prompt);
+    return { ...result, providerUsed: "apmix", modelUsed: APMIX_MODEL };
+  }
+
+  try {
+    const result = await callGemini(prompt);
+    return { ...result, providerUsed: "gemini", modelUsed: GEMINI_MODEL };
+  } catch (error) {
+    if (!AI_FALLBACK_TO_APMIX || !APMIX_API_KEY) {
+      throw error;
+    }
+    console.warn(`Gemini failed (${error.message}). Falling back to ChatGPT via apmix for this run.`);
+    // Rebuild the prompt with apmix-specific instructions instead of the
+    // Gemini-specific ones (see buildPrompt's AI_PROVIDER branch), by
+    // temporarily reusing callApmix directly with an apmix-worded prompt.
+    const apmixPrompt = buildPrompt().replace(
+      /Use Google Search extensively[\s\S]*?Return only verified current opportunities\./,
+      `You are being queried through apmix.ai as ChatGPT (${APMIX_MODEL}) because Gemini was unavailable for this run.
+${APMIX_USE_WEB_SEARCH
+  ? `A web-search tool may be available to you in this request — use it whenever you can to find and confirm real, currently open vacancy pages.`
+  : `There is no web-search tool attached to this request.`}
+Do not invent URLs, deadlines or positions. Use only information you actually know with high confidence, and prefer well-known, large, well-documented funding programmes where you are more likely to be right. If you cannot reliably identify a current vacancy and its exact URL, return fewer results rather than fabricating one.`
+    );
+    const result = await callApmix(apmixPrompt);
+    return { ...result, providerUsed: "apmix", modelUsed: APMIX_MODEL, usedAsFallback: true };
+  }
 }
 
 async function sendTelegramMessage(message) {
@@ -686,20 +734,25 @@ async function main() {
 
   console.log("Running new search...");
   const searchResponse = await callAI();
+  const providerLabel = searchResponse.providerUsed === "gemini" ? "Gemini" : "APMix";
+  if (searchResponse.usedAsFallback) {
+    console.warn("NOTE: this run used the ChatGPT/apmix fallback because Gemini failed.");
+  }
 
   const newSearchResults = cleanResults(searchResponse.results).map(result => ({
     ...result,
-    ai_provider: AI_PROVIDER === "gemini" ? "Gemini" : "APMix"
+    ai_provider: providerLabel
   }));
 
   saveJSON(SOURCES_FILE, {
     searched_at: new Date().toISOString(),
-    ai_provider: AI_PROVIDER === "gemini" ? "Gemini" : "APMix",
-    model: AI_PROVIDER === "gemini" ? GEMINI_MODEL : APMIX_MODEL,
+    ai_provider: providerLabel,
+    model: searchResponse.modelUsed,
+    used_as_fallback: Boolean(searchResponse.usedAsFallback),
     sources: Array.isArray(searchResponse.sources) ? searchResponse.sources : []
   });
   console.log(`Saved ${Array.isArray(searchResponse.sources) ? searchResponse.sources.length : 0} search sources.`);
-  console.log(`${AI_PROVIDER} returned ${newSearchResults.length} valid positions.`);
+  console.log(`${providerLabel} returned ${newSearchResults.length} valid positions.`);
 
   const byURL = new Map(existingResults.map(result => [normalizeURL(result.url), result]));
   for (const result of newSearchResults) {
