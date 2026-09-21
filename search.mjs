@@ -180,14 +180,6 @@ function normalizeURL(url) {
   }
 }
 
-function hostOf(url) {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
-}
-
 function isFutureDeadline(deadline) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(deadline || ""))) return false;
   const date = new Date(`${deadline}T23:59:59`);
@@ -402,14 +394,9 @@ function loadExisting() {
   return cleanResults(loadJSON(RESULTS_FILE, []));
 }
 
-function buildPrompt(provider) {
-  const providerInstructions = provider === "gemini"
-    ? `Use Google Search extensively. For IELTS and language information,
-prefer official university sources. Search the position page and, when
-needed, the university's official admissions/doctoral English-language
-requirements page. Do not use third-party summaries for IELTS claims.
-Return only verified current opportunities.`
-    : `You are being queried through apmix.ai as ChatGPT (${APMIX_MODEL}).
+// Prompt for ChatGPT (via apmix). Gemini builds its own prompts, see below.
+function buildChatGPTPrompt() {
+  const chatgptInstructions = `You are being queried through apmix.ai as ChatGPT (${APMIX_MODEL}).
 ${APMIX_USE_WEB_SEARCH
     ? `A web-search tool may be available to you in this request — use it
 whenever you can to find and confirm real, currently open vacancy pages.`
@@ -443,120 +430,392 @@ ${URL_INTEGRITY_RULE}
 ================ OUTPUT ================
 ${OUTPUT_RULES}
 
-${providerInstructions}
+${chatgptInstructions}
 
-Today's date is ${new Date().toISOString().slice(0, 10)}. Only return positions whose deadline is after this date.
+Today's date is ${todayISO()}. Only return positions whose deadline is after this date.
 `;
 }
 
-async function callGemini(prompt) {
+// ---------------------------------------------------------------------------
+// Gemini pipeline: the model never writes a URL.
+//   1. DISCOVER  - Gemini + Google Search finds pages. We keep only the search
+//                  metadata (the pages it actually found), not the URLs it types.
+//   2. FETCH     - this script opens each of those pages itself and reads the text.
+//   3. EXTRACT   - Gemini reads the page text and fills in deadline/funding/score.
+//                  The URL saved is the address this script fetched.
+// ---------------------------------------------------------------------------
+
+const GEMINI_DISCOVERY_ANGLES = [
+  "degrowth, post-growth, post-consumerism, political economy, commons, sufficiency, and social and ecological transformation",
+  "sustainable consumption, product longevity, repair and reuse, circular economy, sustainable lifestyles, social practices and consumption systems",
+  "alternative ownership and access, sharing, service systems, transition design, social design, design justice, participatory and co-design, critical design",
+  "governance, public policy, transition studies, sustainability science, STS, sociology or political science PhDs about consumption and sustainability"
+];
+const GEMINI_MAX_PAGES = Number(process.env.GEMINI_MAX_PAGES) || 30;
+const PAGE_TEXT_CHARS = 9000;
+const EXTRACTION_BATCH_SIZE = 4;
+const PAGE_USER_AGENT = "Mozilla/5.0 (compatible; PhD-Radar/1.0; +https://github.com/baraynahan/PHD)";
+
+// Words that suggest a doctoral vacancy, including common non-English ones
+// (language is never a reason to drop a position).
+const DOCTORAL_SIGNAL = /phd|ph\.d|doctoral|doctorate|doctorant|doctorat|doctorado|dottorato|promotie|promovend|promotion|doktorand|doktor|avhandling|forskarutbildning/i;
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+async function geminiRequest({ prompt, tools, generationConfig }, isRetry = false) {
   const endpoint =
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+  const body = {
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    generationConfig
+  };
+  if (tools) body.tools = tools;
 
-  async function requestGemini(generationConfig, isRetry = false) {
-    const body = {
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      tools: [{ googleSearch: {} }],
-      generationConfig
-    };
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY
-      },
-      body: JSON.stringify(body)
-    });
-    const data = await response.json();
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": GEMINI_API_KEY
+    },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json().catch(() => ({}));
 
-    if (!response.ok) {
-      if (response.status === 429 && !isRetry) {
-        const retryInfo = data?.error?.details?.find(
-          d => d["@type"] === "type.googleapis.com/google.rpc.RetryInfo"
-        );
-        const match = String(retryInfo?.retryDelay || "").match(/^(\d+(?:\.\d+)?)s?$/);
-        const waitMs = Math.min(match ? Number(match[1]) * 1000 : 15000, 60000) + 1000;
-        console.warn(`Gemini 429 (rate/quota limited). Waiting ${Math.round(waitMs / 1000)}s and retrying once...`);
-        await sleep(waitMs);
-        return requestGemini(generationConfig, true);
-      }
-      const err = new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
-      err.status = response.status;
-      throw err;
+  if (!response.ok) {
+    if (response.status === 429 && !isRetry) {
+      const retryInfo = data?.error?.details?.find(
+        d => d["@type"] === "type.googleapis.com/google.rpc.RetryInfo"
+      );
+      const match = String(retryInfo?.retryDelay || "").match(/^(\d+(?:\.\d+)?)s?$/);
+      const waitMs = Math.min(match ? Number(match[1]) * 1000 : 15000, 60000) + 1000;
+      console.warn(`[Gemini] 429 (rate/quota limited). Waiting ${Math.round(waitMs / 1000)}s and retrying once...`);
+      await sleep(waitMs);
+      return geminiRequest({ prompt, tools, generationConfig }, true);
     }
-    return data;
+    const err = new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
+    err.status = response.status;
+    throw err;
   }
+  return data;
+}
 
-  console.log("Gemini is searching Google...");
-  let data = await requestGemini({ temperature: 0.2 });
-  let groundingResponses = [data];
-  let text = data?.candidates?.[0]?.content?.parts
-    ?.map(part => part.text || "")
-    .join("") || "";
+function geminiText(data) {
+  return (data?.candidates || [])
+    .flatMap(candidate => candidate?.content?.parts || [])
+    .map(part => part.text || "")
+    .join("");
+}
 
-  if (!text) {
-    const candidate = data?.candidates?.[0];
-    console.warn(
-      "Gemini returned no text on the first attempt.",
-      JSON.stringify({
-        finishReason: candidate?.finishReason,
-        finishMessage: candidate?.finishMessage,
-        tokenCount: candidate?.tokenCount,
-        hasGrounding: Boolean(candidate?.groundingMetadata),
-        groundingChunks: candidate?.groundingMetadata?.groundingChunks?.length || 0,
-        webSearchQueries: candidate?.groundingMetadata?.webSearchQueries || [],
-        promptFeedback: data?.promptFeedback
-      })
-    );
-    data = await requestGemini({
-      temperature: 0.2,
-      thinkingConfig: { thinkingBudget: 0 }
-    });
-    groundingResponses.push(data);
-    text = data?.candidates?.[0]?.content?.parts
-      ?.map(part => part.text || "")
-      .join("") || "";
-  }
-
-  if (!text) {
-    console.error(JSON.stringify(data, null, 2));
-    throw new Error("Gemini returned no usable text after retry.");
-  }
-
-  const results = extractJSON(text);
-
-  const sources = groundingResponses
-    .flatMap(response => response?.candidates || [])
+// The pages Google Search actually found. Each uri is normally a
+// vertexaisearch.cloud.google.com redirect that leads to the real page.
+function geminiSearchHits(data) {
+  return (data?.candidates || [])
     .flatMap(candidate => candidate?.groundingMetadata?.groundingChunks || [])
     .map(chunk => chunk?.web)
     .filter(web => web?.uri)
-    .map(web => ({
-      title: String(web.title || "").trim(),
-      url: normalizeURL(web.uri)
-    }))
-    .filter(source => source.url);
+    .map(web => ({ title: String(web.title || "").trim(), uri: String(web.uri).trim() }));
+}
 
-  const uniqueSources = Array.from(
-    new Map(sources.map(source => [source.url, source])).values()
-  );
-  console.log(`Gemini grounding sources captured: ${uniqueSources.length}`);
+function buildDiscoveryPrompt(angle) {
+  return `
+You are an expert PhD opportunity researcher. Today's date is ${todayISO()}.
 
-  // NEW: label (do not remove) results whose URL doesn't trace back to an
-  // actual grounding source. Exact match, or same domain as a real hit,
-  // both count as grounded.
-  const sourceURLs = new Set(uniqueSources.map(s => s.url));
-  const sourceHosts = new Set(uniqueSources.map(s => hostOf(s.url)).filter(Boolean));
+Use Google Search to find currently open, fully funded PhD positions for this
+candidate, focusing on: ${angle}.
 
-  const labeledResults = (Array.isArray(results) ? results : []).map(r => {
-    const url = normalizeURL(r.url);
-    const grounded = sourceURLs.has(url) || sourceHosts.has(hostOf(url));
-    return { ...r, url_grounded: grounded, ai_model: GEMINI_MODEL };
-  });
+${CANDIDATE_PROFILE}
+${GEOGRAPHY}
 
-  const groundedCount = labeledResults.filter(r => r.url_grounded).length;
-  console.log(`URLs matching a real grounding source: ${groundedCount}/${labeledResults.length} (informational only, nothing removed)`);
+Search for individual vacancy pages (official university career/vacancy/doctoral
+pages first; EURAXESS, jobs.ac.uk, AcademicTransfer and similar boards are also
+fine), not general listings or programme overviews. Run several different
+searches with different keywords and countries.
 
-  return { results: labeledResults, sources: uniqueSources };
+Reply with a short bullet list of the specific vacancies you found (title and
+university). Do not write JSON.
+`;
+}
+
+async function geminiDiscover() {
+  const hits = [];
+  let succeeded = 0;
+  let lastError = null;
+
+  // Sequential on purpose: keeps us inside free-tier requests-per-minute limits.
+  for (const [index, angle] of GEMINI_DISCOVERY_ANGLES.entries()) {
+    console.log(`[Gemini] search ${index + 1}/${GEMINI_DISCOVERY_ANGLES.length}: ${angle.slice(0, 55)}...`);
+    try {
+      const request = { prompt: buildDiscoveryPrompt(angle), tools: [{ googleSearch: {} }] };
+      let data = await geminiRequest({ ...request, generationConfig: { temperature: 0.2 } });
+      let found = geminiSearchHits(data);
+
+      if (!found.length && !geminiText(data)) {
+        // Empty response (seen before with thinking models): retry once without thinking.
+        console.warn("[Gemini] empty response, retrying once without thinking...");
+        data = await geminiRequest({
+          ...request,
+          generationConfig: { temperature: 0.2, thinkingConfig: { thinkingBudget: 0 } }
+        });
+        found = geminiSearchHits(data);
+      }
+      succeeded++;
+      hits.push(...found);
+      console.log(`[Gemini]   -> ${found.length} search hits`);
+    } catch (error) {
+      lastError = error;
+      console.warn(`[Gemini] search ${index + 1} failed: ${safeErrorMessage(error)}`);
+    }
+  }
+
+  if (!succeeded) throw lastError || new Error("All Gemini searches failed.");
+  return Array.from(new Map(hits.map(hit => [hit.uri, hit])).values());
+}
+
+function htmlToText(html) {
+  return String(html || "")
+    .replace(/<(script|style|noscript|svg|template)[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<\/?(br|p|div|li|ul|ol|h[1-6]|tr|td|th|section|article|header|footer)\b[^>]*>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&(euro|pound|ndash|mdash|lsquo|rsquo|ldquo|rdquo|hellip|copy);/gi, (_, name) => (
+      { euro: "€", pound: "£", ndash: "–", mdash: "—", lsquo: "'", rsquo: "'", ldquo: '"', rdquo: '"', hellip: "…", copy: "©" }
+    )[name.toLowerCase()])
+    .replace(/&#(\d+);/g, (_, code) => {
+      try { return String.fromCodePoint(Number(code)); } catch { return " "; }
+    })
+    .replace(/[ \t\f\v\r]+/g, " ")
+    .replace(/ ?\n ?/g, "\n")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
+}
+
+function pageTitleOf(html) {
+  const match = String(html || "").match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return match ? htmlToText(match[1]).slice(0, 200) : "";
+}
+
+// Opens a page like a browser would and returns where it really lives plus its text.
+async function fetchPage(url) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller.signal,
+      headers: { "User-Agent": PAGE_USER_AGENT, "Accept": "text/html,application/xhtml+xml" }
+    });
+    const finalURL = normalizeURL(response.url || url);
+    if (!response.ok) return { ok: false, reason: `HTTP ${response.status}`, url: finalURL };
+
+    const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+    if (!/text\/html|application\/xhtml|text\/plain/.test(contentType)) {
+      return { ok: false, reason: `unsupported content type (${contentType || "unknown"})`, url: finalURL };
+    }
+    const html = (await response.text()).slice(0, 400000);
+    return { ok: true, url: finalURL, title: pageTitleOf(html), text: htmlToText(html) };
+  } catch (error) {
+    return {
+      ok: false,
+      reason: error?.name === "AbortError" ? "timed out" : `fetch failed (${String(error?.message || error).slice(0, 80)})`,
+      url: normalizeURL(url)
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// Turns the search hits into real, readable pages (deduplicated by final URL).
+async function fetchHitPages(hits) {
+  const pages = new Map();
+  const skipped = { unreachable: 0, notReadable: 0, notDoctoral: 0, duplicate: 0 };
+
+  for (let i = 0; i < hits.length; i += 5) {
+    const batch = hits.slice(i, i + 5);
+    const fetched = await Promise.all(batch.map(hit => fetchPage(hit.uri)));
+    fetched.forEach((page, j) => {
+      if (!page.ok) {
+        skipped.unreachable++;
+        console.log(`[Gemini]   skip (${page.reason}): ${batch[j].title || page.url}`);
+      } else if (page.text.length < 400) {
+        skipped.notReadable++;
+        console.log(`[Gemini]   skip (almost no text, probably needs JavaScript): ${page.url}`);
+      } else if (!DOCTORAL_SIGNAL.test(page.text) && !DOCTORAL_SIGNAL.test(page.title)) {
+        skipped.notDoctoral++;
+        console.log(`[Gemini]   skip (no PhD/doctoral wording): ${page.url}`);
+      } else if (pages.has(page.url)) {
+        skipped.duplicate++;
+      } else {
+        pages.set(page.url, page);
+      }
+    });
+  }
+  return { pages: Array.from(pages.values()), skipped };
+}
+
+function buildExtractionPrompt(batch) {
+  const pageBlocks = batch.map(page => `=== PAGE ${page.id} ===
+TITLE: ${page.title}
+TEXT:
+${page.text.slice(0, PAGE_TEXT_CHARS)}
+=== END PAGE ${page.id} ===`).join("\n\n");
+
+  return `
+You are an expert PhD opportunity researcher. Today's date is ${todayISO()}.
+
+Below are web pages that this program has ALREADY fetched. Read each page and
+decide whether it describes ONE specific, currently open PhD/doctoral position
+that suits the candidate.
+
+================ CANDIDATE ================
+${CANDIDATE_PROFILE}
+
+================ GEOGRAPHY ================
+${GEOGRAPHY}
+
+================ RULES ================
+- Use ONLY facts written on the page. Never guess or fill gaps from memory.
+- "qualifies" is true only if the page is one specific PhD/doctoral vacancy
+  (not a listing, news item, programme overview, blog post or a closed call),
+  the funding is clearly stated as covering the PhD (salary, stipend or
+  scholarship), and it is not in the United States.
+- "deadline" must be a deadline stated on the page, written as YYYY-MM-DD.
+  Leave it "" if none is stated or it has already passed.
+- Score 0-100 from research-topic fit, degrowth/political/social fit,
+  sustainability, design compatibility, consumption/ownership/systems, methods,
+  candidate background and funding quality.
+- "application_language" is the language the vacancy/application is written in:
+  "English", "Not English" or "Unknown". Never reject a position because of its
+  language.
+- Only fill "ielts_requirement" when this page itself states an English-language
+  or IELTS requirement, and set "ielts_stated_on_page" to true. Otherwise leave
+  it "" and use false. Never guess a score.
+- Do NOT output any URL. The program already knows each page's address.
+
+================ OUTPUT ================
+Return ONLY a JSON array with one object per page, in this shape:
+{
+  "page_id": 1,
+  "qualifies": true,
+  "title": "...",
+  "university": "...",
+  "country": "...",
+  "city": "...",
+  "deadline": "YYYY-MM-DD",
+  "funding": "...",
+  "overall_score": 0,
+  "why_it_matches": "...",
+  "strategic_fit": "...",
+  "why_it_is_not_perfect": "...",
+  "supervisor": "...",
+  "application_language": "English | Not English | Unknown",
+  "ielts_requirement": "",
+  "ielts_stated_on_page": false
+}
+For a page that does not qualify, return only {"page_id": N, "qualifies": false}.
+
+${pageBlocks}
+`;
+}
+
+async function extractBatch(batch) {
+  const prompt = buildExtractionPrompt(batch);
+  const config = { temperature: 0.1, responseMimeType: "application/json" };
+
+  let data = await geminiRequest({ prompt, generationConfig: config });
+  let text = geminiText(data);
+  if (!text) {
+    console.warn("[Gemini] empty extraction response, retrying once without thinking...");
+    data = await geminiRequest({
+      prompt,
+      generationConfig: { ...config, thinkingConfig: { thinkingBudget: 0 } }
+    });
+    text = geminiText(data);
+  }
+  if (!text) throw new Error("Gemini returned no text for the extraction step.");
+
+  let parsed = extractJSON(text);
+  if (!Array.isArray(parsed)) {
+    parsed = Array.isArray(parsed?.pages) ? parsed.pages
+      : Array.isArray(parsed?.results) ? parsed.results : [];
+  }
+
+  const results = [];
+  for (const item of parsed) {
+    const page = batch.find(p => p.id === Number(item?.page_id));
+    if (!page || item.qualifies !== true) continue;
+
+    const ieltsStated = item.ielts_stated_on_page === true && String(item.ielts_requirement || "").trim();
+    // Built field by field, so nothing the model typed (including any "url")
+    // can reach the results. The URL is the page this program fetched.
+    results.push({
+      title: item.title,
+      university: item.university,
+      country: item.country,
+      city: item.city,
+      deadline: item.deadline,
+      funding: item.funding,
+      overall_score: item.overall_score,
+      why_it_matches: item.why_it_matches,
+      strategic_fit: item.strategic_fit,
+      why_it_is_not_perfect: item.why_it_is_not_perfect,
+      supervisor: item.supervisor,
+      application_language: item.application_language,
+      url: page.url,
+      language_source_url: page.url,
+      ielts_requirement: ieltsStated ? String(item.ielts_requirement).trim() : "",
+      ielts_source_url: ieltsStated ? page.url : "",
+      url_grounded: true,
+      ai_model: GEMINI_MODEL
+    });
+  }
+  return results;
+}
+
+async function callGemini() {
+  const hits = await geminiDiscover();
+  console.log(`[Gemini] ${hits.length} distinct search hits. Opening the pages...`);
+
+  const { pages: readable, skipped } = await fetchHitPages(hits);
+  const pages = readable.slice(0, GEMINI_MAX_PAGES).map((page, index) => ({ ...page, id: index + 1 }));
+  console.log(`[Gemini] ${pages.length} readable PhD-related pages (of ${hits.length} hits); reading them now...`);
+
+  const results = [];
+  let failedBatches = 0;
+  let batches = 0;
+  for (let i = 0; i < pages.length; i += EXTRACTION_BATCH_SIZE) {
+    batches++;
+    const batch = pages.slice(i, i + EXTRACTION_BATCH_SIZE);
+    try {
+      results.push(...await extractBatch(batch));
+    } catch (error) {
+      failedBatches++;
+      console.warn(`[Gemini] could not read pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
+    }
+  }
+  if (batches > 0 && failedBatches === batches) {
+    throw new Error("Gemini found pages but could not read any of them.");
+  }
+
+  const detail = `${hits.length} search hits, ${pages.length} readable pages, ` +
+    `${results.length} qualified` +
+    (failedBatches ? `, ${failedBatches}/${batches} read batches failed` : "");
+  console.log(`[Gemini] ${detail}`);
+
+  return {
+    results,
+    // The real pages Gemini's search led to (not the Google redirect links).
+    sources: pages.map(page => ({ title: page.title || page.url, url: page.url })),
+    detail
+  };
 }
 
 async function callApmix(prompt) {
@@ -644,7 +903,7 @@ const PROVIDERS = [
     label: LABEL_CHATGPT,
     model: APMIX_MODEL,
     apiKey: APMIX_API_KEY,
-    call: callApmix
+    call: () => callApmix(buildChatGPTPrompt())
   }
 ];
 
@@ -658,6 +917,7 @@ async function runProvider(provider) {
     status: "ok",
     error: "",
     returned: 0,
+    detail: "",
     results: [],
     sources: []
   };
@@ -671,10 +931,11 @@ async function runProvider(provider) {
 
   console.log(`[${provider.label}] starting (model: ${provider.model})`);
   try {
-    const response = await provider.call(buildPrompt(provider.id));
+    const response = await provider.call();
     const rawResults = Array.isArray(response.results) ? response.results : [];
     run.returned = rawResults.length;
     run.sources = Array.isArray(response.sources) ? response.sources : [];
+    run.detail = String(response.detail || "");
     run.results = cleanResults(
       rawResults.map(result => ({ ...result, ai_provider: provider.label }))
     );
@@ -814,7 +1075,8 @@ async function main() {
       status: run.status,
       error: run.error,
       returned: run.returned,
-      valid: run.results.length
+      valid: run.results.length,
+      detail: run.detail
     })),
     sources: geminiSources
   });
