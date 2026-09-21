@@ -180,10 +180,74 @@ function normalizeURL(url) {
   }
 }
 
+const MONTH_NUMBER = {
+  jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4,
+  may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8,
+  sep: 9, sept: 9, september: 9, oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12
+};
+
+function isRealCalendarDate(year, month, day) {
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+}
+
+function toISODate(year, month, day) {
+  return isRealCalendarDate(year, month, day)
+    ? `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+    : "";
+}
+
+// We ask the model for YYYY-MM-DD, but real vacancy pages state dates in all
+// sorts of formats, and a model won't always convert one perfectly. This is a
+// safety net: it recognizes the ISO format we asked for, plus the handful of
+// formats vacancy pages actually use, and normalizes them all to ISO. Text
+// that isn't a real calendar date in a recognizable shape returns "" (the
+// same as if no deadline were given at all).
+function normalizeDeadline(raw) {
+  const text = String(raw || "").trim();
+  if (!text) return "";
+
+  let m = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) return toISODate(+m[1], +m[2], +m[3]);
+
+  m = text.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/); // 31.01.2027 / 31/01/2027 (day-month-year, the common EU order)
+  if (m) return toISODate(+m[3], +m[2], +m[1]);
+
+  m = text.match(/^(\d{4})[./](\d{1,2})[./](\d{1,2})$/); // 2027/01/31
+  if (m) return toISODate(+m[1], +m[2], +m[3]);
+
+  m = text.match(/^(\d{1,2})(?:st|nd|rd|th)?[\s-]+([A-Za-z]+)\.?[\s,-]+(\d{4})$/); // 31 January 2027 / 31 Jan 2027
+  if (m && MONTH_NUMBER[m[2].toLowerCase()]) return toISODate(+m[3], MONTH_NUMBER[m[2].toLowerCase()], +m[1]);
+
+  m = text.match(/^([A-Za-z]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})$/); // January 31, 2027 / Jan 31 2027
+  if (m && MONTH_NUMBER[m[1].toLowerCase()]) return toISODate(+m[3], MONTH_NUMBER[m[1].toLowerCase()], +m[2]);
+
+  return "";
+}
+
 function isFutureDeadline(deadline) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(deadline || ""))) return false;
   const date = new Date(`${deadline}T23:59:59`);
   return Number.isFinite(date.getTime()) && date.getTime() > Date.now();
+}
+
+// Same checks cleanResults applies, but reports WHY each raw item was
+// dropped instead of just dropping it. Used only for the one-line diagnostic
+// printed when a provider returns items but none survive cleaning, so a
+// silent "0 passed validation" always comes with a reason on the next run.
+function explainRejection(item) {
+  if (!item || typeof item !== "object") return "not an object";
+  if (!String(item.title || "").trim()) return "missing title";
+  if (!String(item.university || "").trim()) return "missing university";
+  if (!String(item.country || "").trim()) return "missing country";
+  if (!normalizeURL(item.url)) return "missing/invalid url";
+  const deadline = normalizeDeadline(item.deadline);
+  if (!deadline) return `deadline not a recognizable date (got: ${JSON.stringify(item.deadline ?? "")})`;
+  if (!isFutureDeadline(deadline)) return `deadline already passed (${deadline})`;
+  const score = Number(item.overall_score);
+  if (!Number.isFinite(score)) return `overall_score is not a number (got: ${JSON.stringify(item.overall_score ?? "")})`;
+  if (score < 60) return `overall_score ${score} is below 60`;
+  return "passes";
 }
 
 // Maps any provider spelling (including the old "APMix" label already stored
@@ -208,7 +272,7 @@ function cleanResults(results) {
     const university = String(item.university || "").trim();
     const country = String(item.country || "").trim();
     const city = String(item.city || "").trim();
-    const deadline = String(item.deadline || "").trim();
+    const deadline = normalizeDeadline(item.deadline);
     const url = normalizeURL(item.url);
     const score = Number(item.overall_score);
 
@@ -455,6 +519,9 @@ const GEMINI_MAX_PAGES = Number(process.env.GEMINI_MAX_PAGES) || 30;
 const PAGE_TEXT_CHARS = 9000;
 const EXTRACTION_BATCH_SIZE = 4;
 const PAGE_USER_AGENT = "Mozilla/5.0 (compatible; PhD-Radar/1.0; +https://github.com/baraynahan/PHD)";
+// Gap between successive Gemini calls (discovery and extraction alike), so a
+// run of ~12+ sequential calls doesn't burst past a per-minute rate limit.
+const GEMINI_CALL_GAP_MS = Number(process.env.GEMINI_CALL_GAP_MS) || 4000;
 
 // Words that suggest a doctoral vacancy, including common non-English ones
 // (language is never a reason to drop a position).
@@ -545,6 +612,7 @@ async function geminiDiscover() {
 
   // Sequential on purpose: keeps us inside free-tier requests-per-minute limits.
   for (const [index, angle] of GEMINI_DISCOVERY_ANGLES.entries()) {
+    if (index > 0) await sleep(GEMINI_CALL_GAP_MS);
     console.log(`[Gemini] search ${index + 1}/${GEMINI_DISCOVERY_ANGLES.length}: ${angle.slice(0, 55)}...`);
     try {
       const request = { prompt: buildDiscoveryPrompt(angle), tools: [{ googleSearch: {} }] };
@@ -792,6 +860,7 @@ async function callGemini() {
   let failedBatches = 0;
   let batches = 0;
   for (let i = 0; i < pages.length; i += EXTRACTION_BATCH_SIZE) {
+    if (i > 0) await sleep(GEMINI_CALL_GAP_MS);
     batches++;
     const batch = pages.slice(i, i + EXTRACTION_BATCH_SIZE);
     try {
@@ -877,7 +946,20 @@ async function callApmix(prompt) {
     throw new Error("APMix returned no usable text.");
   }
 
-  const parsed = extractJSON(text);
+  // Parse failure and "parsed to an empty/non-array" both mean the same
+  // thing here: no usable positions. Neither is treated as a run failure —
+  // without web search, ChatGPT often can't name a real, currently open
+  // vacancy with a real URL and correctly returns nothing rather than
+  // inventing one, sometimes as "[]" and sometimes as a plain-text refusal.
+  let parsed;
+  try {
+    parsed = extractJSON(text);
+  } catch {
+    parsed = [];
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0) {
+    console.log(`APMix returned no usable positions. Raw reply (first 300 chars): ${JSON.stringify(text.slice(0, 300))}`);
+  }
   const labeledResults = (Array.isArray(parsed) ? parsed : []).map(r => ({
     ...r,
     // APMix has no grounding-chunk list to check against, so we leave this
@@ -940,6 +1022,13 @@ async function runProvider(provider) {
       rawResults.map(result => ({ ...result, ai_provider: provider.label }))
     );
     console.log(`[${provider.label}] returned ${run.returned} results, ${run.results.length} passed validation.`);
+    if (run.returned > 0 && run.results.length === 0) {
+      const reasons = rawResults.map(explainRejection);
+      const tally = new Map();
+      for (const reason of reasons) tally.set(reason, (tally.get(reason) || 0) + 1);
+      console.log(`[${provider.label}] why none passed: ` +
+        Array.from(tally, ([reason, count]) => `${count}x ${reason}`).join("; "));
+    }
   } catch (error) {
     run.status = "failed";
     run.error = safeErrorMessage(error);
