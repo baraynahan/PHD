@@ -22,7 +22,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T00:55:12.234Z",
+    "verification_checked_at": "2026-09-21T01:00:00.664Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=8403"
   },
@@ -49,7 +49,7 @@
     "ai_model": "gemini-2.5-flash",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T00:55:12.234Z",
+    "verification_checked_at": "2026-09-21T01:00:00.664Z",
     "verification_note": "Page is reachable, but the automated content check could not confirm that it is a PhD vacancy page.",
     "verification_url": "https://www.kuleuven.be/personeel/jobsite/jobs/60278704"
   },
@@ -76,7 +76,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T00:55:12.234Z",
+    "verification_checked_at": "2026-09-21T01:00:00.664Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760"
   },
@@ -103,7 +103,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T00:55:12.234Z",
+    "verification_checked_at": "2026-09-21T01:00:00.664Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://phd.leeds.ac.uk/project/1897-justice-implications-of-the-uk-s-net-zero-carbon-policies"
   },
@@ -130,7 +130,7 @@
     "ai_model": "gemini-2.5-flash",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T00:55:12.234Z",
+    "verification_checked_at": "2026-09-21T01:00:00.664Z",
     "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND jobs.ul.ie",
     "verification_url": "https://jobs.ul.ie/job_description.php?jobID=1130"
   },
@@ -157,7 +157,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T00:55:15.987Z",
+    "verification_checked_at": "2026-09-21T01:00:01.582Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.jobbnorge.no/en/available-jobs/job/237083/personvernombud"
   },
@@ -184,7 +184,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-21T00:55:15.988Z",
+    "verification_checked_at": "2026-09-21T01:00:01.582Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://www.applykite.com/positions/doctoral-researcher-in-social-sciences-on-the-politics-of-the-green-transition-n7h1dowtqr"
   },
@@ -211,36 +211,9 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T00:55:15.988Z",
+    "verification_checked_at": "2026-09-21T01:00:01.582Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.lu.se/vacancies/phd-position-in-sustainability-science-just-energy-transitions"
-  },
-  {
-    "title": "PhD position Landscape Governance",
-    "university": "Wageningen University & Research",
-    "country": "Netherlands",
-    "city": "Wageningen",
-    "deadline": "2026-10-06",
-    "url": "https://www.wur.nl/en/vacancy/phd-position-landscape-governance.htm",
-    "funding": "Fully funded, competitive Dutch doctoral salary (€3204 - €4051 gross per month)",
-    "overall_score": 85,
-    "why_it_matches": "This position is an excellent match for the candidate's interests in governance, policy, social and political transformation, and consumption systems, particularly as they relate to sustainable transitions. The focus on 'transformative landscape governance' and 'designing enabling environments for the transitions to nature-inclusive agroecosystems' directly aligns with the candidate's trajectory towards social and political transformation and transition design. The project's emphasis on understanding complex interactions between livestock, nature, and economy, and the need for coordinated public and private action, resonates with interests in political economy, sustainable consumption, and consumption systems. The comfort with qualitative, theoretical, policy, participatory, and mixed-method research is also a strong fit for the described methodological approach.",
-    "strategic_fit": "The candidate's trajectory from product design to social and political transformation, with strong interests in degrowth, post-growth, political economy, and governance, is exceptionally well-suited. The project's interdisciplinary nature, combining social science perspectives (Spatial Planning, Public Administration and Governance, Institutional Economics, Political Science, Rural Sociology) with environmental topics, allows for a broad application of the candidate's design research and sustainability education background. The focus on 'designing coordinated action' and 'enabling environments' provides a direct link to the candidate's design expertise, even if the PhD is not explicitly 'design' focused. It offers a concrete context for exploring alternative consumption systems and sustainable lifestyles through a governance lens.",
-    "why_it_is_not_perfect": "",
-    "supervisor": "",
-    "classification": "",
-    "research_area": "",
-    "application_language": "English",
-    "language_source_url": "https://www.wur.nl/en/vacancy/phd-position-landscape-governance.htm",
-    "ielts_requirement": "C1 level, not specified on official university website for a numerical IELTS score for this specific position, but general WUR PhD admission states IELTS 6.5 overall with 6.0 on each section.",
-    "ielts_source_url": "https://www.wur.nl/en/Education-Programmes/PhD-Programme/Admission-requirements.htm",
-    "ai_provider": "Gemini",
-    "ai_model": "gemini-2.5-flash",
-    "url_grounded": false,
-    "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T00:55:15.988Z",
-    "verification_note": "HTTP 404",
-    "verification_url": "https://www.wur.nl/en/vacancy/phd-position-landscape-governance.htm"
   },
   {
     "title": "KHK CURE Fellowships 2027/2028: “Things” (Cultural Practices of Reparation)",
@@ -265,7 +238,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T00:55:15.988Z",
+    "verification_checked_at": "2026-09-21T01:00:01.582Z",
     "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND www.kulturpraxis-reparation.de",
     "verification_url": "https://www.kulturpraxis-reparation.de/en/fellowships/call-for-fellowships-2027-2028"
   },
@@ -292,7 +265,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T00:55:17.124Z",
+    "verification_checked_at": "2026-09-21T01:00:01.582Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.uni-flensburg.de/fileadmin/content/europa-universitaet/organisation/einrichtungen/wasatia-graduate-school/dokumente/Call_for_PhD_Candidates_Wasatia_Graduate_School_2026.pdf"
   }
