@@ -49,8 +49,8 @@ function safeErrorMessage(error) {
 }
 
 const CANDIDATE_PROFILE = `
-The candidate is an Industrial Design graduate, university lecturer,
-sustainability educator, and design researcher.
+The candidate is an Industrial Design graduate, university lecturer in
+service design, sustainability educator, and design researcher.
 
 The candidate's trajectory is:
 PRODUCT DESIGN → SUSTAINABLE DESIGN → SUSTAINABLE CONSUMPTION →
@@ -60,7 +60,8 @@ POST-GROWTH / DEGROWTH → SOCIAL + POLITICAL TRANSFORMATION.
 Strong interests include degrowth, post-growth, political economy,
 sustainable consumption, alternative ownership/access, commons,
 sufficiency, social practices, ecological/social transformation,
-transition design, social design, design justice, participatory/co-design,
+transition design, social design, service design, product-service
+systems (PSS), systemic design, design justice, participatory/co-design,
 governance, policy, sustainable lifestyles, consumption systems,
 service systems, transition studies, alternative futures and critical design.
 
