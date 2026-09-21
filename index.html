@@ -239,7 +239,7 @@ async function loadSources() {
     if (runInfo.length) {
       const when = data.searched_at ? new Date(data.searched_at).toLocaleString() : "";
       const parts = runInfo.map(run => {
-        if (run.status === "ok") return `✓ <strong>${escapeHTML(run.provider)}</strong> (${escapeHTML(run.model)}): ${Number(run.returned) || 0} returned, ${Number(run.valid) || 0} valid`;
+        if (run.status === "ok") return `✓ <strong>${escapeHTML(run.provider)}</strong> (${escapeHTML(run.model)}): ${Number(run.returned) || 0} returned, ${Number(run.valid) || 0} valid${run.detail ? " · " + escapeHTML(run.detail) : ""}`;
         return `⚠️ <strong>${escapeHTML(run.provider)}</strong> (${escapeHTML(run.model)}): ${escapeHTML(run.status)}${run.error ? " — " + escapeHTML(run.error) : ""}`;
       });
       const box = document.getElementById("runs");
@@ -252,7 +252,7 @@ async function loadSources() {
     if (sources.length) {
       const links = sources.map(source => '<li><a href="' + escapeHTML(safeURL(source.url)) + '" target="_blank" rel="noopener">' + escapeHTML(source.title || source.url) + "</a></li>").join("");
       const box = document.getElementById("sources");
-      box.innerHTML = '<strong>🔗 Gemini search sources from the latest search</strong><div style="margin-top:6px;color:#666;font-size:13px">These are the actual web sources returned by Google Search. They are shown separately because a source may support more than one result. ChatGPT does not return sources.</div><ul style="margin:8px 0 0 20px;padding:0">' + links + "</ul>";
+      box.innerHTML = '<strong>🔗 Pages read by Gemini in the latest search</strong><div style="margin-top:6px;color:#666;font-size:13px">Google Search found these pages and the radar opened each one itself before Gemini read it, so every Gemini link comes from a page that was actually loaded. ChatGPT has no search and returns no sources.</div><ul style="margin:8px 0 0 20px;padding:0">' + links + "</ul>";
       box.style.display = "block";
     }
   } catch (error) {
