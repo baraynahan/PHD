@@ -16,7 +16,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const APMIX_API_KEY = process.env.APMIX_API_KEY;
 
 // ChatGPT is reached through the apmix.ai API provider.
-const APMIX_MODEL = process.env.APMIX_MODEL || "gpt-5.6-luna-free";
+const APMIX_MODEL = process.env.APMIX_MODEL || "deepseek-v4-flash-free";
 
 // Off by default. If you turn this on and apmix's endpoint doesn't support
 // a web-search tool on chat/completions, the code below catches the error
