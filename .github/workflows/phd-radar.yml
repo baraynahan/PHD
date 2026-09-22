@@ -42,10 +42,12 @@ jobs:
           bun-version: latest
 
       # ----------------------------------------
+      # 3. Run PhD search (Gemini only) + Telegram
       # ----------------------------------------
       - name: Run PhD search
         env:
-          AI_PROVIDER: both
+          # Gemini is the only AI provider.
+          AI_PROVIDER: gemini
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
