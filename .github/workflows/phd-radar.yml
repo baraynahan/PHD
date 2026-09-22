@@ -42,13 +42,18 @@ jobs:
           bun-version: latest
 
       # ----------------------------------------
-      # 3. Run PhD search (Gemini only) + Telegram
+      # 3. Run PhD search (Gemini + DeepSeek/Tavily) + Telegram
       # ----------------------------------------
       - name: Run PhD search
         env:
-          # Gemini is the only AI provider.
-          AI_PROVIDER: gemini
+          # Gemini (Google Search grounding)
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # DeepSeek via apmix.ai, grounded on Tavily web search.
+          # If either of these two is missing, this provider is skipped
+          # (or shown as failed in sources.json) and Gemini still runs.
+          APMIX_API_KEY: ${{ secrets.APMIX_API_KEY }}
+          APMIX_MODEL: deepseek-v4-flash-free
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
