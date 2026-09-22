@@ -42,16 +42,11 @@ jobs:
           bun-version: latest
 
       # ----------------------------------------
-      # 3. Run PhD search (Gemini + ChatGPT) + Telegram
       # ----------------------------------------
       - name: Run PhD search
         env:
-          # "both" runs Gemini and ChatGPT at the same time and keeps both results.
           AI_PROVIDER: both
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          # ChatGPT goes through the apmix.ai API provider.
-          APMIX_API_KEY: ${{ secrets.APMIX_API_KEY }}
-          APMIX_MODEL: deepseek-v4-flash-free
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
