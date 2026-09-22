@@ -9,13 +9,8 @@ const RESULTS_FILE = "results.json";
 const NOTIFIED_FILE = "notified.json";
 const SOURCES_FILE = "sources.json";
 
-const AI_PROVIDER = String(process.env.AI_PROVIDER || "both").toLowerCase();
+const AI_PROVIDER = "gemini";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-
-// a web-search tool on chat/completions, the code below catches the error
-// and silently retries without it — it will not break your run either way.
-
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
@@ -26,12 +21,15 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+if (AI_PROVIDER !== "gemini") {
+  throw new Error('AI_PROVIDER must be "gemini".');
 }
 
 // Error text ends up in sources.json, which is published on GitHub Pages,
 // so never let an API key or a wall of response JSON leak into it.
 function safeErrorMessage(error) {
   let message = String(error?.message || error || "Unknown error");
+  for (const secret of [GEMINI_API_KEY, TELEGRAM_BOT_TOKEN]) {
     if (secret) message = message.split(secret).join("***");
   }
   return message.length > 300 ? `${message.slice(0, 300)}…` : message;
@@ -145,6 +143,7 @@ Return ONLY a valid JSON array. Every object MUST contain:
   "language_source_url": "...",
   "ielts_requirement": "...",
   "ielts_source_url": "...",
+  "ai_provider": "Gemini"
 }
 
 Use an empty string for source URLs when no official source was found.
@@ -239,11 +238,8 @@ function explainRejection(item) {
   return "passes";
 }
 
-// in results.json) to one of the two dashboard labels. "" = unknown/legacy.
 function providerLabelOf(value) {
-  const v = String(value || "").trim().toLowerCase();
-  if (v === "gemini") return LABEL_GEMINI;
-  return "";
+  return String(value || "").trim().toLowerCase() === "gemini" ? LABEL_GEMINI : "";
 }
 
 function cleanResults(results) {
@@ -440,392 +436,7 @@ function saveJSON(file, value) {
 }
 
 function loadExisting() {
-  return cleanResults(loadJSON(RESULTS_FILE, []));
-}
-
-    ? `A web-search tool may be available to you in this request — use it
-whenever you can to find and confirm real, currently open vacancy pages.`
-    : `There is no web-search tool attached to this request.`}
-Do not invent URLs, deadlines or positions. Use only information you
-actually know with high confidence, and prefer well-known, large,
-well-documented funding programmes where you are more likely to be
-right. If you cannot reliably identify a current vacancy and its exact
-URL, return fewer results rather than fabricating one.`;
-
-  return `
-You are an expert PhD opportunity researcher.
-
-Find currently open, fully funded PhD positions that are exceptionally
-well aligned with this candidate.
-
-================ CANDIDATE ================
-${CANDIDATE_PROFILE}
-
-================ GEOGRAPHY ================
-${GEOGRAPHY}
-
-================ SEARCH STRATEGY ================
-${SEARCH_STRATEGY}
-
-================ RULES ================
-${RULES}
-
-${URL_INTEGRITY_RULE}
-
-================ OUTPUT ================
-${OUTPUT_RULES}
-
-
-Today's date is ${todayISO()}. Only return positions whose deadline is after this date.
-`;
-}
-
-// ---------------------------------------------------------------------------
-// Gemini pipeline: the model never writes a URL.
-//   1. DISCOVER  - Gemini + Google Search finds pages. We keep only the search
-//                  metadata (the pages it actually found), not the URLs it types.
-//   2. FETCH     - this script opens each of those pages itself and reads the text.
-//   3. EXTRACT   - Gemini reads the page text and fills in deadline/funding/score.
-//                  The URL saved is the address this script fetched.
-// ---------------------------------------------------------------------------
-
-const GEMINI_DISCOVERY_ANGLES = [
-  "degrowth, post-growth, post-consumerism, political economy, commons, sufficiency, and social and ecological transformation",
-  "sustainable consumption, product longevity, repair and reuse, circular economy, sustainable lifestyles, social practices and consumption systems",
-  "alternative ownership and access, sharing, service systems, transition design, social design, design justice, participatory and co-design, critical design",
-  "governance, public policy, transition studies, sustainability science, STS, sociology or political science PhDs about consumption and sustainability"
-];
-const GEMINI_MAX_PAGES = Number(process.env.GEMINI_MAX_PAGES) || 30;
-const PAGE_TEXT_CHARS = 9000;
-const EXTRACTION_BATCH_SIZE = 4;
-const PAGE_USER_AGENT = "Mozilla/5.0 (compatible; PhD-Radar/1.0; +https://github.com/baraynahan/PHD)";
-// Gap between successive Gemini calls (discovery and extraction alike), so a
-// run of ~12+ sequential calls doesn't burst past a per-minute rate limit.
-const GEMINI_CALL_GAP_MS = Number(process.env.GEMINI_CALL_GAP_MS) || 4000;
-
-// Words that suggest a doctoral vacancy, including common non-English ones
-// (language is never a reason to drop a position).
-const DOCTORAL_SIGNAL = /phd|ph\.d|doctoral|doctorate|doctorant|doctorat|doctorado|dottorato|promotie|promovend|promotion|doktorand|doktor|avhandling|forskarutbildning/i;
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-async function geminiRequest({ prompt, tools, generationConfig }, isRetry = false) {
-  const endpoint =
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
-  const body = {
-    contents: [{ role: "user", parts: [{ text: prompt }] }],
-    generationConfig
-  };
-  if (tools) body.tools = tools;
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": GEMINI_API_KEY
-    },
-    body: JSON.stringify(body)
-  });
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    if (response.status === 429 && !isRetry) {
-      const retryInfo = data?.error?.details?.find(
-        d => d["@type"] === "type.googleapis.com/google.rpc.RetryInfo"
-      );
-      const match = String(retryInfo?.retryDelay || "").match(/^(\d+(?:\.\d+)?)s?$/);
-      const waitMs = Math.min(match ? Number(match[1]) * 1000 : 15000, 60000) + 1000;
-      console.warn(`[Gemini] 429 (rate/quota limited). Waiting ${Math.round(waitMs / 1000)}s and retrying once...`);
-      await sleep(waitMs);
-      return geminiRequest({ prompt, tools, generationConfig }, true);
-    }
-    const err = new Error(`Gemini API error ${response.status}: ${JSON.stringify(data)}`);
-    err.status = response.status;
-    throw err;
-  }
-  return data;
-}
-
-function geminiText(data) {
-  return (data?.candidates || [])
-    .flatMap(candidate => candidate?.content?.parts || [])
-    .map(part => part.text || "")
-    .join("");
-}
-
-// The pages Google Search actually found. Each uri is normally a
-// vertexaisearch.cloud.google.com redirect that leads to the real page.
-function geminiSearchHits(data) {
-  return (data?.candidates || [])
-    .flatMap(candidate => candidate?.groundingMetadata?.groundingChunks || [])
-    .map(chunk => chunk?.web)
-    .filter(web => web?.uri)
-    .map(web => ({ title: String(web.title || "").trim(), uri: String(web.uri).trim() }));
-}
-
-function buildDiscoveryPrompt(angle) {
-  return `
-You are an expert PhD opportunity researcher. Today's date is ${todayISO()}.
-
-Use Google Search to find currently open, fully funded PhD positions for this
-candidate, focusing on: ${angle}.
-
-${CANDIDATE_PROFILE}
-${GEOGRAPHY}
-
-Search for individual vacancy pages (official university career/vacancy/doctoral
-pages first; EURAXESS, jobs.ac.uk, AcademicTransfer and similar boards are also
-fine), not general listings or programme overviews. Run several different
-searches with different keywords and countries.
-
-Reply with a short bullet list of the specific vacancies you found (title and
-university). Do not write JSON.
-`;
-}
-
-async function geminiDiscover() {
-  const hits = [];
-  let succeeded = 0;
-  let lastError = null;
-
-  // Sequential on purpose: keeps us inside free-tier requests-per-minute limits.
-  for (const [index, angle] of GEMINI_DISCOVERY_ANGLES.entries()) {
-    if (index > 0) await sleep(GEMINI_CALL_GAP_MS);
-    console.log(`[Gemini] search ${index + 1}/${GEMINI_DISCOVERY_ANGLES.length}: ${angle.slice(0, 55)}...`);
-    try {
-      const request = { prompt: buildDiscoveryPrompt(angle), tools: [{ googleSearch: {} }] };
-      let data = await geminiRequest({ ...request, generationConfig: { temperature: 0.2 } });
-      let found = geminiSearchHits(data);
-
-      if (!found.length && !geminiText(data)) {
-        // Empty response (seen before with thinking models): retry once without thinking.
-        console.warn("[Gemini] empty response, retrying once without thinking...");
-        data = await geminiRequest({
-          ...request,
-          generationConfig: { temperature: 0.2, thinkingConfig: { thinkingBudget: 0 } }
-        });
-        found = geminiSearchHits(data);
-      }
-      succeeded++;
-      hits.push(...found);
-      console.log(`[Gemini]   -> ${found.length} search hits`);
-    } catch (error) {
-      lastError = error;
-      console.warn(`[Gemini] search ${index + 1} failed: ${safeErrorMessage(error)}`);
-    }
-  }
-
-  if (!succeeded) throw lastError || new Error("All Gemini searches failed.");
-  return Array.from(new Map(hits.map(hit => [hit.uri, hit])).values());
-}
-
-function htmlToText(html) {
-  return String(html || "")
-    .replace(/<(script|style|noscript|svg|template)[\s\S]*?<\/\1>/gi, " ")
-    .replace(/<!--[\s\S]*?-->/g, " ")
-    .replace(/<\/?(br|p|div|li|ul|ol|h[1-6]|tr|td|th|section|article|header|footer)\b[^>]*>/gi, "\n")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&(euro|pound|ndash|mdash|lsquo|rsquo|ldquo|rdquo|hellip|copy);/gi, (_, name) => (
-      { euro: "€", pound: "£", ndash: "–", mdash: "—", lsquo: "'", rsquo: "'", ldquo: '"', rdquo: '"', hellip: "…", copy: "©" }
-    )[name.toLowerCase()])
-    .replace(/&#(\d+);/g, (_, code) => {
-      try { return String.fromCodePoint(Number(code)); } catch { return " "; }
-    })
-    .replace(/[ \t\f\v\r]+/g, " ")
-    .replace(/ ?\n ?/g, "\n")
-    .replace(/\n{2,}/g, "\n")
-    .trim();
-}
-
-function pageTitleOf(html) {
-  const match = String(html || "").match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  return match ? htmlToText(match[1]).slice(0, 200) : "";
-}
-
-// Opens a page like a browser would and returns where it really lives plus its text.
-async function fetchPage(url) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000);
-  try {
-    const response = await fetch(url, {
-      method: "GET",
-      redirect: "follow",
-      signal: controller.signal,
-      headers: { "User-Agent": PAGE_USER_AGENT, "Accept": "text/html,application/xhtml+xml" }
-    });
-    const finalURL = normalizeURL(response.url || url);
-    if (!response.ok) return { ok: false, reason: `HTTP ${response.status}`, url: finalURL };
-
-    const contentType = String(response.headers.get("content-type") || "").toLowerCase();
-    if (!/text\/html|application\/xhtml|text\/plain/.test(contentType)) {
-      return { ok: false, reason: `unsupported content type (${contentType || "unknown"})`, url: finalURL };
-    }
-    const html = (await response.text()).slice(0, 400000);
-    return { ok: true, url: finalURL, title: pageTitleOf(html), text: htmlToText(html) };
-  } catch (error) {
-    return {
-      ok: false,
-      reason: error?.name === "AbortError" ? "timed out" : `fetch failed (${String(error?.message || error).slice(0, 80)})`,
-      url: normalizeURL(url)
-    };
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-// Turns the search hits into real, readable pages (deduplicated by final URL).
-async function fetchHitPages(hits) {
-  const pages = new Map();
-  const skipped = { unreachable: 0, notReadable: 0, notDoctoral: 0, duplicate: 0 };
-
-  for (let i = 0; i < hits.length; i += 5) {
-    const batch = hits.slice(i, i + 5);
-    const fetched = await Promise.all(batch.map(hit => fetchPage(hit.uri)));
-    fetched.forEach((page, j) => {
-      if (!page.ok) {
-        skipped.unreachable++;
-        console.log(`[Gemini]   skip (${page.reason}): ${batch[j].title || page.url}`);
-      } else if (page.text.length < 400) {
-        skipped.notReadable++;
-        console.log(`[Gemini]   skip (almost no text, probably needs JavaScript): ${page.url}`);
-      } else if (!DOCTORAL_SIGNAL.test(page.text) && !DOCTORAL_SIGNAL.test(page.title)) {
-        skipped.notDoctoral++;
-        console.log(`[Gemini]   skip (no PhD/doctoral wording): ${page.url}`);
-      } else if (pages.has(page.url)) {
-        skipped.duplicate++;
-      } else {
-        pages.set(page.url, page);
-      }
-    });
-  }
-  return { pages: Array.from(pages.values()), skipped };
-}
-
-function buildExtractionPrompt(batch) {
-  const pageBlocks = batch.map(page => `=== PAGE ${page.id} ===
-TITLE: ${page.title}
-TEXT:
-${page.text.slice(0, PAGE_TEXT_CHARS)}
-=== END PAGE ${page.id} ===`).join("\n\n");
-
-  return `
-You are an expert PhD opportunity researcher. Today's date is ${todayISO()}.
-
-Below are web pages that this program has ALREADY fetched. Read each page and
-decide whether it describes ONE specific, currently open PhD/doctoral position
-that suits the candidate.
-
-================ CANDIDATE ================
-${CANDIDATE_PROFILE}
-
-================ GEOGRAPHY ================
-${GEOGRAPHY}
-
-================ RULES ================
-- Use ONLY facts written on the page. Never guess or fill gaps from memory.
-- "qualifies" is true only if the page is one specific PhD/doctoral vacancy
-  (not a listing, news item, programme overview, blog post or a closed call),
-  the funding is clearly stated as covering the PhD (salary, stipend or
-  scholarship), and it is not in the United States.
-- "deadline" must be a deadline stated on the page, written as YYYY-MM-DD.
-  Leave it "" if none is stated or it has already passed.
-- Score 0-100 from research-topic fit, degrowth/political/social fit,
-  sustainability, design compatibility, consumption/ownership/systems, methods,
-  candidate background and funding quality.
-- "application_language" is the language the vacancy/application is written in:
-  "English", "Not English" or "Unknown". Never reject a position because of its
-  language.
-- Only fill "ielts_requirement" when this page itself states an English-language
-  or IELTS requirement, and set "ielts_stated_on_page" to true. Otherwise leave
-  it "" and use false. Never guess a score.
-- Do NOT output any URL. The program already knows each page's address.
-
-================ OUTPUT ================
-Return ONLY a JSON array with one object per page, in this shape:
-{
-  "page_id": 1,
-  "qualifies": true,
-  "title": "...",
-  "university": "...",
-  "country": "...",
-  "city": "...",
-  "deadline": "YYYY-MM-DD",
-  "funding": "...",
-  "overall_score": 0,
-  "why_it_matches": "...",
-  "strategic_fit": "...",
-  "why_it_is_not_perfect": "...",
-  "supervisor": "...",
-  "application_language": "English | Not English | Unknown",
-  "ielts_requirement": "",
-  "ielts_stated_on_page": false
-}
-For a page that does not qualify, return only {"page_id": N, "qualifies": false}.
-
-${pageBlocks}
-`;
-}
-
-async function extractBatch(batch) {
-  const prompt = buildExtractionPrompt(batch);
-  const config = { temperature: 0.1, responseMimeType: "application/json" };
-
-  let data = await geminiRequest({ prompt, generationConfig: config });
-  let text = geminiText(data);
-  if (!text) {
-    console.warn("[Gemini] empty extraction response, retrying once without thinking...");
-    data = await geminiRequest({
-      prompt,
-      generationConfig: { ...config, thinkingConfig: { thinkingBudget: 0 } }
-    });
-    text = geminiText(data);
-  }
-  if (!text) throw new Error("Gemini returned no text for the extraction step.");
-
-  let parsed = extractJSON(text);
-  if (!Array.isArray(parsed)) {
-    parsed = Array.isArray(parsed?.pages) ? parsed.pages
-      : Array.isArray(parsed?.results) ? parsed.results : [];
-  }
-
-  const results = [];
-  for (const item of parsed) {
-    const page = batch.find(p => p.id === Number(item?.page_id));
-    if (!page || item.qualifies !== true) continue;
-
-    const ieltsStated = item.ielts_stated_on_page === true && String(item.ielts_requirement || "").trim();
-    // Built field by field, so nothing the model typed (including any "url")
-    // can reach the results. The URL is the page this program fetched.
-    results.push({
-      title: item.title,
-      university: item.university,
-      country: item.country,
-      city: item.city,
-      deadline: item.deadline,
-      funding: item.funding,
-      overall_score: item.overall_score,
-      why_it_matches: item.why_it_matches,
-      strategic_fit: item.strategic_fit,
-      why_it_is_not_perfect: item.why_it_is_not_perfect,
-      supervisor: item.supervisor,
-      application_language: item.application_language,
-      url: page.url,
-      language_source_url: page.url,
-      ielts_requirement: ieltsStated ? String(item.ielts_requirement).trim() : "",
-      ielts_source_url: ieltsStated ? page.url : "",
-      url_grounded: true,
-      ai_model: GEMINI_MODEL
-    });
-  }
-  return results;
+  return cleanResults(loadJSON(RESULTS_FILE, [])).filter(result => result.ai_provider === LABEL_GEMINI);
 }
 
 async function callGemini() {
@@ -867,69 +478,6 @@ async function callGemini() {
   };
 }
 
-
-    const body = {
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.2
-    };
-    if (withTools) {
-      // supports this on /v1/chat/completions is unconfirmed — check their
-      // docs. If it's rejected, we fall back to a plain request below.
-      body.tools = [{ type: "web_search" }];
-    }
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(body)
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      err.status = response.status;
-      throw err;
-    }
-    return data;
-  }
-
-  let data;
-    try {
-    } catch (error) {
-    }
-  } else {
-  }
-
-  const text = data?.choices?.[0]?.message?.content || "";
-  if (data?.usage) {
-  } else {
-  }
-
-  if (!text) {
-    console.error(JSON.stringify(data, null, 2));
-  }
-
-  // Parse failure and "parsed to an empty/non-array" both mean the same
-  // thing here: no usable positions. Neither is treated as a run failure —
-  // vacancy with a real URL and correctly returns nothing rather than
-  // inventing one, sometimes as "[]" and sometimes as a plain-text refusal.
-  let parsed;
-  try {
-    parsed = extractJSON(text);
-  } catch {
-    parsed = [];
-  }
-  if (!Array.isArray(parsed) || parsed.length === 0) {
-  }
-  const labeledResults = (Array.isArray(parsed) ? parsed : []).map(r => ({
-    ...r,
-    // as null ("unknown") rather than pretending we verified it — the HTTP
-    // verification step below still runs on every result regardless.
-    url_grounded: null,
-  }));
-
-  return { results: labeledResults, sources: [] };
-}
-
 const PROVIDERS = [
   {
     id: "gemini",
@@ -937,8 +485,6 @@ const PROVIDERS = [
     model: GEMINI_MODEL,
     apiKey: GEMINI_API_KEY,
     call: callGemini
-  },
-  {
   }
 ];
 
@@ -992,8 +538,8 @@ async function runProvider(provider) {
 
 // Runs the selected providers at the same time.
 async function callAllProviders() {
-  const selected = PROVIDERS.filter(p => AI_PROVIDER === "both" || p.id === AI_PROVIDER);
-  console.log(`AI providers: ${selected.map(p => `${p.label} (${p.model})`).join(" + ")}`);
+  const selected = PROVIDERS;
+  console.log(`AI provider: ${selected[0].label} (${selected[0].model})`);
   const runs = await Promise.all(selected.map(runProvider));
 
   if (!runs.some(run => run.status === "ok")) {
@@ -1069,7 +615,7 @@ async function notifyExceptionalMatches(results) {
   const notified = loadJSON(NOTIFIED_FILE, {});
   let changed = false;
 
-  const byURL = new Map();
+    const byURL = new Map();
   for (const position of results.filter(x => Number(x.overall_score) >= 90)) {
     const url = normalizeURL(position.url);
     const entry = byURL.get(url) || { best: position, providers: [] };
@@ -1105,7 +651,7 @@ async function main() {
   console.log("Running new search (all providers at the same time)...");
   const runs = await callAllProviders();
 
-  const geminiSources = runs.find(run => run.id === "gemini")?.sources || [];
+    const geminiSources = runs.find(run => run.id === "gemini")?.sources || [];
 
   saveJSON(SOURCES_FILE, {
     searched_at: new Date().toISOString(),
@@ -1147,6 +693,7 @@ async function main() {
 
   await notifyExceptionalMatches(verifiedResults);
 
+  for (const label of [LABEL_GEMINI]) {
     const mine = verifiedResults.filter(result => result.ai_provider === label);
     if (!mine.length && !runs.some(run => run.label === label)) continue;
     console.log(`\nTop matches — ${label}:`);
