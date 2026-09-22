@@ -22,7 +22,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T22:50:00.493Z",
+    "verification_checked_at": "2026-09-22T17:07:40.551Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=8403"
   },
@@ -49,7 +49,7 @@
     "ai_model": "gemini-2.5-flash",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T22:50:00.493Z",
+    "verification_checked_at": "2026-09-22T17:07:40.551Z",
     "verification_note": "Page is reachable, but the automated content check could not confirm that it is a PhD vacancy page.",
     "verification_url": "https://www.kuleuven.be/personeel/jobsite/jobs/60278704"
   },
@@ -76,7 +76,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T22:50:00.493Z",
+    "verification_checked_at": "2026-09-22T17:07:40.551Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760"
   },
@@ -103,7 +103,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T22:50:00.493Z",
+    "verification_checked_at": "2026-09-22T17:07:40.551Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://phd.leeds.ac.uk/project/1897-justice-implications-of-the-uk-s-net-zero-carbon-policies"
   },
@@ -130,7 +130,7 @@
     "ai_model": "gemini-2.5-flash",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T22:50:00.493Z",
+    "verification_checked_at": "2026-09-22T17:07:40.551Z",
     "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND jobs.ul.ie",
     "verification_url": "https://jobs.ul.ie/job_description.php?jobID=1130"
   },
@@ -157,7 +157,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T22:50:01.857Z",
+    "verification_checked_at": "2026-09-22T17:07:41.909Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.jobbnorge.no/en/available-jobs/job/237083/personvernombud"
   },
@@ -184,7 +184,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-21T22:50:01.857Z",
+    "verification_checked_at": "2026-09-22T17:07:41.909Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://www.applykite.com/positions/doctoral-researcher-in-social-sciences-on-the-politics-of-the-green-transition-n7h1dowtqr"
   },
@@ -211,7 +211,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T22:50:01.857Z",
+    "verification_checked_at": "2026-09-22T17:07:41.909Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.lu.se/vacancies/phd-position-in-sustainability-science-just-energy-transitions"
   },
@@ -238,7 +238,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T22:50:01.857Z",
+    "verification_checked_at": "2026-09-22T17:07:41.909Z",
     "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND www.kulturpraxis-reparation.de",
     "verification_url": "https://www.kulturpraxis-reparation.de/en/fellowships/call-for-fellowships-2027-2028"
   },
@@ -265,8 +265,35 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-21T22:50:01.857Z",
+    "verification_checked_at": "2026-09-22T17:07:41.909Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.uni-flensburg.de/fileadmin/content/europa-universitaet/organisation/einrichtungen/wasatia-graduate-school/dokumente/Call_for_PhD_Candidates_Wasatia_Graduate_School_2026.pdf"
+  },
+  {
+    "title": "PhD scholarship in Auditing",
+    "university": "CBS - Copenhagen Business School",
+    "country": "Denmark",
+    "city": "Copenhagen",
+    "deadline": "2026-11-11",
+    "url": "https://www.cbs.dk/om-cbs/job-og-karriere/ledige-stillinger/phd-scholarship-auditing",
+    "funding": "PhD scholarship",
+    "overall_score": 70,
+    "why_it_matches": "The PhD offers a specific research theme on 'the role of auditing and assurance in sustainable development,' encouraging exploration of alternative forms of auditing beyond compliance and aiming for a meaningful role in sustainability. This aligns well with the candidate's strong interest in sustainable consumption, ecological/social transformation, and systemic design. The call welcomes applicants from other social sciences interested in auditing as a research domain, which suits the candidate's background in design research, sustainability education, and openness to fields like sociology or political science. The preference for qualitative research methods is also a strong match.",
+    "strategic_fit": "This position offers a unique opportunity to apply systemic and critical thinking to the often-overlooked domain of auditing within the context of sustainable development. It directly addresses the candidate's interest in sustainable consumption and systems by challenging traditional compliance-oriented approaches and seeking transformative roles for assurance in sustainability. While not explicitly degrowth, the focus on 'alternative forms' and 'meaningful role' beyond current models resonates with the candidate's trajectory towards post-growth and social transformation. The project's engagement with 'evolving societal demands' and 'debate about how auditing and assurance can play a meaningful role in sustainability' aligns with interests in governance and policy.",
+    "why_it_is_not_perfect": "The core discipline of 'Auditing' and 'Accounting' is quite distant from the candidate's primary background in Industrial Design and Service Design. While the candidate is open to non-design fields, the direct connection to design methodologies or theories might be limited unless the project can be creatively framed. The terms 'degrowth,' 'post-growth,' 'alternative ownership/access,' or 'commons' are not explicitly mentioned, requiring the candidate to frame their proposal to connect these interests to the auditing context. One of the research themes also mentions 'generative artificial intelligence,' which the candidate aims to avoid, though it's not the central focus of the entire call.",
+    "supervisor": "Professor Thomas Riise Johansen",
+    "classification": "",
+    "research_area": "",
+    "application_language": "English",
+    "language_source_url": "https://www.cbs.dk/om-cbs/job-og-karriere/ledige-stillinger/phd-scholarship-auditing",
+    "ielts_requirement": "Not specified on official university website",
+    "ielts_source_url": "",
+    "ai_provider": "Gemini",
+    "ai_model": "gemini-2.5-flash",
+    "url_grounded": true,
+    "verification_status": "Verified",
+    "verification_checked_at": "2026-09-22T17:07:43.911Z",
+    "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
+    "verification_url": "https://www.cbs.dk/om-cbs/job-og-karriere/ledige-stillinger/phd-scholarship-auditing"
   }
 ]
