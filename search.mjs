@@ -803,7 +803,7 @@ async function main() {
   const existingResults = loadExisting();
   console.log(`Existing active positions: ${existingResults.length}`);
 
-  console.log("Running new search (all providers at the same time)...");
+  console.log("Running new search with Gemini + Google Search...");
   const runs = await callAllProviders();
 
     const geminiSources = runs.find(run => run.id === "gemini")?.sources || [];
