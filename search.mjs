@@ -223,34 +223,29 @@ function isFutureDeadline(deadline) {
 const GEMINI_DISCOVERY_ANGLES = [
   `Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
 ${CANDIDATE_PROFILE}
-Focus on degrowth, post-growth, sustainable consumption, post-consumerism, political economy,
-sufficiency, commons, alternative ownership/access, sharing, social/ecological transformation
-and governance. ${GEOGRAPHY}
-Search official university vacancy pages. Exclude generic programmes and expired positions.`,
-  `Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
+Search broadly across ALL of these themes in one comprehensive Google Search pass:
+degrowth, post-growth, post-consumerism, political economy, sustainable consumption,
+product longevity, repair/reuse, circular economy, sustainable lifestyles, social practices,
+consumption systems, alternative ownership/access, commons, sharing systems, sufficiency,
+service systems, product-service systems, transition design, social design, design justice,
+participatory/co-design, systemic design, critical design, alternative futures, governance,
+public policy, transition studies, sustainability science, STS, sociology, political science
+and environmental humanities where relevant. ${GEOGRAPHY}
+Prioritise official university vacancy pages. Exclude generic programmes and expired positions.`,
+  `Run a second independent search pass for currently open, funded PhD/doctoral vacancies in Europe
+matching this profile:
 ${CANDIDATE_PROFILE}
-Focus on sustainable consumption, product longevity, repair/reuse, circular economy,
-sustainable lifestyles, social practices, consumption systems, service systems and
-product-service systems. ${GEOGRAPHY}
-Search official university vacancy pages. Exclude generic programmes and expired positions.`,
-  `Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
-${CANDIDATE_PROFILE}
-Focus on alternative ownership, access, sharing systems, transition design, social design,
-design justice, participatory/co-design, critical design, systemic design and alternative
-futures. ${GEOGRAPHY}
-Search official university vacancy pages. Exclude generic programmes and expired positions.`,
-  `Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
-${CANDIDATE_PROFILE}
-Focus on governance, public policy, transition studies, sustainability science, STS,
-sociology, political science and environmental humanities where the research concerns
-consumption, sustainability or societal/ecological transformation. ${GEOGRAPHY}
-Search official university vacancy pages. Exclude generic programmes and expired positions.`
+Actively vary the search terms and look for opportunities that the first broad pass may miss,
+especially positions using less obvious terminology around societal transformation, sustainable
+lifestyles, consumption practices, ownership/access, commons, service systems, governance,
+policy, social innovation and ecological transition. ${GEOGRAPHY}
+Prioritise official university vacancy pages. Exclude generic programmes and expired positions.`
 ];
 
 const GEMINI_MAX_PAGES = 32;
 const PAGE_TEXT_CHARS = 24000;
-const EXTRACTION_BATCH_SIZE = 4;
-const GEMINI_CALL_GAP_MS = 800;
+const EXTRACTION_BATCH_SIZE = 8;
+const GEMINI_CALL_GAP_MS = 6500;
 const PAGE_USER_AGENT = "Mozilla/5.0 (compatible; PhD-Radar/1.0)";
 
 async function fetchPage(url) {
