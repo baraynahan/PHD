@@ -51,7 +51,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           # ChatGPT goes through the apmix.ai API provider.
           APMIX_API_KEY: ${{ secrets.APMIX_API_KEY }}
-          APMIX_MODEL: gpt-5.6-luna-free
+          APMIX_MODEL: deepseek-v4-flash-free
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
