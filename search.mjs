@@ -219,6 +219,160 @@ function isFutureDeadline(deadline) {
   return Number.isFinite(date.getTime()) && date.getTime() > Date.now();
 }
 
+
+const GEMINI_DISCOVERY_ANGLES = [
+  \`Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
+\${CANDIDATE_PROFILE}
+Focus on degrowth, post-growth, sustainable consumption, post-consumerism, political economy,
+sufficiency, commons, alternative ownership/access, sharing, social/ecological transformation
+and governance. \${GEOGRAPHY}
+Search official university vacancy pages. Exclude generic programmes and expired positions.\`,
+  \`Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
+\${CANDIDATE_PROFILE}
+Focus on sustainable consumption, product longevity, repair/reuse, circular economy,
+sustainable lifestyles, social practices, consumption systems, service systems and
+product-service systems. \${GEOGRAPHY}
+Search official university vacancy pages. Exclude generic programmes and expired positions.\`,
+  \`Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
+\${CANDIDATE_PROFILE}
+Focus on alternative ownership, access, sharing systems, transition design, social design,
+design justice, participatory/co-design, critical design, systemic design and alternative
+futures. \${GEOGRAPHY}
+Search official university vacancy pages. Exclude generic programmes and expired positions.\`,
+  \`Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
+\${CANDIDATE_PROFILE}
+Focus on governance, public policy, transition studies, sustainability science, STS,
+sociology, political science and environmental humanities where the research concerns
+consumption, sustainability or societal/ecological transformation. \${GEOGRAPHY}
+Search official university vacancy pages. Exclude generic programmes and expired positions.\`
+];
+
+const GEMINI_MAX_PAGES = 32;
+const PAGE_TEXT_CHARS = 24000;
+const EXTRACTION_BATCH_SIZE = 4;
+const GEMINI_CALL_GAP_MS = 800;
+const PAGE_USER_AGENT = "Mozilla/5.0 (compatible; PhD-Radar/1.0)";
+
+async function fetchPage(url) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 18000);
+  try {
+    const response = await fetch(url, { redirect: "follow", signal: controller.signal,
+      headers: { "User-Agent": PAGE_USER_AGENT, "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8" } });
+    const finalURL = normalizeURL(response.url || url);
+    const contentType = String(response.headers.get("content-type") || "");
+    if (!response.ok || !contentType.includes("text"))
+      return { ok:false, url:finalURL, title:"", text:"", reason:\`HTTP \${response.status} / \${contentType || "unknown content type"}\` };
+    const html = await response.text();
+    const text = html.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ")
+      .replace(/<noscript[\s\S]*?<\/noscript>/gi," ").replace(/<svg[\s\S]*?<\/svg>/gi," ")
+      .replace(/<[^>]+>/g," ").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"')
+      .replace(/&#39;/gi,"'").replace(/\s+/g," ").trim();
+    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim() : "";
+    return { ok:true, url:finalURL, title, text:text.slice(0,PAGE_TEXT_CHARS), reason:"" };
+  } finally { clearTimeout(timeout); }
+}
+
+async function fetchHitPages(hits) {
+  const pages=[], skipped=[], seen=new Set();
+  for (const hit of hits) {
+    const rawURL=normalizeURL(hit.url); if (!rawURL || seen.has(rawURL)) continue; seen.add(rawURL);
+    try {
+      const page=await fetchPage(rawURL);
+      if (!page.ok || page.text.length<300) { skipped.push({...hit,reason:page.reason||"page too short"}); continue; }
+      if (!/phd|ph\.d|doctoral|doctorate/i.test(page.text)) { skipped.push({...hit,reason:"not obviously doctoral"}); continue; }
+      pages.push({...hit,...page,url:page.url||rawURL});
+      if (pages.length>=GEMINI_MAX_PAGES) break;
+    } catch(error) { skipped.push({...hit,reason:safeErrorMessage(error)}); }
+  }
+  return {pages,skipped};
+}
+
+async function geminiGenerate(prompt, useSearch=true) {
+  if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not configured.");
+  const endpoint=\`https://generativelanguage.googleapis.com/v1beta/models/\${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=\${encodeURIComponent(GEMINI_API_KEY)}\`;
+  const body={contents:[{role:"user",parts:[{text:prompt}]}],
+    ...(useSearch ? {tools:[{google_search:{}}]} : {}),
+    generationConfig:{temperature:0.1,responseMimeType:"text/plain"}};
+  const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const data=await response.json();
+  if (!response.ok) throw new Error(data?.error?.message || \`Gemini HTTP \${response.status}\`);
+  const text=(data?.candidates||[]).flatMap(c=>c?.content?.parts||[]).map(p=>p?.text||"").join("\n").trim();
+  if (!text) throw new Error("Gemini returned no text.");
+  return {text,data};
+}
+
+function collectGroundingHits(data) {
+  const hits=[];
+  for (const candidate of data?.candidates||[]) {
+    for (const chunk of candidate?.groundingMetadata?.groundingChunks||[]) {
+      if (chunk?.web?.uri) hits.push({title:String(chunk.web.title||chunk.web.uri),url:chunk.web.uri});
+    }
+  }
+  return hits;
+}
+
+async function geminiDiscover() {
+  console.log("[Gemini] Google Search discovery starting...");
+  const allHits=[],seen=new Set();
+  for (let i=0;i<GEMINI_DISCOVERY_ANGLES.length;i++) {
+    if (i>0) await sleep(GEMINI_CALL_GAP_MS);
+    const prompt=\`You are the discovery stage of a PhD vacancy radar.
+\${GEMINI_DISCOVERY_ANGLES[i]}
+\${SEARCH_STRATEGY}
+\${RULES}
+Return a short textual list of the most relevant pages you found. Do not invent URLs.
+The program will take URLs only from Google's grounding metadata, not from your text.\`;
+    const {data}=await geminiGenerate(prompt,true);
+    for (const hit of collectGroundingHits(data)) {
+      const url=normalizeURL(hit.url); if (!url || seen.has(url)) continue;
+      seen.add(url); allHits.push({...hit,url});
+    }
+    console.log(\`[Gemini] angle \${i+1}/\${GEMINI_DISCOVERY_ANGLES.length}: \${allHits.length} unique hits so far\`);
+  }
+  if (!allHits.length) throw new Error("Gemini Google Search returned no grounded web pages.");
+  return allHits;
+}
+
+function buildExtractionPrompt(pages) {
+  const pageBlocks=pages.map(page=>\`--- PAGE \${page.id} ---
+TITLE: \${page.title||""}
+URL: \${page.url}
+CONTENT:
+\${page.text}
+--- END PAGE \${page.id} ---\`).join("\n\n");
+  return \`You are the extraction and verification stage of a funded European PhD vacancy radar.
+
+\${CANDIDATE_PROFILE}
+\${GEOGRAPHY}
+\${RULES}
+\${URL_INTEGRITY_RULE}
+\${OUTPUT_RULES}
+
+Use the supplied page contents as primary evidence. A page is eligible only if it describes
+one specific PhD/doctoral vacancy or doctoral research position, funding is clearly stated,
+and the application deadline is explicitly stated and still in the future relative to today.
+Do not turn a generic programme, news article, lab page or directory into a vacancy.
+
+For "url", copy the URL from the supplied PAGE header exactly.
+For language and IELTS fields, prefer official university sources. You may use Google Search
+if necessary to locate the relevant official university English/IELTS page, but never invent
+a URL or IELTS score. If no official IELTS requirement can be established, use the required fallback.
+
+Return ONLY a JSON array. Do not use Markdown fences.
+
+\${pageBlocks}\`;
+}
+
+async function extractBatch(pages) {
+  const {text}=await geminiGenerate(buildExtractionPrompt(pages),true);
+  const parsed=extractJSON(text);
+  if (!Array.isArray(parsed)) throw new Error("Gemini extraction response was not an array.");
+  return parsed;
+}
+
+
 // Same checks cleanResults applies, but reports WHY each raw item was
 // dropped instead of just dropping it. Used only for the one-line diagnostic
 // printed when a provider returns items but none survive cleaning, so a
