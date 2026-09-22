@@ -296,6 +296,7 @@ function cleanResults(results) {
       // a label for you to weigh, it never removes a result.
       url_grounded: item.url_grounded === true
         ? true
+        : false,
       verification_status: ["Verified", "Not verified"].includes(String(item.verification_status || ""))
         ? String(item.verification_status)
         : "Not verified",
