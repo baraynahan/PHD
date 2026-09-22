@@ -5,252 +5,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PhD Radar</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f4f4f4;color:#171717}
-header{background:#111;color:white;padding:45px 24px}
-header .inner,main{max-width:1400px;margin:auto}
-h1{margin:0;font-size:38px}
-.subtitle{margin-top:10px;color:#aaa;font-size:16px}
-main{margin:30px auto;padding:0 20px}
-.controls{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:25px;flex-wrap:wrap}
-.search-button{border:0;border-radius:9px;background:#111;color:#fff;padding:12px 18px;font:inherit;font-weight:600;cursor:pointer}
-.search-button:hover{opacity:.88}
-.search-button:disabled{opacity:.55;cursor:wait}
-.help{color:#666;font-size:13px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin-bottom:30px}
-.stat{background:white;border-radius:12px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
-.stat-number{font-size:32px;font-weight:700}
-.stat-label{color:#666;margin-top:5px}
-
-/* view switch */
-.view-switch{display:inline-flex;background:#e6e6e6;border-radius:10px;padding:4px;gap:4px;margin-bottom:22px}
-.view-switch button{border:0;background:transparent;border-radius:7px;padding:9px 16px;font:inherit;font-weight:600;color:#555;cursor:pointer}
-.view-switch button[aria-pressed="true"]{background:#111;color:#fff}
-.view-switch button:focus-visible,.search-button:focus-visible{outline:3px solid #6a8dff;outline-offset:2px}
-
-/* layout: two provider columns, or one narrower column */
-.columns{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
-.columns.single{grid-template-columns:minmax(0,1100px);justify-content:center}
-.column{min-width:0}
-.column-head{display:flex;justify-content:space-between;align-items:center;gap:12px;background:white;border-radius:12px;padding:14px 18px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.05);border-top:4px solid #ccc}
-.column-head.gemini{border-top-color:#4c8bf5}
-.column-head .name{font-weight:700;font-size:18px}
-.column-head .model{color:#666;font-size:13px;margin-top:3px;word-break:break-all}
-.column-head .count{color:#444;font-size:14px;white-space:nowrap}
-.column-head .status{font-size:12px;margin-top:3px;color:#a35b00}
-
-.position{background:white;border-radius:14px;padding:25px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
-.top{display:flex;justify-content:space-between;gap:20px}
-.title{font-size:22px;font-weight:700;line-height:1.3}
-.university{margin-top:8px;color:#555}
-.score{min-width:75px;height:75px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#111;color:white;font-size:21px;font-weight:700}
-.meta{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
-.tag{background:#eee;padding:6px 10px;border-radius:7px;font-size:13px}
-.tag.country{font-weight:600}
-.tag.ai-provider{font-weight:600}
-.tag.ai-provider.gemini{background:#eef5ff}
-.tag.both{background:#e8f6ea;font-weight:600}
-.tag.warning{background:#fff0f0}
-.tag.ielts{background:#f0f0ff}
-.tag.verification{font-weight:600}
-.tag.verification.ok{background:#eef8ee}
-.tag.verification.warn{background:#fff4e5}
-.tag a{color:inherit}
-.verification-notice{background:#fff4e5;border:1px solid #f0d7a5;border-radius:12px;padding:14px 16px;margin-bottom:24px;line-height:1.5}
-.verification-notice.runs-ok{background:#eef8ee;border-color:#c9e4cb}
-.section{margin-top:17px;line-height:1.6}
-.section strong{display:block;margin-bottom:5px}
-.button{display:inline-block;margin-top:20px;padding:10px 16px;border-radius:8px;background:#111;color:white;text-decoration:none}
-.empty{background:white;padding:40px;text-align:center;border-radius:12px;color:#555}
-
-@media(max-width:1000px){.columns{grid-template-columns:minmax(0,1fr)}}
-@media(max-width:700px){.controls{align-items:flex-start;flex-direction:column}.top{flex-direction:column}.score{width:70px;height:70px}h1{font-size:30px}.title{font-size:20px}}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f4f4f4;color:#171717}header{background:#111;color:white;padding:45px 24px}header .inner,main{max-width:1100px;margin:auto}h1{margin:0;font-size:38px}.subtitle{margin-top:10px;color:#aaa;font-size:16px}main{margin:30px auto;padding:0 20px}.controls{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:10px}.search-button{border:0;border-radius:9px;background:#111;color:#fff;padding:12px 18px;font:inherit;font-weight:600;cursor:pointer}.search-button:hover{opacity:.88}.search-button:disabled{opacity:.55;cursor:wait}.help{color:#666;font-size:13px}#providerBreakdown{margin-bottom:20px}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin-bottom:30px}.stat{background:white;border-radius:12px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.05)}.stat-number{font-size:32px;font-weight:700}.stat-label{color:#666;margin-top:5px}.position{background:white;border-radius:14px;padding:25px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.05)}.top{display:flex;justify-content:space-between;gap:20px}.title{font-size:22px;font-weight:700;line-height:1.3}.university{margin-top:8px;color:#555}.score{min-width:75px;height:75px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#111;color:white;font-size:21px;font-weight:700}.meta{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}.tag{background:#eee;padding:6px 10px;border-radius:7px;font-size:13px}.tag.country{font-weight:600}.tag.ai-provider{font-weight:600}.tag.ai-provider.gemini{background:#eef5ff}.tag.ai-provider.apmix{background:#f5efff}.tag.ai-provider.deepseek{background:#f5efff}.tag.warning{background:#fff0f0}.tag.ielts{background:#f0f0ff}.tag.verification{font-weight:600}.tag.verification.ok{background:#eef8ee}.tag.verification.warn{background:#fff4e5}.verification-notice{background:#fff4e5;border:1px solid #f0d7a5;border-radius:12px;padding:14px 16px;margin-bottom:24px;line-height:1.5}.tag a{color:inherit}.section{margin-top:17px;line-height:1.6}.section strong{display:block;margin-bottom:5px}.button{display:inline-block;margin-top:20px;padding:10px 16px;border-radius:8px;background:#111;color:white;text-decoration:none}.empty{background:white;padding:50px;text-align:center;border-radius:12px}@media(max-width:700px){.controls{align-items:flex-start;flex-direction:column}.top{flex-direction:column}.score{width:70px;height:70px}h1{font-size:30px}}
 </style>
 </head>
 <body>
 <header><div class="inner"><h1>PhD Radar</h1><div class="subtitle">Industrial Design · Sustainability · Consumption · Social & Political Transformation</div></div></header>
 <main>
 <div class="controls">
-  <div class="help">Results are automatically updated daily. Each search uses Gemini with Google Search and reads the discovered pages directly.</div>
-  <button id="searchButton" class="search-button" onclick="manualSearch()">🔎 Search for new PhDs</button>
+<div class="help">Results are automatically updated daily.</div>
+<button id="searchButton" class="search-button" onclick="manualSearch()">🔎 Search for new PhDs</button>
 </div>
-<div id="runs" class="verification-notice" style="display:none"></div>
-<div class="verification-notice"><strong>🔎 Verification:</strong> The radar checks whether each vacancy URL is reachable and appears to contain a PhD/doctoral vacancy. Verification is <strong>informational only</strong>; results are never removed because of a failed or inconclusive check. Gemini also uses Google Search and opens the discovered pages before extracting vacancy details.</div>
-<div id="sources"/> class="verification-notice" style="display:none"></div>
+<div class="help" id="providerBreakdown"></div>
+<div class="verification-notice"><strong>🔎 Verification:</strong> The radar checks whether each vacancy URL is reachable and appears to contain a PhD/doctoral vacancy. Verification is <strong>informational only</strong>; results are never removed because of a failed or inconclusive check.</div><div id="sources" class="verification-notice" style="display:none"></div>
 <div class="stats">
-  <div class="stat"><div class="stat-number" id="total">—</div><div class="stat-label">Active positions</div></div>
-  <div class="stat"><div class="stat-number" id="high">—</div><div class="stat-label">80+ score</div></div>
-  <div class="stat"><div class="stat-number" id="countries">—</div><div class="stat-label">Countries</div></div>
-  </div>
-<div class="view-switch" role="group" aria-label="Choose which results to show">
-  <button type="button" data-view="Gemini" aria-pressed="true">Gemini</button>
+<div class="stat"><div class="stat-number" id="total">—</div><div class="stat-label">Active positions</div></div>
+<div class="stat"><div class="stat-number" id="high">—</div><div class="stat-label">80+ score</div></div>
+<div class="stat"><div class="stat-number" id="countries">—</div><div class="stat-label">Countries</div></div>
 </div>
 <div id="results"></div>
 </main>
 <script>
-const PROVIDER_ORDER = ["Gemini"];
-let allResults = [];
-let runInfo = [];
-let currentView = "both";
-
-function escapeHTML(value) {
-  return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}
-
-// Only allow real web links in href attributes.
-function safeURL(value) {
-  try {
-    const parsed = new URL(String(value || ""));
-    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.href : "#";
-  } catch { return "#"; }
-}
-
-function providerOf(item) {
-  const v = String(item.ai_provider || "").toLowerCase();
-  if (v === "gemini") return "Gemini";
-  return "Other";
-}
-
-const urlKey = item => String(item.url || "").replace(/\/$/, "");
-const titleKey = item => (String(item.university || "") + "|" + String(item.title || "")).toLowerCase().replace(/[^a-z0-9]/g, "");
-
-// A vacancy counts as "found by both" if the same URL, or the same
-// university + title, was returned by more than one provider.
-function buildOverlap(results) {
-  return () => false;
-}
-
-function modelFor(provider) {
-  const fromRun = runInfo.find(run => run.provider === provider);
-  if (fromRun && fromRun.model) return fromRun.model;
-  const fromItem = allResults.find(item => providerOf(item) === provider && item.ai_model);
-  return fromItem ? fromItem.ai_model : "";
-}
-
-function renderCard(item, isBoth) {
-  const language = item.application_language || "Unknown";
-  const notEnglish = language === "Not English";
-  const ielts = item.ielts_requirement || "Not specified on official university website";
-  const verificationStatus = item.verification_status || "Not verified";
-  const provider = providerOf(item);
-  const providerClass = provider.toLowerCase().replace(/[^a-z]/g, "");
-  const verificationClass = verificationStatus === "Verified" ? "ok" : "warn";
-  const verificationNote = item.verification_note || "No successful verification yet.";
-  const verificationLink = item.verification_url
-    ? ' · <a href="' + escapeHTML(safeURL(item.verification_url)) + '" target="_blank" rel="noopener">checked URL</a>' : "";
-  const ieltsSource = item.ielts_source_url
-    ? ' · <a href="' + escapeHTML(safeURL(item.ielts_source_url)) + '" target="_blank" rel="noopener">official source</a>' : "";
-  const modelTag = item.ai_model ? " · " + escapeHTML(item.ai_model) : "";
-
-  return `<article class="position"><div class="top"><div><div class="title">${escapeHTML(item.title)}</div><div class="university">${escapeHTML(item.university)}${item.city ? " · " + escapeHTML(item.city) : ""}</div></div><div class="score">${escapeHTML(item.overall_score)}</div></div>
-<div class="meta">
-<span class="tag ai-provider ${providerClass}">🤖 ${escapeHTML(provider)}${modelTag}</span>
-${isBoth ? '<span class="tag both" title="The other provider also returned this vacancy">🤝 Found by both</span>' : ""}
-<span class="tag country">🌍 ${escapeHTML(item.country || "Country not specified")}</span>
-<span class="tag">Deadline: ${escapeHTML(item.deadline)}</span>
-${item.classification ? `<span class="tag">${escapeHTML(item.classification)}</span>` : ""}
-${item.research_area ? `<span class="tag">${escapeHTML(item.research_area)}</span>` : ""}
-${item.funding ? `<span class="tag">${escapeHTML(item.funding)}</span>` : ""}
-<span class="tag ${notEnglish ? "warning" : ""}">${notEnglish ? "⚠️ " : "🗣️ "}Language: ${escapeHTML(language)}</span>
-<span class="tag ielts">📚 IELTS: ${escapeHTML(ielts)}${ieltsSource}</span>
-<span class="tag verification ${verificationClass}" title="${escapeHTML(verificationNote)}">${verificationStatus === "Verified" ? "✓" : "⚠️"} ${escapeHTML(verificationStatus)}${verificationLink}</span>
-</div>
-<div class="section"><strong>Why it matches</strong>${escapeHTML(item.why_it_matches || "")}</div>
-${item.strategic_fit ? `<div class="section"><strong>Strategic fit</strong>${escapeHTML(item.strategic_fit)}</div>` : ""}
-${item.why_it_is_not_perfect ? `<div class="section"><strong>Potential weakness</strong>${escapeHTML(item.why_it_is_not_perfect)}</div>` : ""}
-${item.supervisor ? `<div class="section"><strong>Supervisor</strong>${escapeHTML(item.supervisor)}</div>` : ""}
-<a class="button" href="${escapeHTML(safeURL(item.url))}" target="_blank" rel="noopener">Open PhD position →</a></article>`;
-}
-
-function renderColumn(provider, items, isBoth) {
-  const run = runInfo.find(r => r.provider === provider);
-  const model = modelFor(provider);
-  const problem = run && run.status !== "ok"
-    ? `<div class="status">⚠️ Latest search ${escapeHTML(run.status)}${items.length ? " — showing earlier results" : ""}</div>` : "";
-  const cards = items.length
-    ? items.map(item => renderCard(item, isBoth(item))).join("")
-    : `<div class="empty">No ${escapeHTML(provider)} results yet.</div>`;
-  return `<section class="column"><div class="column-head ${provider.toLowerCase()}"><div><div class="name">🤖 ${escapeHTML(provider)}</div>${model ? `<div class="model">${escapeHTML(model)}</div>` : ""}${problem}</div><div class="count">${items.length} position${items.length === 1 ? "" : "s"}</div></div>${cards}</section>`;
-}
-
-function render() {
-  const isBoth = buildOverlap(allResults);
-  const sorted = [...allResults].sort((a, b) => Number(b.overall_score) - Number(a.overall_score));
-
-  document.getElementById("total").textContent = allResults.length;
-  document.getElementById("high").textContent = allResults.filter(x => Number(x.overall_score) >= 80).length;
-  document.getElementById("countries").textContent = new Set(allResults.map(x => x.country).filter(Boolean)).size;
-  const container = document.getElementById("results");
-  if (!allResults.length) {
-    container.innerHTML = '<div class="empty">No active PhD positions found.</div>';
-    return;
-  }
-
-  const providers = [currentView];
-  const columns = providers.map(p => renderColumn(p, sorted.filter(x => providerOf(x) === p), isBoth));
-  container.innerHTML = '<div class="columns' + (providers.length === 1 ? " single" : "") + '">' + columns.join("") + "</div>";
-
-  document.querySelectorAll(".view-switch button").forEach(button => {
-    button.setAttribute("aria-pressed", String(button.dataset.view === currentView));
-  });
-}
-
-async function loadResults() {
-  try {
-    const response = await fetch("results.json?" + Date.now());
-    if (!response.ok) throw new Error("HTTP " + response.status);
-    allResults = await response.json();
-    await loadSources();
-    render();
-  } catch (error) {
-    document.getElementById("results").innerHTML = '<div class="empty">Could not load results.</div>';
-    console.error(error);
-  }
-}
-
-async function loadSources() {
-  try {
-    const response = await fetch("sources.json?" + Date.now());
-    if (!response.ok) return;
-    const data = await response.json();
-
-    runInfo = Array.isArray(data.runs) ? data.runs : [];
-    if (runInfo.length) {
-      const when = data.searched_at ? new Date(data.searched_at).toLocaleString() : "";
-      const parts = runInfo.map(run => {
-        if (run.status === "ok") return `✓ <strong>${escapeHTML(run.provider)}</strong> (${escapeHTML(run.model)}): ${Number(run.returned) || 0} returned, ${Number(run.valid) || 0} valid${run.detail ? " · " + escapeHTML(run.detail) : ""}`;
-        return `⚠️ <strong>${escapeHTML(run.provider)}</strong> (${escapeHTML(run.model)}): ${escapeHTML(run.status)}${run.error ? " — " + escapeHTML(run.error) : ""}`;
-      });
-      const box = document.getElementById("runs");
-      box.innerHTML = "<strong>Latest search" + (when ? " · " + escapeHTML(when) : "") + "</strong><br>" + parts.join("<br>");
-      box.classList.toggle("runs-ok", runInfo.every(run => run.status === "ok"));
-      box.style.display = "block";
-    }
-
-    const sources = Array.isArray(data.sources) ? data.sources : [];
-    if (sources.length) {
-      const links = sources.map(source => '<li><a href="' + escapeHTML(safeURL(source.url)) + '" target="_blank" rel="noopener">' + escapeHTML(source.title || source.url) + "</a></li>").join("");
-      const box = document.getElementById("sources");
-      box.innerHTML = '<strong>🔗 Pages read by Gemini in the latest search</strong><div style="margin-top:6px;color:#666;font-size:13px">Google Search found these pages and the radar opened each one itself before Gemini read it. This provides the grounding pages used for the latest Gemini search.</div><ul style="margin:8px 0 0 20px;padding:0">' + links + "</ul>";
-      box.style.display = "block";
-    }
-  } catch (error) {
-    console.error(error);
-  }
-}
-
-function manualSearch() {
-  const button = document.getElementById("searchButton");
-  button.disabled = true;
-  button.textContent = "⏳ Starting search…";
-  window.open("https://github.com/baraynahan/PHD/actions/workflows/phd-radar.yml", "_blank", "noopener");
-  setTimeout(() => { button.disabled = false; button.textContent = "🔎 Search for new PhDs"; }, 2500);
-}
-
-document.querySelectorAll(".view-switch button").forEach(button => {
-  button.addEventListener("click", () => { currentView = button.dataset.view; render(); });
-});
-
+async function loadResults(){try{const response=await fetch("results.json?"+Date.now());if(!response.ok)throw new Error("HTTP "+response.status);render(await response.json());loadSources()}catch(error){document.getElementById("results").innerHTML='<div class="empty">Could not load results.</div>';console.error(error)}}
+async function loadSources(){try{const response=await fetch("sources.json?"+Date.now());if(!response.ok)return;const data=await response.json();const sources=Array.isArray(data.sources)?data.sources:[];const box=document.getElementById("sources");if(!sources.length)return;const links=sources.map(source=>'<li><a href="'+escapeHTML(source.url)+'" target="_blank" rel="noopener">'+escapeHTML(source.title||source.url)+'</a></li>').join("");box.innerHTML='<strong>🔗 Sources found during the latest search</strong><div style="margin-top:6px;color:#666;font-size:13px">These are the actual web sources returned by the search system. They are shown separately because a source may support more than one result.</div><ul style="margin:8px 0 0 20px;padding:0">'+links+'</ul>';box.style.display="block"}catch(error){console.error(error)}}
+function renderProviderBreakdown(results){const el=document.getElementById("providerBreakdown");if(!el)return;const counts={};for(const item of results){const provider=item.ai_provider||"Unknown";counts[provider]=(counts[provider]||0)+1}const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);el.textContent=entries.length?"By search engine: "+entries.map(([provider,count])=>provider+": "+count).join(" · "):""}
+function render(results){document.getElementById("total").textContent=results.length;document.getElementById("high").textContent=results.filter(x=>Number(x.overall_score)>=80).length;document.getElementById("countries").textContent=new Set(results.map(x=>x.country).filter(Boolean)).size;renderProviderBreakdown(results);const container=document.getElementById("results");if(!results.length){container.innerHTML='<div class="empty">No active PhD positions found.</div>';return}results.sort((a,b)=>Number(b.overall_score)-Number(a.overall_score));container.innerHTML=results.map(item=>{const language=item.application_language||"Unknown";const notEnglish=language==="Not English";const ielts=item.ielts_requirement||"Not specified on official university website";const verificationStatus=item.verification_status||"Not verified";const aiProvider=item.ai_provider||"Unknown";const aiProviderClass=aiProvider.toLowerCase().replace(/[^a-z]/g,"");const verificationClass=verificationStatus==="Verified"?"ok":"warn";const verificationNote=item.verification_note||"No successful verification yet.";const verificationLink=item.verification_url?" · <a href=\""+escapeHTML(item.verification_url)+"\" target=\"_blank\" rel=\"noopener\">checked URL</a>":"";const ieltsSource=item.ielts_source_url?` · <a href="${escapeHTML(item.ielts_source_url)}" target="_blank" rel="noopener">official source</a>`:"";return `<article class="position"><div class="top"><div><div class="title">${escapeHTML(item.title)}</div><div class="university">${escapeHTML(item.university)}${item.city?" · "+escapeHTML(item.city):""}</div></div><div class="score">${item.overall_score}</div></div><div class="meta"><span class="tag country">🌍 ${escapeHTML(item.country||"Country not specified")}</span><span class="tag ai-provider ${aiProviderClass}">🤖 API: ${escapeHTML(aiProvider)}</span><span class="tag">Deadline: ${escapeHTML(item.deadline)}</span>${item.classification?`<span class="tag">${escapeHTML(item.classification)}</span>`:""}${item.research_area?`<span class="tag">${escapeHTML(item.research_area)}</span>`:""}${item.funding?`<span class="tag">${escapeHTML(item.funding)}</span>`:""}<span class="tag ${notEnglish?"warning":""}">${notEnglish?"⚠️ ":"🗣️ "}Language: ${escapeHTML(language)}</span><span class="tag ielts">📚 IELTS: ${escapeHTML(ielts)}${ieltsSource}</span><span class="tag verification ${verificationClass}" title="${escapeHTML(verificationNote)}">${verificationStatus==="Verified"?"✓":"⚠️"} ${verificationStatus}${verificationLink}</span></div><div class="section"><strong>Why it matches</strong>${escapeHTML(item.why_it_matches||"")}</div>${item.strategic_fit?`<div class="section"><strong>Strategic fit</strong>${escapeHTML(item.strategic_fit)}</div>`:""}${item.why_it_is_not_perfect?`<div class="section"><strong>Potential weakness</strong>${escapeHTML(item.why_it_is_not_perfect)}</div>`:""}${item.supervisor?`<div class="section"><strong>Supervisor</strong>${escapeHTML(item.supervisor)}</div>`:""}<a class="button" href="${escapeHTML(item.url)}" target="_blank" rel="noopener">Open PhD position →</a></article>`}).join("")}
+function escapeHTML(value){return String(value??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;")}
+function manualSearch(){const button=document.getElementById("searchButton");button.disabled=true;button.textContent="⏳ Starting search…";window.open("https://github.com/baraynahan/PHD/actions/workflows/phd-radar.yml","_blank","noopener");setTimeout(()=>{button.disabled=false;button.textContent="🔎 Search for new PhDs"},2500)}
 loadResults();
 </script>
 </body>
