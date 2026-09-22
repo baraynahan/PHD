@@ -9,40 +9,29 @@ const RESULTS_FILE = "results.json";
 const NOTIFIED_FILE = "notified.json";
 const SOURCES_FILE = "sources.json";
 
-// "both" (default) runs Gemini and ChatGPT at the same time and keeps both
-// sets of results. "gemini" or "apmix" run just one provider (handy for testing).
 const AI_PROVIDER = String(process.env.AI_PROVIDER || "both").toLowerCase();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const APMIX_API_KEY = process.env.APMIX_API_KEY;
 
-// ChatGPT is reached through the apmix.ai API provider.
-const APMIX_MODEL = process.env.APMIX_MODEL || "deepseek-v4-flash-free";
 
-// Off by default. If you turn this on and apmix's endpoint doesn't support
 // a web-search tool on chat/completions, the code below catches the error
 // and silently retries without it — it will not break your run either way.
-const APMIX_USE_WEB_SEARCH = String(process.env.APMIX_USE_WEB_SEARCH || "false").toLowerCase() === "true";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 // Labels stored in results.json / shown on the dashboard.
 const LABEL_GEMINI = "Gemini";
-const LABEL_CHATGPT = "ChatGPT";
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-if (!["both", "gemini", "apmix"].includes(AI_PROVIDER)) {
-  throw new Error('AI_PROVIDER must be "both", "gemini" or "apmix".');
 }
 
 // Error text ends up in sources.json, which is published on GitHub Pages,
 // so never let an API key or a wall of response JSON leak into it.
 function safeErrorMessage(error) {
   let message = String(error?.message || error || "Unknown error");
-  for (const secret of [GEMINI_API_KEY, APMIX_API_KEY, TELEGRAM_BOT_TOKEN]) {
     if (secret) message = message.split(secret).join("***");
   }
   return message.length > 300 ? `${message.slice(0, 300)}…` : message;
@@ -156,7 +145,6 @@ Return ONLY a valid JSON array. Every object MUST contain:
   "language_source_url": "...",
   "ielts_requirement": "...",
   "ielts_source_url": "...",
-  "ai_provider": "Gemini | ChatGPT"
 }
 
 Use an empty string for source URLs when no official source was found.
@@ -251,18 +239,15 @@ function explainRejection(item) {
   return "passes";
 }
 
-// Maps any provider spelling (including the old "APMix" label already stored
 // in results.json) to one of the two dashboard labels. "" = unknown/legacy.
 function providerLabelOf(value) {
   const v = String(value || "").trim().toLowerCase();
   if (v === "gemini") return LABEL_GEMINI;
-  if (["chatgpt", "apmix", "openai", "gpt"].includes(v)) return LABEL_CHATGPT;
   return "";
 }
 
 function cleanResults(results) {
   if (!Array.isArray(results)) return [];
-  // Keyed by provider + URL: if Gemini and ChatGPT both find the same
   // vacancy, each provider keeps its own entry so both results are shown.
   const byKey = new Map();
 
@@ -315,7 +300,6 @@ function cleanResults(results) {
       // a label for you to weigh, it never removes a result.
       url_grounded: item.url_grounded === true
         ? true
-        : (item.url_grounded === false ? false : null), // null = unknown (ChatGPT has no grounding source list)
       verification_status: ["Verified", "Not verified"].includes(String(item.verification_status || ""))
         ? String(item.verification_status)
         : "Not verified",
@@ -459,10 +443,6 @@ function loadExisting() {
   return cleanResults(loadJSON(RESULTS_FILE, []));
 }
 
-// Prompt for ChatGPT (via apmix). Gemini builds its own prompts, see below.
-function buildChatGPTPrompt() {
-  const chatgptInstructions = `You are being queried through apmix.ai as ChatGPT (${APMIX_MODEL}).
-${APMIX_USE_WEB_SEARCH
     ? `A web-search tool may be available to you in this request — use it
 whenever you can to find and confirm real, currently open vacancy pages.`
     : `There is no web-search tool attached to this request.`}
@@ -495,7 +475,6 @@ ${URL_INTEGRITY_RULE}
 ================ OUTPUT ================
 ${OUTPUT_RULES}
 
-${chatgptInstructions}
 
 Today's date is ${todayISO()}. Only return positions whose deadline is after this date.
 `;
@@ -888,19 +867,12 @@ async function callGemini() {
   };
 }
 
-async function callApmix(prompt) {
-  const endpoint = "https://api.apmix.ai/v1/chat/completions";
-  console.log(`APMix is querying model: ${APMIX_MODEL}`);
-  console.log(`APMix web-search tool requested: ${APMIX_USE_WEB_SEARCH}`);
 
-  async function requestApmix(withTools) {
     const body = {
-      model: APMIX_MODEL,
       messages: [{ role: "user", content: prompt }],
       temperature: 0.2
     };
     if (withTools) {
-      // Experimental: OpenAI-style web_search tool. Whether apmix actually
       // supports this on /v1/chat/completions is unconfirmed — check their
       // docs. If it's rejected, we fall back to a plain request below.
       body.tools = [{ type: "web_search" }];
@@ -908,14 +880,12 @@ async function callApmix(prompt) {
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${APMIX_API_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify(body)
     });
     const data = await response.json();
     if (!response.ok) {
-      const err = new Error(`APMix API error ${response.status}: ${JSON.stringify(data)}`);
       err.status = response.status;
       throw err;
     }
@@ -923,33 +893,23 @@ async function callApmix(prompt) {
   }
 
   let data;
-  if (APMIX_USE_WEB_SEARCH) {
     try {
-      data = await requestApmix(true);
     } catch (error) {
-      console.warn(`APMix rejected the web_search tool (${error.message}). Retrying without it.`);
-      data = await requestApmix(false);
     }
   } else {
-    data = await requestApmix(false);
   }
 
   const text = data?.choices?.[0]?.message?.content || "";
-  console.log("APMix request succeeded.");
   if (data?.usage) {
-    console.log("APMix usage:", JSON.stringify(data.usage));
   } else {
-    console.log("APMix did not return a usage object.");
   }
 
   if (!text) {
     console.error(JSON.stringify(data, null, 2));
-    throw new Error("APMix returned no usable text.");
   }
 
   // Parse failure and "parsed to an empty/non-array" both mean the same
   // thing here: no usable positions. Neither is treated as a run failure —
-  // without web search, ChatGPT often can't name a real, currently open
   // vacancy with a real URL and correctly returns nothing rather than
   // inventing one, sometimes as "[]" and sometimes as a plain-text refusal.
   let parsed;
@@ -959,15 +919,12 @@ async function callApmix(prompt) {
     parsed = [];
   }
   if (!Array.isArray(parsed) || parsed.length === 0) {
-    console.log(`APMix returned no usable positions. Raw reply (first 300 chars): ${JSON.stringify(text.slice(0, 300))}`);
   }
   const labeledResults = (Array.isArray(parsed) ? parsed : []).map(r => ({
     ...r,
-    // APMix has no grounding-chunk list to check against, so we leave this
     // as null ("unknown") rather than pretending we verified it — the HTTP
     // verification step below still runs on every result regardless.
     url_grounded: null,
-    ai_model: APMIX_MODEL
   }));
 
   return { results: labeledResults, sources: [] };
@@ -982,11 +939,6 @@ const PROVIDERS = [
     call: callGemini
   },
   {
-    id: "apmix",
-    label: LABEL_CHATGPT,
-    model: APMIX_MODEL,
-    apiKey: APMIX_API_KEY,
-    call: () => callApmix(buildChatGPTPrompt())
   }
 ];
 
@@ -1117,7 +1069,6 @@ async function notifyExceptionalMatches(results) {
   const notified = loadJSON(NOTIFIED_FILE, {});
   let changed = false;
 
-  // Same vacancy found by both Gemini and ChatGPT -> one message, listing both.
   const byURL = new Map();
   for (const position of results.filter(x => Number(x.overall_score) >= 90)) {
     const url = normalizeURL(position.url);
@@ -1154,7 +1105,6 @@ async function main() {
   console.log("Running new search (all providers at the same time)...");
   const runs = await callAllProviders();
 
-  // Grounding sources only exist for Gemini (Google Search). ChatGPT has none.
   const geminiSources = runs.find(run => run.id === "gemini")?.sources || [];
 
   saveJSON(SOURCES_FILE, {
@@ -1197,7 +1147,6 @@ async function main() {
 
   await notifyExceptionalMatches(verifiedResults);
 
-  for (const label of [LABEL_GEMINI, LABEL_CHATGPT]) {
     const mine = verifiedResults.filter(result => result.ai_provider === label);
     if (!mine.length && !runs.some(run => run.label === label)) continue;
     console.log(`\nTop matches — ${label}:`);
