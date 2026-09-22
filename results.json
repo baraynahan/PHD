@@ -22,7 +22,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T17:07:40.551Z",
+    "verification_checked_at": "2026-09-22T17:34:00.927Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=8403"
   },
@@ -49,7 +49,7 @@
     "ai_model": "gemini-2.5-flash",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T17:07:40.551Z",
+    "verification_checked_at": "2026-09-22T17:34:00.927Z",
     "verification_note": "Page is reachable, but the automated content check could not confirm that it is a PhD vacancy page.",
     "verification_url": "https://www.kuleuven.be/personeel/jobsite/jobs/60278704"
   },
@@ -76,7 +76,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T17:07:40.551Z",
+    "verification_checked_at": "2026-09-22T17:34:00.927Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760"
   },
@@ -103,7 +103,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T17:07:40.551Z",
+    "verification_checked_at": "2026-09-22T17:34:00.927Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://phd.leeds.ac.uk/project/1897-justice-implications-of-the-uk-s-net-zero-carbon-policies"
   },
@@ -130,7 +130,7 @@
     "ai_model": "gemini-2.5-flash",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T17:07:40.551Z",
+    "verification_checked_at": "2026-09-22T17:34:00.927Z",
     "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND jobs.ul.ie",
     "verification_url": "https://jobs.ul.ie/job_description.php?jobID=1130"
   },
@@ -157,7 +157,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T17:07:41.909Z",
+    "verification_checked_at": "2026-09-22T17:34:02.151Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.jobbnorge.no/en/available-jobs/job/237083/personvernombud"
   },
@@ -184,7 +184,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-22T17:07:41.909Z",
+    "verification_checked_at": "2026-09-22T17:34:02.151Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://www.applykite.com/positions/doctoral-researcher-in-social-sciences-on-the-politics-of-the-green-transition-n7h1dowtqr"
   },
@@ -211,7 +211,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T17:07:41.909Z",
+    "verification_checked_at": "2026-09-22T17:34:02.151Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.lu.se/vacancies/phd-position-in-sustainability-science-just-energy-transitions"
   },
@@ -238,7 +238,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T17:07:41.909Z",
+    "verification_checked_at": "2026-09-22T17:34:02.151Z",
     "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND www.kulturpraxis-reparation.de",
     "verification_url": "https://www.kulturpraxis-reparation.de/en/fellowships/call-for-fellowships-2027-2028"
   },
@@ -265,7 +265,7 @@
     "ai_model": "",
     "url_grounded": null,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T17:07:41.909Z",
+    "verification_checked_at": "2026-09-22T17:34:02.151Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.uni-flensburg.de/fileadmin/content/europa-universitaet/organisation/einrichtungen/wasatia-graduate-school/dokumente/Call_for_PhD_Candidates_Wasatia_Graduate_School_2026.pdf"
   },
@@ -292,7 +292,7 @@
     "ai_model": "gemini-2.5-flash",
     "url_grounded": true,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-22T17:07:43.911Z",
+    "verification_checked_at": "2026-09-22T17:34:04.129Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://www.cbs.dk/om-cbs/job-og-karriere/ledige-stillinger/phd-scholarship-auditing"
   }
