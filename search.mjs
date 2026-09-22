@@ -221,30 +221,30 @@ function isFutureDeadline(deadline) {
 
 
 const GEMINI_DISCOVERY_ANGLES = [
-  \`Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
-\${CANDIDATE_PROFILE}
+  `Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
+${CANDIDATE_PROFILE}
 Focus on degrowth, post-growth, sustainable consumption, post-consumerism, political economy,
 sufficiency, commons, alternative ownership/access, sharing, social/ecological transformation
-and governance. \${GEOGRAPHY}
-Search official university vacancy pages. Exclude generic programmes and expired positions.\`,
-  \`Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
-\${CANDIDATE_PROFILE}
+and governance. ${GEOGRAPHY}
+Search official university vacancy pages. Exclude generic programmes and expired positions.`,
+  `Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
+${CANDIDATE_PROFILE}
 Focus on sustainable consumption, product longevity, repair/reuse, circular economy,
 sustainable lifestyles, social practices, consumption systems, service systems and
-product-service systems. \${GEOGRAPHY}
-Search official university vacancy pages. Exclude generic programmes and expired positions.\`,
-  \`Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
-\${CANDIDATE_PROFILE}
+product-service systems. ${GEOGRAPHY}
+Search official university vacancy pages. Exclude generic programmes and expired positions.`,
+  `Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
+${CANDIDATE_PROFILE}
 Focus on alternative ownership, access, sharing systems, transition design, social design,
 design justice, participatory/co-design, critical design, systemic design and alternative
-futures. \${GEOGRAPHY}
-Search official university vacancy pages. Exclude generic programmes and expired positions.\`,
-  \`Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
-\${CANDIDATE_PROFILE}
+futures. ${GEOGRAPHY}
+Search official university vacancy pages. Exclude generic programmes and expired positions.`,
+  `Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
+${CANDIDATE_PROFILE}
 Focus on governance, public policy, transition studies, sustainability science, STS,
 sociology, political science and environmental humanities where the research concerns
-consumption, sustainability or societal/ecological transformation. \${GEOGRAPHY}
-Search official university vacancy pages. Exclude generic programmes and expired positions.\`
+consumption, sustainability or societal/ecological transformation. ${GEOGRAPHY}
+Search official university vacancy pages. Exclude generic programmes and expired positions.`
 ];
 
 const GEMINI_MAX_PAGES = 32;
@@ -262,7 +262,7 @@ async function fetchPage(url) {
     const finalURL = normalizeURL(response.url || url);
     const contentType = String(response.headers.get("content-type") || "");
     if (!response.ok || !contentType.includes("text"))
-      return { ok:false, url:finalURL, title:"", text:"", reason:\`HTTP \${response.status} / \${contentType || "unknown content type"}\` };
+      return { ok:false, url:finalURL, title:"", text:"", reason:`HTTP ${response.status} / ${contentType || "unknown content type"}` };
     const html = await response.text();
     const text = html.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ")
       .replace(/<noscript[\s\S]*?<\/noscript>/gi," ").replace(/<svg[\s\S]*?<\/svg>/gi," ")
@@ -291,13 +291,13 @@ async function fetchHitPages(hits) {
 
 async function geminiGenerate(prompt, useSearch=true) {
   if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not configured.");
-  const endpoint=\`https://generativelanguage.googleapis.com/v1beta/models/\${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=\${encodeURIComponent(GEMINI_API_KEY)}\`;
+  const endpoint=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
   const body={contents:[{role:"user",parts:[{text:prompt}]}],
     ...(useSearch ? {tools:[{google_search:{}}]} : {}),
     generationConfig:{temperature:0.1,responseMimeType:"text/plain"}};
   const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
   const data=await response.json();
-  if (!response.ok) throw new Error(data?.error?.message || \`Gemini HTTP \${response.status}\`);
+  if (!response.ok) throw new Error(data?.error?.message || `Gemini HTTP ${response.status}`);
   const text=(data?.candidates||[]).flatMap(c=>c?.content?.parts||[]).map(p=>p?.text||"").join("\n").trim();
   if (!text) throw new Error("Gemini returned no text.");
   return {text,data};
@@ -318,37 +318,37 @@ async function geminiDiscover() {
   const allHits=[],seen=new Set();
   for (let i=0;i<GEMINI_DISCOVERY_ANGLES.length;i++) {
     if (i>0) await sleep(GEMINI_CALL_GAP_MS);
-    const prompt=\`You are the discovery stage of a PhD vacancy radar.
-\${GEMINI_DISCOVERY_ANGLES[i]}
-\${SEARCH_STRATEGY}
-\${RULES}
+    const prompt=`You are the discovery stage of a PhD vacancy radar.
+${GEMINI_DISCOVERY_ANGLES[i]}
+${SEARCH_STRATEGY}
+${RULES}
 Return a short textual list of the most relevant pages you found. Do not invent URLs.
-The program will take URLs only from Google's grounding metadata, not from your text.\`;
+The program will take URLs only from Google's grounding metadata, not from your text.`;
     const {data}=await geminiGenerate(prompt,true);
     for (const hit of collectGroundingHits(data)) {
       const url=normalizeURL(hit.url); if (!url || seen.has(url)) continue;
       seen.add(url); allHits.push({...hit,url});
     }
-    console.log(\`[Gemini] angle \${i+1}/\${GEMINI_DISCOVERY_ANGLES.length}: \${allHits.length} unique hits so far\`);
+    console.log(`[Gemini] angle ${i+1}/${GEMINI_DISCOVERY_ANGLES.length}: ${allHits.length} unique hits so far`);
   }
   if (!allHits.length) throw new Error("Gemini Google Search returned no grounded web pages.");
   return allHits;
 }
 
 function buildExtractionPrompt(pages) {
-  const pageBlocks=pages.map(page=>\`--- PAGE \${page.id} ---
-TITLE: \${page.title||""}
-URL: \${page.url}
+  const pageBlocks=pages.map(page=>`--- PAGE ${page.id} ---
+TITLE: ${page.title||""}
+URL: ${page.url}
 CONTENT:
-\${page.text}
---- END PAGE \${page.id} ---\`).join("\n\n");
-  return \`You are the extraction and verification stage of a funded European PhD vacancy radar.
+${page.text}
+--- END PAGE ${page.id} ---`).join("\n\n");
+  return `You are the extraction and verification stage of a funded European PhD vacancy radar.
 
-\${CANDIDATE_PROFILE}
-\${GEOGRAPHY}
-\${RULES}
-\${URL_INTEGRITY_RULE}
-\${OUTPUT_RULES}
+${CANDIDATE_PROFILE}
+${GEOGRAPHY}
+${RULES}
+${URL_INTEGRITY_RULE}
+${OUTPUT_RULES}
 
 Use the supplied page contents as primary evidence. A page is eligible only if it describes
 one specific PhD/doctoral vacancy or doctoral research position, funding is clearly stated,
@@ -362,7 +362,7 @@ a URL or IELTS score. If no official IELTS requirement can be established, use t
 
 Return ONLY a JSON array. Do not use Markdown fences.
 
-\${pageBlocks}\`;
+${pageBlocks}`;
 }
 
 async function extractBatch(pages) {
