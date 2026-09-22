@@ -22,7 +22,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T22:34:50.977Z",
+    "verification_checked_at": "2026-09-22T22:44:33.707Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=8403"
   },
@@ -49,7 +49,7 @@
     "ai_model": "gemini-2.5-flash",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T22:34:50.977Z",
+    "verification_checked_at": "2026-09-22T22:44:33.707Z",
     "verification_note": "Page is reachable, but the automated content check could not confirm that it is a PhD vacancy page.",
     "verification_url": "https://www.kuleuven.be/personeel/jobsite/jobs/60278704"
   },
@@ -76,7 +76,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T22:34:50.977Z",
+    "verification_checked_at": "2026-09-22T22:44:33.707Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760"
   },
@@ -103,7 +103,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T22:34:50.977Z",
+    "verification_checked_at": "2026-09-22T22:44:33.707Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://phd.leeds.ac.uk/project/1897-justice-implications-of-the-uk-s-net-zero-carbon-policies"
   },
@@ -130,7 +130,7 @@
     "ai_model": "gemini-2.5-flash",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T22:34:50.977Z",
+    "verification_checked_at": "2026-09-22T22:44:33.707Z",
     "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND jobs.ul.ie",
     "verification_url": "https://jobs.ul.ie/job_description.php?jobID=1130"
   },
@@ -157,7 +157,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T22:34:52.268Z",
+    "verification_checked_at": "2026-09-22T22:44:34.381Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.jobbnorge.no/en/available-jobs/job/237083/personvernombud"
   },
@@ -184,7 +184,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-22T22:34:52.268Z",
+    "verification_checked_at": "2026-09-22T22:44:34.381Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://www.applykite.com/positions/doctoral-researcher-in-social-sciences-on-the-politics-of-the-green-transition-n7h1dowtqr"
   },
@@ -211,7 +211,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T22:34:52.268Z",
+    "verification_checked_at": "2026-09-22T22:44:34.381Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.lu.se/vacancies/phd-position-in-sustainability-science-just-energy-transitions"
   },
@@ -238,7 +238,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T22:34:52.268Z",
+    "verification_checked_at": "2026-09-22T22:44:34.381Z",
     "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND www.kulturpraxis-reparation.de",
     "verification_url": "https://www.kulturpraxis-reparation.de/en/fellowships/call-for-fellowships-2027-2028"
   },
@@ -265,7 +265,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-22T22:34:52.268Z",
+    "verification_checked_at": "2026-09-22T22:44:34.381Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.uni-flensburg.de/fileadmin/content/europa-universitaet/organisation/einrichtungen/wasatia-graduate-school/dokumente/Call_for_PhD_Candidates_Wasatia_Graduate_School_2026.pdf"
   },
@@ -292,8 +292,35 @@
     "ai_model": "gemini-2.5-flash",
     "url_grounded": true,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-22T22:34:54.137Z",
+    "verification_checked_at": "2026-09-22T22:44:35.483Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://www.cbs.dk/om-cbs/job-og-karriere/ledige-stillinger/phd-scholarship-auditing"
+  },
+  {
+    "title": "PhD position in Economic Ethics and/or Environmental Ethics (Financial Ethics Research Group / Sustainable Finance Lab)",
+    "university": "University of Gothenburg, Department of Philosophy, Linguistics and Theory of Science",
+    "country": "Sweden",
+    "city": "Gothenburg",
+    "deadline": "2026-10-13",
+    "url": "https://philjobs.org/job/show/31961",
+    "funding": "PhD position in Sweden, funded as full-time employment for four years, with salary, occupational pension, 28 days base vacation, wellness time during working hours and compensation for medical visits. Connected to the Vinnova-funded Sustainable Finance Lab research programme.",
+    "overall_score": 63,
+    "why_it_matches": "The research area is deliberately broad and includes the political philosophy of markets, ethics of commodification, consumer duties to buy or invest sustainably, firm and bank duties to mitigate climate change, collective action problems and the philosophy of environmental economics — all of which touch the candidate's ownership/access, consumption, political-economy and post-growth interests from a normative angle. It is a theoretical, argument-driven PhD, matching her comfort with theoretical and critical work, and it values a self-formulated research question, which suits a design researcher used to framing problems. Deductions: low design compatibility, a philosophy department where applicants normally need a demonstrable philosophical research background, and an ethics rather than systems/practice framing of sustainability. Included nevertheless as a genuinely funded, clearly specified, future-deadline vacancy with meaningful overlap on markets, commodities and sustainable consumption.",
+    "strategic_fit": "Extends the trajectory from design-based sustainability research into normative political economy, providing the theoretical/philosophical grounding for sufficiency, limitarianism, commons and degrowth arguments that the candidate currently approaches through design and social practice. The Financial Ethics Research Group and Sustainable Finance Lab connect this work to markets, money and institutional reform, supporting the social and political transformation strand of her agenda.",
+    "why_it_is_not_perfect": "",
+    "supervisor": "",
+    "classification": "",
+    "research_area": "",
+    "application_language": "English",
+    "language_source_url": "https://philjobs.org/job/show/31961",
+    "ielts_requirement": "Not specified on official university website",
+    "ielts_source_url": "",
+    "ai_provider": "DeepSeek",
+    "ai_model": "",
+    "url_grounded": false,
+    "verification_status": "Verified",
+    "verification_checked_at": "2026-09-22T22:44:35.484Z",
+    "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
+    "verification_url": "https://philjobs.org/job/show/31961"
   }
 ]
