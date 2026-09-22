@@ -9,27 +9,36 @@ const RESULTS_FILE = "results.json";
 const NOTIFIED_FILE = "notified.json";
 const SOURCES_FILE = "sources.json";
 
-const AI_PROVIDER = "gemini";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
+// New: apmix.ai gives us DeepSeek; Tavily gives DeepSeek the web search it
+// doesn't have natively (mirrors what Gemini gets for free via groundingMetadata).
+const APMIX_API_KEY = process.env.APMIX_API_KEY;
+const APMIX_MODEL = process.env.APMIX_MODEL || "deepseek-v4-flash-free";
+const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
+
 // Labels stored in results.json / shown on the dashboard.
 const LABEL_GEMINI = "Gemini";
+const LABEL_APMIX = "DeepSeek";
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-if (AI_PROVIDER !== "gemini") {
-  throw new Error('AI_PROVIDER must be "gemini".');
+if (!GEMINI_API_KEY && !APMIX_API_KEY) {
+  throw new Error(
+    "Configure at least one provider: set GEMINI_API_KEY, and/or " +
+    "APMIX_API_KEY together with TAVILY_API_KEY."
+  );
 }
 
 // Error text ends up in sources.json, which is published on GitHub Pages,
 // so never let an API key or a wall of response JSON leak into it.
 function safeErrorMessage(error) {
   let message = String(error?.message || error || "Unknown error");
-  for (const secret of [GEMINI_API_KEY, TELEGRAM_BOT_TOKEN]) {
+  for (const secret of [GEMINI_API_KEY, TELEGRAM_BOT_TOKEN, APMIX_API_KEY, TAVILY_API_KEY]) {
     if (secret) message = message.split(secret).join("***");
   }
   return message.length > 300 ? `${message.slice(0, 300)}…` : message;
@@ -143,7 +152,7 @@ Return ONLY a valid JSON array. Every object MUST contain:
   "language_source_url": "...",
   "ielts_requirement": "...",
   "ielts_source_url": "...",
-  "ai_provider": "Gemini"
+  "ai_provider": "Gemini | DeepSeek"
 }
 
 Use an empty string for source URLs when no official source was found.
@@ -248,6 +257,33 @@ const EXTRACTION_BATCH_SIZE = 8;
 const GEMINI_CALL_GAP_MS = 6500;
 const PAGE_USER_AGENT = "Mozilla/5.0 (compatible; PhD-Radar/1.0)";
 
+// Tavily takes literal search queries (not free-form instructions like
+// Gemini's search tool), so this is a fixed query list covering the same
+// ground as SEARCH_STRATEGY + GEOGRAPHY.
+const TAVILY_QUERIES = [
+  "fully funded PhD position sustainable consumption",
+  "open PhD vacancy degrowth post-growth Europe",
+  "PhD position circular economy ownership access commons",
+  "doctoral position sufficiency social practices sustainability",
+  "PhD vacancy transition design social design justice",
+  "fully funded PhD political economy sustainability transformation",
+  "doctoral position product longevity repair reuse consumption",
+  "PhD position service systems product-service systems sustainability",
+  "open doctoral vacancy participatory co-design governance policy",
+  "fully funded PhD Netherlands Sweden Denmark sustainability design",
+  "PhD vacancy Germany UK Switzerland Austria sustainable consumption",
+  "open PhD position alternative futures critical design sustainability",
+  "fully funded PhD sustainable lifestyles social design Europe",
+  "PhD vacancy sharing economy access-based consumption research",
+  "doctoral vacancy systemic design service design sustainability",
+  "PhD position societal transformation ecological transition Europe"
+];
+
+const TAVILY_MAX_RESULTS_PER_QUERY = 10;
+const TAVILY_CALL_GAP_MS = 600;
+const APMIX_MAX_PAGES = 32;
+const APMIX_CALL_GAP_MS = 3000;
+
 async function fetchPage(url) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 18000);
@@ -269,7 +305,7 @@ async function fetchPage(url) {
   } finally { clearTimeout(timeout); }
 }
 
-async function fetchHitPages(hits) {
+async function fetchHitPages(hits, maxPages = GEMINI_MAX_PAGES) {
   const pages=[], skipped=[], seen=new Set();
   for (const hit of hits) {
     const rawURL=normalizeURL(hit.url); if (!rawURL || seen.has(rawURL)) continue; seen.add(rawURL);
@@ -278,7 +314,7 @@ async function fetchHitPages(hits) {
       if (!page.ok || page.text.length<300) { skipped.push({...hit,reason:page.reason||"page too short"}); continue; }
       if (!/phd|ph\.d|doctoral|doctorate/i.test(page.text)) { skipped.push({...hit,reason:"not obviously doctoral"}); continue; }
       pages.push({...hit,...page,url:page.url||rawURL});
-      if (pages.length>=GEMINI_MAX_PAGES) break;
+      if (pages.length>=maxPages) break;
     } catch(error) { skipped.push({...hit,reason:safeErrorMessage(error)}); }
   }
   return {pages,skipped};
@@ -330,13 +366,105 @@ The program will take URLs only from Google's grounding metadata, not from your 
   return allHits;
 }
 
-function buildExtractionPrompt(pages) {
+// --- Tavily (search) + apmix (DeepSeek) -----------------------------------
+// Tavily plays the same role here that Gemini's built-in google_search tool
+// plays above: it turns queries into a set of candidate URLs. Those URLs
+// then go through the same fetchHitPages() used by Gemini, so DeepSeek's
+// extraction step reads real page text, not just a Tavily snippet.
+
+async function tavilySearch(query) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  try {
+    const response = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: TAVILY_API_KEY,
+        query,
+        search_depth: "advanced",
+        max_results: TAVILY_MAX_RESULTS_PER_QUERY,
+        include_answer: false,
+        include_raw_content: false
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      console.warn(`[Tavily] error for query "${query}": ${response.status} ${safeErrorMessage(JSON.stringify(data))}`);
+      return [];
+    }
+    return Array.isArray(data.results) ? data.results : [];
+  } catch (error) {
+    console.warn(`[Tavily] request failed for query "${query}": ${safeErrorMessage(error)}`);
+    return [];
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function tavilyDiscover() {
+  if (!TAVILY_API_KEY) throw new Error("TAVILY_API_KEY is not configured.");
+  console.log("[DeepSeek] Tavily search discovery starting...");
+  const allHits = [], seen = new Set();
+  for (let i = 0; i < TAVILY_QUERIES.length; i++) {
+    if (i > 0) await sleep(TAVILY_CALL_GAP_MS);
+    const query = TAVILY_QUERIES[i];
+    const results = await tavilySearch(query);
+    for (const item of results) {
+      const url = normalizeURL(item.url);
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      allHits.push({ title: String(item.title || url).trim(), url });
+    }
+    console.log(`[DeepSeek] query ${i + 1}/${TAVILY_QUERIES.length} ("${query}"): ${allHits.length} unique hits so far`);
+  }
+  if (!allHits.length) throw new Error("Tavily search returned no results.");
+  return allHits;
+}
+
+async function apmixGenerate(prompt) {
+  if (!APMIX_API_KEY) throw new Error("APMIX_API_KEY is not configured.");
+  const endpoint = "https://api.apmix.ai/v1/chat/completions";
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${APMIX_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: APMIX_MODEL,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.1
+    })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data?.error?.message || `APMix HTTP ${response.status}`);
+  const text = data?.choices?.[0]?.message?.content || "";
+  if (!text) throw new Error("APMix returned no text.");
+  return { text, data };
+}
+
+// hasSearchTool=false swaps out the "you may use Google Search" line for one
+// telling DeepSeek it only has the supplied page text, since apmix has no
+// search tool of its own.
+function buildExtractionPrompt(pages, { hasSearchTool = true } = {}) {
   const pageBlocks=pages.map(page=>`--- PAGE ${page.id} ---
 TITLE: ${page.title||""}
 URL: ${page.url}
 CONTENT:
 ${page.text}
 --- END PAGE ${page.id} ---`).join("\n\n");
+
+  const languageNote = hasSearchTool
+    ? `For language and IELTS fields, prefer official university sources. You may use Google Search
+if necessary to locate the relevant official university English/IELTS page, but never invent
+a URL or IELTS score. If no official IELTS requirement can be established, use the required fallback.`
+    : `For language and IELTS fields, prefer official university sources. You do not have web
+search access beyond the page contents supplied below — do not guess or invent an IELTS
+score or a source URL. If the supplied page content does not state an official IELTS
+requirement, use the required fallback rather than guessing.`;
+
   return `You are the extraction and verification stage of a funded European PhD vacancy radar.
 
 ${CANDIDATE_PROFILE}
@@ -351,9 +479,7 @@ and the application deadline is explicitly stated and still in the future relati
 Do not turn a generic programme, news article, lab page or directory into a vacancy.
 
 For "url", copy the URL from the supplied PAGE header exactly.
-For language and IELTS fields, prefer official university sources. You may use Google Search
-if necessary to locate the relevant official university English/IELTS page, but never invent
-a URL or IELTS score. If no official IELTS requirement can be established, use the required fallback.
+${languageNote}
 
 Return ONLY a JSON array. Do not use Markdown fences.
 
@@ -364,6 +490,13 @@ async function extractBatch(pages) {
   const {text}=await geminiGenerate(buildExtractionPrompt(pages),true);
   const parsed=extractJSON(text);
   if (!Array.isArray(parsed)) throw new Error("Gemini extraction response was not an array.");
+  return parsed;
+}
+
+async function extractApmixBatch(pages) {
+  const { text } = await apmixGenerate(buildExtractionPrompt(pages, { hasSearchTool: false }));
+  const parsed = extractJSON(text);
+  if (!Array.isArray(parsed)) throw new Error("DeepSeek extraction response was not an array.");
   return parsed;
 }
 
@@ -387,8 +520,11 @@ function explainRejection(item) {
   return "passes";
 }
 
+const PROVIDER_LABELS = [LABEL_GEMINI, LABEL_APMIX];
+
 function providerLabelOf(value) {
-  return String(value || "").trim().toLowerCase() === "gemini" ? LABEL_GEMINI : "";
+  const raw = String(value || "").trim();
+  return PROVIDER_LABELS.find(label => label.toLowerCase() === raw.toLowerCase()) || "";
 }
 
 function cleanResults(results) {
@@ -585,15 +721,17 @@ function saveJSON(file, value) {
   writeFileSync(file, JSON.stringify(value, null, 2) + "\n");
 }
 
+// Keep every provider's prior results (cleanResults already keys each entry
+// by "provider|url", so Gemini and DeepSeek rows never collide).
 function loadExisting() {
-  return cleanResults(loadJSON(RESULTS_FILE, [])).filter(result => result.ai_provider === LABEL_GEMINI);
+  return cleanResults(loadJSON(RESULTS_FILE, []));
 }
 
 async function callGemini() {
   const hits = await geminiDiscover();
   console.log(`[Gemini] ${hits.length} distinct search hits. Opening the pages...`);
 
-  const { pages: readable, skipped } = await fetchHitPages(hits);
+  const { pages: readable, skipped } = await fetchHitPages(hits, GEMINI_MAX_PAGES);
   const pages = readable.slice(0, GEMINI_MAX_PAGES).map((page, index) => ({ ...page, id: index + 1 }));
   console.log(`[Gemini] ${pages.length} readable PhD-related pages (of ${hits.length} hits); reading them now...`);
 
@@ -628,6 +766,48 @@ async function callGemini() {
   };
 }
 
+async function callApmix() {
+  if (!TAVILY_API_KEY) {
+    throw new Error("TAVILY_API_KEY is not configured (required for the DeepSeek/apmix provider's search).");
+  }
+
+  const hits = await tavilyDiscover();
+  console.log(`[DeepSeek] ${hits.length} distinct Tavily hits. Opening the pages...`);
+
+  const { pages: readable, skipped } = await fetchHitPages(hits, APMIX_MAX_PAGES);
+  const pages = readable.slice(0, APMIX_MAX_PAGES).map((page, index) => ({ ...page, id: index + 1 }));
+  console.log(`[DeepSeek] ${pages.length} readable PhD-related pages (of ${hits.length} hits); reading them now...`);
+
+  const results = [];
+  let failedBatches = 0;
+  let batches = 0;
+  for (let i = 0; i < pages.length; i += EXTRACTION_BATCH_SIZE) {
+    if (i > 0) await sleep(APMIX_CALL_GAP_MS);
+    batches++;
+    const batch = pages.slice(i, i + EXTRACTION_BATCH_SIZE);
+    try {
+      results.push(...await extractApmixBatch(batch));
+    } catch (error) {
+      failedBatches++;
+      console.warn(`[DeepSeek] could not read pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
+    }
+  }
+  if (batches > 0 && failedBatches === batches) {
+    throw new Error("DeepSeek found pages but could not read any of them.");
+  }
+
+  const detail = `${hits.length} Tavily hits, ${pages.length} readable pages, ` +
+    `${results.length} qualified` +
+    (failedBatches ? `, ${failedBatches}/${batches} read batches failed` : "");
+  console.log(`[DeepSeek] ${detail}`);
+
+  return {
+    results,
+    sources: pages.map(page => ({ title: page.title || page.url, url: page.url })),
+    detail
+  };
+}
+
 const PROVIDERS = [
   {
     id: "gemini",
@@ -635,6 +815,13 @@ const PROVIDERS = [
     model: GEMINI_MODEL,
     apiKey: GEMINI_API_KEY,
     call: callGemini
+  },
+  {
+    id: "apmix",
+    label: LABEL_APMIX,
+    model: APMIX_MODEL,
+    apiKey: APMIX_API_KEY,
+    call: callApmix
   }
 ];
 
@@ -689,7 +876,7 @@ async function runProvider(provider) {
 // Runs the selected providers at the same time.
 async function callAllProviders() {
   const selected = PROVIDERS;
-  console.log(`AI provider: ${selected[0].label} (${selected[0].model})`);
+  console.log(`AI providers: ${selected.map(p => `${p.label} (${p.model})`).join(", ")}`);
   const runs = await Promise.all(selected.map(runProvider));
 
   if (!runs.some(run => run.status === "ok")) {
@@ -798,10 +985,16 @@ async function main() {
   const existingResults = loadExisting();
   console.log(`Existing active positions: ${existingResults.length}`);
 
-  console.log("Running new search with Gemini + Google Search...");
+  console.log(`Running new search across ${PROVIDERS.map(p => p.label).join(" + ")}...`);
   const runs = await callAllProviders();
 
-    const geminiSources = runs.find(run => run.id === "gemini")?.sources || [];
+  const sourcesByProvider = new Map(runs.map(run => [run.id, run.sources]));
+  const allSourcesMap = new Map();
+  for (const sources of sourcesByProvider.values()) {
+    for (const source of sources) {
+      if (source?.url) allSourcesMap.set(source.url, source);
+    }
+  }
 
   saveJSON(SOURCES_FILE, {
     searched_at: new Date().toISOString(),
@@ -812,11 +1005,12 @@ async function main() {
       error: run.error,
       returned: run.returned,
       valid: run.results.length,
-      detail: run.detail
+      detail: run.detail,
+      sources: run.sources.length
     })),
-    sources: geminiSources
+    sources: Array.from(allSourcesMap.values())
   });
-  console.log(`Saved ${geminiSources.length} Gemini search sources.`);
+  console.log(`Saved ${allSourcesMap.size} search sources across ${runs.length} provider(s).`);
 
   // Merge existing + new, keyed by provider + URL so both providers' results
   // are kept side by side. Within one provider, the higher score wins.
@@ -843,7 +1037,7 @@ async function main() {
 
   await notifyExceptionalMatches(verifiedResults);
 
-  for (const label of [LABEL_GEMINI]) {
+  for (const label of PROVIDERS.map(p => p.label)) {
     const mine = verifiedResults.filter(result => result.ai_provider === label);
     if (!mine.length && !runs.some(run => run.label === label)) continue;
     console.log(`\nTop matches — ${label}:`);
