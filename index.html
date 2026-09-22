@@ -34,7 +34,6 @@ main{margin:30px auto;padding:0 20px}
 .column{min-width:0}
 .column-head{display:flex;justify-content:space-between;align-items:center;gap:12px;background:white;border-radius:12px;padding:14px 18px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.05);border-top:4px solid #ccc}
 .column-head.gemini{border-top-color:#4c8bf5}
-.column-head.chatgpt{border-top-color:#9b6bff}
 .column-head .name{font-weight:700;font-size:18px}
 .column-head .model{color:#666;font-size:13px;margin-top:3px;word-break:break-all}
 .column-head .count{color:#444;font-size:14px;white-space:nowrap}
@@ -50,7 +49,6 @@ main{margin:30px auto;padding:0 20px}
 .tag.country{font-weight:600}
 .tag.ai-provider{font-weight:600}
 .tag.ai-provider.gemini{background:#eef5ff}
-.tag.ai-provider.chatgpt,.tag.ai-provider.apmix{background:#f5efff}
 .tag.both{background:#e8f6ea;font-weight:600}
 .tag.warning{background:#fff0f0}
 .tag.ielts{background:#f0f0ff}
@@ -73,27 +71,24 @@ main{margin:30px auto;padding:0 20px}
 <header><div class="inner"><h1>PhD Radar</h1><div class="subtitle">Industrial Design · Sustainability · Consumption · Social & Political Transformation</div></div></header>
 <main>
 <div class="controls">
-  <div class="help">Results are automatically updated daily. Each search runs Gemini and ChatGPT at the same time.</div>
+  <div class="help">Results are automatically updated daily. Each search uses Gemini with Google Search and reads the discovered pages directly.</div>
   <button id="searchButton" class="search-button" onclick="manualSearch()">🔎 Search for new PhDs</button>
 </div>
 <div id="runs" class="verification-notice" style="display:none"></div>
-<div class="verification-notice"><strong>🔎 Verification:</strong> The radar checks whether each vacancy URL is reachable and appears to contain a PhD/doctoral vacancy. Verification is <strong>informational only</strong>; results are never removed because of a failed or inconclusive check. ChatGPT answers without live web search, so check its links carefully.</div>
-<div id="sources" class="verification-notice" style="display:none"></div>
+<div class="verification-notice"><strong>🔎 Verification:</strong> The radar checks whether each vacancy URL is reachable and appears to contain a PhD/doctoral vacancy. Verification is <strong>informational only</strong>; results are never removed because of a failed or inconclusive check. Gemini also uses Google Search and opens the discovered pages before extracting vacancy details.</div>
+<div id="sources"/> class="verification-notice" style="display:none"></div>
 <div class="stats">
   <div class="stat"><div class="stat-number" id="total">—</div><div class="stat-label">Active positions</div></div>
   <div class="stat"><div class="stat-number" id="high">—</div><div class="stat-label">80+ score</div></div>
   <div class="stat"><div class="stat-number" id="countries">—</div><div class="stat-label">Countries</div></div>
-  <div class="stat"><div class="stat-number" id="both">—</div><div class="stat-label">Found by both</div></div>
-</div>
+  </div>
 <div class="view-switch" role="group" aria-label="Choose which results to show">
-  <button type="button" data-view="both" aria-pressed="true">Side by side</button>
-  <button type="button" data-view="Gemini" aria-pressed="false">Gemini</button>
-  <button type="button" data-view="ChatGPT" aria-pressed="false">ChatGPT</button>
+  <button type="button" data-view="Gemini" aria-pressed="true">Gemini</button>
 </div>
 <div id="results"></div>
 </main>
 <script>
-const PROVIDER_ORDER = ["Gemini", "ChatGPT"];
+const PROVIDER_ORDER = ["Gemini"];
 let allResults = [];
 let runInfo = [];
 let currentView = "both";
@@ -110,11 +105,9 @@ function safeURL(value) {
   } catch { return "#"; }
 }
 
-// Older results.json entries were labelled "APMix"; that is the ChatGPT side.
 function providerOf(item) {
   const v = String(item.ai_provider || "").toLowerCase();
   if (v === "gemini") return "Gemini";
-  if (v === "chatgpt" || v === "apmix") return "ChatGPT";
   return "Other";
 }
 
@@ -124,16 +117,7 @@ const titleKey = item => (String(item.university || "") + "|" + String(item.titl
 // A vacancy counts as "found by both" if the same URL, or the same
 // university + title, was returned by more than one provider.
 function buildOverlap(results) {
-  const byUrl = new Map(), byTitle = new Map();
-  const add = (map, key, provider) => {
-    if (!map.has(key)) map.set(key, new Set());
-    map.get(key).add(provider);
-  };
-  for (const item of results) {
-    add(byUrl, urlKey(item), providerOf(item));
-    add(byTitle, titleKey(item), providerOf(item));
-  }
-  return item => byUrl.get(urlKey(item)).size > 1 || byTitle.get(titleKey(item)).size > 1;
+  return () => false;
 }
 
 function modelFor(provider) {
@@ -196,19 +180,14 @@ function render() {
   document.getElementById("total").textContent = allResults.length;
   document.getElementById("high").textContent = allResults.filter(x => Number(x.overall_score) >= 80).length;
   document.getElementById("countries").textContent = new Set(allResults.map(x => x.country).filter(Boolean)).size;
-  const bothKeys = new Set(allResults.filter(isBoth).map(titleKey));
-  document.getElementById("both").textContent = bothKeys.size;
-
   const container = document.getElementById("results");
   if (!allResults.length) {
     container.innerHTML = '<div class="empty">No active PhD positions found.</div>';
     return;
   }
 
-  const providers = currentView === "both" ? PROVIDER_ORDER : [currentView];
-  const other = sorted.filter(x => providerOf(x) === "Other");
+  const providers = [currentView];
   const columns = providers.map(p => renderColumn(p, sorted.filter(x => providerOf(x) === p), isBoth));
-  if (currentView === "both" && other.length) columns.push(renderColumn("Other", other, isBoth));
   container.innerHTML = '<div class="columns' + (providers.length === 1 ? " single" : "") + '">' + columns.join("") + "</div>";
 
   document.querySelectorAll(".view-switch button").forEach(button => {
@@ -252,7 +231,7 @@ async function loadSources() {
     if (sources.length) {
       const links = sources.map(source => '<li><a href="' + escapeHTML(safeURL(source.url)) + '" target="_blank" rel="noopener">' + escapeHTML(source.title || source.url) + "</a></li>").join("");
       const box = document.getElementById("sources");
-      box.innerHTML = '<strong>🔗 Pages read by Gemini in the latest search</strong><div style="margin-top:6px;color:#666;font-size:13px">Google Search found these pages and the radar opened each one itself before Gemini read it, so every Gemini link comes from a page that was actually loaded. ChatGPT has no search and returns no sources.</div><ul style="margin:8px 0 0 20px;padding:0">' + links + "</ul>";
+      box.innerHTML = '<strong>🔗 Pages read by Gemini in the latest search</strong><div style="margin-top:6px;color:#666;font-size:13px">Google Search found these pages and the radar opened each one itself before Gemini read it. This provides the grounding pages used for the latest Gemini search.</div><ul style="margin:8px 0 0 20px;padding:0">' + links + "</ul>";
       box.style.display = "block";
     }
   } catch (error) {
