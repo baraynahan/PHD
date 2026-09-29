@@ -23,7 +23,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T00:55:10.525Z",
+    "verification_checked_at": "2026-09-29T01:12:09.822Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=8403"
   },
@@ -46,42 +46,14 @@
     "application_language": "English",
     "language_source_url": "https://www.academictransfer.com/en/jobs/363721/phd-position-transition-pathways-and-innovation-for-circular-consumption-of-e-bikes-and-electronics",
     "ielts_requirement": "Not specified on official university website",
-    "ielts_source_url": "",
+    "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/phd-and-engd/admission",
     "ai_provider": "DeepSeek",
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T00:55:10.525Z",
+    "verification_checked_at": "2026-09-29T01:12:09.822Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://www.academictransfer.com/en/jobs/363721/phd-position-transition-pathways-and-innovation-for-circular-consumption-of-e-bikes-and-electronics"
-  },
-  {
-    "title": "PhD Position Transition Pathways and Innovation for Circular Consumption of E-bikes and Electronics",
-    "university": "Delft University of Technology (TU Delft)",
-    "country": "Netherlands",
-    "city": "Delft",
-    "deadline": "2026-09-30",
-    "url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760",
-    "funding": "Fully funded (4-year PhD employment, salary from €3204 to €4051 gross per month, plus 8% holiday allowance and an 8.3% end-of-year bonus).",
-    "overall_score": 95,
-    "why_it_matches": "This position is an exceptional match for the candidate. The project directly addresses 'circular consumption,' 'transition pathways,' 'innovation,' and 'consumer behaviour' within the context of a 'circular society.' The candidate's trajectory (PRODUCT DESIGN → SUSTAINABLE DESIGN → SUSTAINABLE CONSUMPTION → PRODUCT LONGEVITY → CONSUMPTION SYSTEMS → OWNERSHIP / ACCESS → POST-GROWTH / DEGROWTH → SOCIAL + POLITICAL TRANSFORMATION) aligns perfectly with the project's focus on systemic transitions and circularity. The mention of 'design research' and 'stakeholder engagement' directly matches the candidate's background and interests in transition design, social design, participatory/co-design, and consumption systems. The methods (qualitative, quantitative, stakeholder workshops, interviews, backcasting, social simulation modelling) are all within the candidate's comfort zone.",
-    "original_text": "",
-    "strategic_fit": "The candidate's industrial design background, sustainability education, and research interests in sustainable consumption, product longevity, consumption systems, alternative ownership/access, circular economy, and transition design are directly applicable. The project's emphasis on behavioural change, policy mixes, and social simulation aligns with the candidate's comfort with theoretical, policy, participatory, and mixed-method research. The focus on 'systemic transitions' and 'circular society' provides a strong platform for exploring post-growth/degrowth concepts in a practical, applied context.",
-    "why_it_is_not_perfect": "",
-    "supervisor": "",
-    "classification": "",
-    "research_area": "",
-    "application_language": "English",
-    "language_source_url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760",
-    "ielts_requirement": "Overall band score of at least 7.0 and a minimum of 6.5 for each section.",
-    "ielts_source_url": "https://www.tudelft.nl/en/education/admission-and-application/phd-and-engd/admission",
-    "ai_provider": "Unknown",
-    "ai_model": "",
-    "url_grounded": false,
-    "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T00:55:10.525Z",
-    "verification_note": "HTTP 404",
-    "verification_url": "https://www.tudelft.nl/en/about-tu-delft/careers/vacancies/details?jobid=3760"
   },
   {
     "title": "PhD researcher (09-2024). ATTRACT Project (Ministry of Science, Innovation and Universities)",
@@ -107,7 +79,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T00:55:10.525Z",
+    "verification_checked_at": "2026-09-29T01:12:09.822Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://postgrowth-lab.uvigo.es/team/job-offers"
   },
@@ -135,7 +107,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T00:55:10.525Z",
+    "verification_checked_at": "2026-09-29T01:12:09.822Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://phd.leeds.ac.uk/project/1897-justice-implications-of-the-uk-s-net-zero-carbon-policies"
   },
@@ -163,7 +135,7 @@
     "ai_model": "gemini-2.5-flash",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T00:55:11.760Z",
+    "verification_checked_at": "2026-09-29T01:12:09.822Z",
     "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND jobs.ul.ie",
     "verification_url": "https://jobs.ul.ie/job_description.php?jobID=1130"
   },
@@ -191,7 +163,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T00:55:11.760Z",
+    "verification_checked_at": "2026-09-29T01:12:10.504Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://www.ugent.be/ps/politiekewetenschappen/cdo/en/news-events/news/phd-vacancy-in-the-pfaros-ihi-project"
   },
@@ -219,7 +191,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T00:55:11.760Z",
+    "verification_checked_at": "2026-09-29T01:12:10.504Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.jobbnorge.no/en/available-jobs/job/237083/personvernombud"
   },
@@ -247,7 +219,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T00:55:11.760Z",
+    "verification_checked_at": "2026-09-29T01:12:10.504Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://www.applykite.com/positions/doctoral-researcher-in-social-sciences-on-the-politics-of-the-green-transition-n7h1dowtqr"
   },
@@ -275,7 +247,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T00:55:11.760Z",
+    "verification_checked_at": "2026-09-29T01:12:10.504Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.lu.se/vacancies/phd-position-in-sustainability-science-just-energy-transitions"
   },
@@ -303,7 +275,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T00:55:13.607Z",
+    "verification_checked_at": "2026-09-29T01:12:10.504Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://opportunitiesforyouth.org/2026/09/27/phd-opportunities"
   },
@@ -331,7 +303,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T00:55:13.608Z",
+    "verification_checked_at": "2026-09-29T01:12:12.020Z",
     "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND www.kulturpraxis-reparation.de",
     "verification_url": "https://www.kulturpraxis-reparation.de/en/fellowships/call-for-fellowships-2027-2028"
   },
@@ -359,7 +331,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T00:55:13.608Z",
+    "verification_checked_at": "2026-09-29T01:12:12.020Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://jobs.uzh.ch/job-vacancies/msca-doctoral-position-on-balancing-individual-ai-augmentation-with-organisational-stability/2fd7364f-2034-4217-85cd-f9bf27dcb414"
   },
@@ -387,7 +359,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T00:55:13.608Z",
+    "verification_checked_at": "2026-09-29T01:12:12.020Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.uni-flensburg.de/fileadmin/content/europa-universitaet/organisation/einrichtungen/wasatia-graduate-school/dokumente/Call_for_PhD_Candidates_Wasatia_Graduate_School_2026.pdf"
   },
@@ -415,7 +387,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T00:55:13.608Z",
+    "verification_checked_at": "2026-09-29T01:12:12.020Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://opportunitiesforyouth.org/2026/07/17/fully-funded-phd-positions-in-applied-macroeconomics-and-political-economy-at-eth-zurich-switzerland-2026"
   },
@@ -443,7 +415,7 @@
     "ai_model": "gemini-2.5-flash",
     "url_grounded": true,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T00:55:15.456Z",
+    "verification_checked_at": "2026-09-29T01:12:12.020Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://www.cbs.dk/om-cbs/job-og-karriere/ledige-stillinger/phd-scholarship-auditing"
   },
@@ -471,7 +443,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T00:55:15.456Z",
+    "verification_checked_at": "2026-09-29T01:12:13.605Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://philjobs.org/job/show/31961"
   }
