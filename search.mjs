@@ -152,7 +152,8 @@ Return ONLY a valid JSON array. Every object MUST contain:
   "language_source_url": "...",
   "ielts_requirement": "...",
   "ielts_source_url": "...",
-  "ai_provider": "Gemini | DeepSeek"
+  "ai_provider": "Gemini | DeepSeek",
+  "original_text": "The cleaned text captured directly from the vacancy page used for this result."
 }
 
 Use an empty string for source URLs when no official source was found.
@@ -563,6 +564,7 @@ function cleanResults(results) {
       funding: String(item.funding || "").trim(),
       overall_score: Math.round(score),
       why_it_matches: String(item.why_it_matches || item.fit_reason || "").trim(),
+      original_text: String(item.original_text || "").trim(),
       strategic_fit: String(item.strategic_fit || "").trim(),
       why_it_is_not_perfect: String(item.why_it_is_not_perfect || "").trim(),
       supervisor: String(item.supervisor || "").trim(),
@@ -743,7 +745,7 @@ async function callGemini() {
     batches++;
     const batch = pages.slice(i, i + EXTRACTION_BATCH_SIZE);
     try {
-      results.push(...await extractBatch(batch));
+      results.push(...(await extractBatch(batch)).map(item => ({ ...item, original_text: batch.find(page => normalizeURL(page.url) === normalizeURL(item.url))?.text || "" })));
     } catch (error) {
       failedBatches++;
       console.warn(`[Gemini] could not read pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
@@ -786,7 +788,7 @@ async function callApmix() {
     batches++;
     const batch = pages.slice(i, i + EXTRACTION_BATCH_SIZE);
     try {
-      results.push(...await extractApmixBatch(batch));
+      results.push(...(await extractApmixBatch(batch)).map(item => ({ ...item, original_text: batch.find(page => normalizeURL(page.url) === normalizeURL(item.url))?.text || "" })));
     } catch (error) {
       failedBatches++;
       console.warn(`[DeepSeek] could not read pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
