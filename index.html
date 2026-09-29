@@ -23,6 +23,7 @@
 <div class="stat"><div class="stat-number" id="countries">—</div><div class="stat-label">Countries</div></div>
 </div>
 <div id="results"></div>
+<div id="sources" class="verification-notice" style="display:none"></div>
 </main>
 <script>
 async function loadResults(){try{const response=await fetch("results.json?"+Date.now());if(!response.ok)throw new Error("HTTP "+response.status);render(await response.json());loadSources()}catch(error){document.getElementById("results").innerHTML='<div class="empty">Could not load results.</div>';console.error(error)}}
