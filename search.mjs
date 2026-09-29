@@ -523,19 +523,83 @@ function explainRejection(item) {
 
 const PROVIDER_LABELS = [LABEL_GEMINI, LABEL_APMIX];
 
-function providerLabelOf(value) {
+function providerLabelsOf(value) {
   const raw = String(value || "").trim();
-  return PROVIDER_LABELS.find(label => label.toLowerCase() === raw.toLowerCase()) || "";
+  if (!raw) return [];
+  const labels = raw.split(/\s*\+\s*/)
+    .map(part => PROVIDER_LABELS.find(label => label.toLowerCase() === part.trim().toLowerCase()))
+    .filter(Boolean);
+  return [...new Set(labels)];
+}
+
+function providerLabelOf(value) {
+  return providerLabelsOf(value)[0] || "";
+}
+
+function mergeProviderLabels(a, b) {
+  const labels = [...providerLabelsOf(a), ...providerLabelsOf(b)];
+  return [...new Set(labels)].join(" + ") || "Unknown";
+}
+
+function normalizeIdentityText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/^phd\s+(position|project|studentship|in)[:\-]?\s*/i, "")
+    .replace(/\b(position|project|studentship|vacancy|doctoral|phd)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+function resultIdentity(item) {
+  const title = normalizeIdentityText(item.title);
+  const university = normalizeIdentityText(item.university);
+  const deadline = normalizeDeadline(item.deadline);
+  return title && university && deadline
+    ? `${university}|${title}|${deadline}`
+    : normalizeURL(item.url);
+}
+
+function chooseBetterResult(a, b) {
+  const scoreA = Number(a?.overall_score || 0);
+  const scoreB = Number(b?.overall_score || 0);
+  const verifiedA = a?.verification_status === "Verified";
+  const verifiedB = b?.verification_status === "Verified";
+
+  if (verifiedA !== verifiedB) return verifiedB ? b : a;
+  if (scoreB > scoreA) return b;
+  if (scoreA > scoreB) return a;
+
+  const textA = String(a?.original_text || "");
+  const textB = String(b?.original_text || "");
+  return textB.length > textA.length ? b : a;
+}
+
+function mergeResultRecords(a, b) {
+  const better = chooseBetterResult(a, b);
+  const other = better === a ? b : a;
+  const merged = {
+    ...other,
+    ...better,
+    ai_provider: mergeProviderLabels(a.ai_provider, b.ai_provider),
+    ai_model: [a.ai_model, b.ai_model].map(v => String(v || "").trim()).filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i).join(" + "),
+    original_text: String(better.original_text || other.original_text || "").trim(),
+    url_grounded: Boolean(a.url_grounded || b.url_grounded),
+    verification_status: a.verification_status === "Verified" || b.verification_status === "Verified" ? "Verified" : "Not verified"
+  };
+  if (!String(merged.verification_note || "").trim()) merged.verification_note = String(other.verification_note || "").trim();
+  if (!String(merged.verification_url || "").trim()) merged.verification_url = normalizeURL(other.verification_url);
+  if (!String(merged.ielts_source_url || "").trim()) merged.ielts_source_url = normalizeURL(other.ielts_source_url);
+  if (!String(merged.language_source_url || "").trim()) merged.language_source_url = normalizeURL(other.language_source_url);
+  return merged;
 }
 
 function cleanResults(results) {
   if (!Array.isArray(results)) return [];
-  // vacancy, each provider keeps its own entry so both results are shown.
-  const byKey = new Map();
+  const byIdentity = new Map();
 
   for (const item of results) {
     if (!item || typeof item !== "object") continue;
-
     const title = String(item.title || "").trim();
     const university = String(item.university || "").trim();
     const country = String(item.country || "").trim();
@@ -543,24 +607,15 @@ function cleanResults(results) {
     const deadline = normalizeDeadline(item.deadline);
     const url = normalizeURL(item.url);
     const score = Number(item.overall_score);
-
     if (!title || !university || !country || !url) continue;
     if (!isFutureDeadline(deadline)) continue;
     if (!Number.isFinite(score) || score < 60) continue;
 
-    const language = ["English", "Not English", "Unknown"].includes(
-      String(item.application_language || "")
-    ) ? String(item.application_language) : "Unknown";
-
-    const provider = providerLabelOf(item.ai_provider) || "Unknown";
-
+    const language = ["English", "Not English", "Unknown"].includes(String(item.application_language || ""))
+      ? String(item.application_language) : "Unknown";
+    const provider = providerLabelsOf(item.ai_provider).join(" + ") || "Unknown";
     const candidate = {
-      title,
-      university,
-      country,
-      city,
-      deadline,
-      url,
+      title, university, country, city, deadline, url,
       funding: String(item.funding || "").trim(),
       overall_score: Math.round(score),
       why_it_matches: String(item.why_it_matches || item.fit_reason || "").trim(),
@@ -572,42 +627,25 @@ function cleanResults(results) {
       research_area: String(item.research_area || "").trim(),
       application_language: language,
       language_source_url: normalizeURL(item.language_source_url),
-      ielts_requirement: String(
-        item.ielts_requirement || "Not specified on official university website"
-      ).trim(),
+      ielts_requirement: String(item.ielts_requirement || "Not specified on official university website").trim(),
       ielts_source_url: normalizeURL(item.ielts_source_url),
       ai_provider: provider,
-      // Left empty for older entries that never recorded a model.
       ai_model: String(item.ai_model || "").trim(),
-      // Informational only, same philosophy as verification below: this is
-      // a label for you to weigh, it never removes a result.
-      url_grounded: item.url_grounded === true
-        ? true
-        : false,
-      verification_status: ["Verified", "Not verified"].includes(String(item.verification_status || ""))
-        ? String(item.verification_status)
-        : "Not verified",
+      url_grounded: item.url_grounded === true,
+      verification_status: ["Verified", "Not verified"].includes(String(item.verification_status || "")) ? String(item.verification_status) : "Not verified",
       verification_checked_at: String(item.verification_checked_at || "").trim(),
       verification_note: String(item.verification_note || "").trim(),
       verification_url: normalizeURL(item.verification_url)
     };
-
-    const key = `${provider}|${url}`;
-    const previous = byKey.get(key);
-    if (previous && previous.overall_score >= candidate.overall_score) continue;
-    byKey.set(key, candidate);
+    const identity = resultIdentity(candidate);
+    const previous = byIdentity.get(identity);
+    byIdentity.set(identity, previous ? mergeResultRecords(previous, candidate) : candidate);
   }
 
-  const cleaned = Array.from(byKey.values());
-
-  cleaned.sort((a, b) =>
-    b.overall_score - a.overall_score ||
-    new Date(a.deadline) - new Date(b.deadline)
-  );
-
+  const cleaned = Array.from(byIdentity.values());
+  cleaned.sort((a, b) => b.overall_score - a.overall_score || new Date(a.deadline) - new Date(b.deadline));
   return cleaned;
 }
-
 // Unchanged on purpose: verification stays informational-only. Nothing here
 // removes a result, it only labels it so you can judge for yourself.
 async function verifyPosition(position) {
@@ -1014,20 +1052,22 @@ async function main() {
   });
   console.log(`Saved ${allSourcesMap.size} search sources across ${runs.length} provider(s).`);
 
-  // Merge existing + new, keyed by provider + URL so both providers' results
-  // are kept side by side. Within one provider, the higher score wins.
-  const keyOf = result => `${result.ai_provider}|${normalizeURL(result.url)}`;
-  const merged = new Map(existingResults.map(result => [keyOf(result), result]));
+  // Merge existing and new results by vacancy identity. When multiple
+  // search systems find the same vacancy, they become one record and
+  // ai_provider records all systems that found it.
+  const merged = new Map();
+  for (const result of existingResults) {
+    const identity = resultIdentity(result);
+    const previous = merged.get(identity);
+    merged.set(identity, previous ? mergeResultRecords(previous, result) : result);
+  }
   for (const run of runs) {
     for (const result of run.results) {
-      const key = keyOf(result);
-      const existing = merged.get(key);
-      if (!existing || Number(result.overall_score) >= Number(existing.overall_score)) {
-        merged.set(key, existing ? { ...existing, ...result } : result);
-      }
+      const identity = resultIdentity(result);
+      const previous = merged.get(identity);
+      merged.set(identity, previous ? mergeResultRecords(previous, result) : result);
     }
   }
-
   const mergedResults = cleanResults(Array.from(merged.values()));
 
   // Verification stays informational-only: nothing is ever removed from
