@@ -23,7 +23,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T01:12:09.822Z",
+    "verification_checked_at": "2026-09-29T01:16:35.019Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.tudelft.nl/over-ons/werken-bij-tu-delft/vacatures/details?jobid=8403"
   },
@@ -51,7 +51,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T01:12:09.822Z",
+    "verification_checked_at": "2026-09-29T01:16:35.019Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://www.academictransfer.com/en/jobs/363721/phd-position-transition-pathways-and-innovation-for-circular-consumption-of-e-bikes-and-electronics"
   },
@@ -79,7 +79,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T01:12:09.822Z",
+    "verification_checked_at": "2026-09-29T01:16:35.019Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://postgrowth-lab.uvigo.es/team/job-offers"
   },
@@ -107,7 +107,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T01:12:09.822Z",
+    "verification_checked_at": "2026-09-29T01:16:35.019Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://phd.leeds.ac.uk/project/1897-justice-implications-of-the-uk-s-net-zero-carbon-policies"
   },
@@ -135,7 +135,7 @@
     "ai_model": "gemini-2.5-flash",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T01:12:09.822Z",
+    "verification_checked_at": "2026-09-29T01:16:35.019Z",
     "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND jobs.ul.ie",
     "verification_url": "https://jobs.ul.ie/job_description.php?jobID=1130"
   },
@@ -163,7 +163,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T01:12:10.504Z",
+    "verification_checked_at": "2026-09-29T01:16:35.980Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://www.ugent.be/ps/politiekewetenschappen/cdo/en/news-events/news/phd-vacancy-in-the-pfaros-ihi-project"
   },
@@ -191,7 +191,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T01:12:10.504Z",
+    "verification_checked_at": "2026-09-29T01:16:35.980Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.jobbnorge.no/en/available-jobs/job/237083/personvernombud"
   },
@@ -219,7 +219,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T01:12:10.504Z",
+    "verification_checked_at": "2026-09-29T01:16:35.980Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://www.applykite.com/positions/doctoral-researcher-in-social-sciences-on-the-politics-of-the-green-transition-n7h1dowtqr"
   },
@@ -247,7 +247,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T01:12:10.504Z",
+    "verification_checked_at": "2026-09-29T01:16:35.980Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.lu.se/vacancies/phd-position-in-sustainability-science-just-energy-transitions"
   },
@@ -274,9 +274,9 @@
     "ai_provider": "Gemini",
     "ai_model": "",
     "url_grounded": false,
-    "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T01:12:10.504Z",
-    "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
+    "verification_status": "Not verified",
+    "verification_checked_at": "2026-09-29T01:16:35.980Z",
+    "verification_note": "HTTP 403",
     "verification_url": "https://opportunitiesforyouth.org/2026/09/27/phd-opportunities"
   },
   {
@@ -303,7 +303,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T01:12:12.020Z",
+    "verification_checked_at": "2026-09-29T01:16:37.343Z",
     "verification_note": "Could not fetch page: getaddrinfo ENOTFOUND www.kulturpraxis-reparation.de",
     "verification_url": "https://www.kulturpraxis-reparation.de/en/fellowships/call-for-fellowships-2027-2028"
   },
@@ -331,7 +331,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T01:12:12.020Z",
+    "verification_checked_at": "2026-09-29T01:16:37.343Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://jobs.uzh.ch/job-vacancies/msca-doctoral-position-on-balancing-individual-ai-augmentation-with-organisational-stability/2fd7364f-2034-4217-85cd-f9bf27dcb414"
   },
@@ -359,7 +359,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Not verified",
-    "verification_checked_at": "2026-09-29T01:12:12.020Z",
+    "verification_checked_at": "2026-09-29T01:16:37.343Z",
     "verification_note": "HTTP 404",
     "verification_url": "https://www.uni-flensburg.de/fileadmin/content/europa-universitaet/organisation/einrichtungen/wasatia-graduate-school/dokumente/Call_for_PhD_Candidates_Wasatia_Graduate_School_2026.pdf"
   },
@@ -386,9 +386,9 @@
     "ai_provider": "Gemini",
     "ai_model": "",
     "url_grounded": false,
-    "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T01:12:12.020Z",
-    "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
+    "verification_status": "Not verified",
+    "verification_checked_at": "2026-09-29T01:16:37.343Z",
+    "verification_note": "HTTP 403",
     "verification_url": "https://opportunitiesforyouth.org/2026/07/17/fully-funded-phd-positions-in-applied-macroeconomics-and-political-economy-at-eth-zurich-switzerland-2026"
   },
   {
@@ -415,7 +415,7 @@
     "ai_model": "gemini-2.5-flash",
     "url_grounded": true,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T01:12:12.020Z",
+    "verification_checked_at": "2026-09-29T01:16:37.344Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://www.cbs.dk/om-cbs/job-og-karriere/ledige-stillinger/phd-scholarship-auditing"
   },
@@ -443,7 +443,7 @@
     "ai_model": "",
     "url_grounded": false,
     "verification_status": "Verified",
-    "verification_checked_at": "2026-09-29T01:12:13.605Z",
+    "verification_checked_at": "2026-09-29T01:16:38.489Z",
     "verification_note": "HTTP 200; page contains PhD/doctoral and vacancy/position signals",
     "verification_url": "https://philjobs.org/job/show/31961"
   }
