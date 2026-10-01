@@ -23,6 +23,16 @@ const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 const LABEL_GEMINI = "Gemini";
 const LABEL_APMIX = "DeepSeek";
 
+// The models don't know today's date on their own (Gemini 2.5 Flash thinks it's
+// ~2024/2025), so they happily surface closed vacancies. Tell them explicitly.
+const TODAY = new Date().toISOString().slice(0, 10);
+const THIS_YEAR = Number(TODAY.slice(0, 4));
+const DATE_CONTEXT = `
+TODAY'S DATE IS ${TODAY}. Only positions whose application deadline is AFTER ${TODAY}
+are useful. Prefer vacancies posted in the last 3 months and PhDs starting in
+${THIS_YEAR} or ${THIS_YEAR + 1}. Ignore anything that closed before ${TODAY}.
+`;
+
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -134,6 +144,9 @@ month/day/year, European and Australian pages use day/month/year.
 Score 0-100 using research-topic fit, degrowth/political/social fit,
 sustainability, design compatibility, consumption/ownership/systems,
 methods, candidate background and funding quality. Return only scores 60+.
+Be strict: a position whose core topic is unrelated to the profile (e.g. auditing,
+finance, AI/organisational studies, health, engineering) must score below 60 even if
+it mentions sustainability once. Reserve 85+ for genuinely central fits.
 
 IMPORTANT LANGUAGE AND IELTS RULES:
 1. Determine the actual language of the PhD position/application.
@@ -296,7 +309,13 @@ transition design, social/service/systemic design, design justice, co-design, go
 public policy, sustainability transitions, STS, sociology, political economy.
 In Australia look for HDR / Research Training Program funded projects; in Canada look for
 funded supervisor-advertised PhD projects and studentships.
-Prioritise official university pages. Exclude generic programmes and expired positions.`
+Prioritise official university pages. Exclude generic programmes and expired positions.`,
+  `Second pass for CANADA, AUSTRALIA and NEW ZEALAND only (never the United States): find funded
+PhD projects/scholarships in sociology, geography, environmental studies, sustainability,
+design, planning or political science departments on sustainable consumption, circular
+economy, degrowth, sufficiency, social practices, sharing/commons, transitions or social design.
+Include listings on findaphd.com, universityaffairs.ca, and official university HDR/graduate
+scholarship pages. Exclude generic programmes and expired positions.`
 ];
 
 const GEMINI_MAX_PAGES = 32;      // Europe-first pages
@@ -311,6 +330,8 @@ const PAGE_USER_AGENT = "Mozilla/5.0 (compatible; PhD-Radar/1.0)";
 // ground as SEARCH_STRATEGY + GEOGRAPHY.
 const TAVILY_QUERIES = [
   "fully funded PhD position sustainable consumption",
+  `PhD vacancy ${THIS_YEAR + 1} start sustainability consumption degrowth`,
+  `doctoral position ${THIS_YEAR + 1} sustainability transitions social science Europe`,
   "open PhD vacancy degrowth post-growth Europe",
   "PhD position circular economy ownership access commons",
   "doctoral position sufficiency social practices sustainability",
@@ -330,6 +351,10 @@ const TAVILY_QUERIES = [
 
 // Tier 3 queries (Canada / Australia / New Zealand), searched separately.
 const TAVILY_TIER3_QUERIES = [
+  `PhD scholarship ${THIS_YEAR + 1} sustainability consumption Australia findaphd`,
+  `PhD position ${THIS_YEAR + 1} sustainability transitions Canada findaphd`,
+  `funded PhD ${THIS_YEAR + 1} design sustainability Australia university scholarship closing date`,
+  `PhD opportunity ${THIS_YEAR + 1} sustainability social science Canada universityaffairs.ca`,
   "funded PhD scholarship sustainable consumption Australia",
   "HDR scholarship degrowth circular economy sustainability Australia",
   "PhD project transition design social design Australia university",
@@ -433,7 +458,8 @@ async function geminiDiscover(angles = GEMINI_DISCOVERY_ANGLES, tag = "Europe-fi
 ${angles[i]}
 ${SEARCH_STRATEGY}
 ${RULES}
-Return a short textual list of the most relevant pages you found. Do not invent URLs.
+${DATE_CONTEXT}
+Return a list of at least 20 relevant, CURRENTLY OPEN vacancy pages you found. Do not invent URLs.
 The program will take URLs only from Google's grounding metadata, not from your text.`;
     const {data}=await geminiGenerate(prompt,true);
     for (const hit of collectGroundingHits(data)) {
@@ -465,7 +491,8 @@ async function tavilySearch(query) {
         search_depth: "advanced",
         max_results: TAVILY_MAX_RESULTS_PER_QUERY,
         include_answer: false,
-        include_raw_content: false
+        include_raw_content: false,
+        time_range: "year"
       })
     });
     const data = await response.json();
@@ -554,7 +581,8 @@ ${OUTPUT_RULES}
 Use the supplied page contents as primary evidence. A page is eligible only if it describes
 one specific PhD/doctoral vacancy, doctoral research position or (Canada/Australia/NZ) a specific
 funded PhD project / project-linked scholarship, funding is clearly stated,
-and the application deadline is explicitly stated and still in the future relative to today.
+and the application deadline is explicitly stated and still in the future (after ${TODAY}).
+${DATE_CONTEXT}
 Do not turn a generic programme, news article, lab page or directory into a vacancy.
 
 For "url", copy the URL from the supplied PAGE header exactly.
@@ -1174,7 +1202,7 @@ async function main() {
     if (!mine.length && !runs.some(run => run.label === label)) continue;
     console.log(`\nTop matches â€” ${label}:`);
     for (const result of mine.slice(0, 10)) {
-      const groundFlag = result.url_grounded === false ? " [ungrounded]" : "";
+      const groundFlag = result.url_grounded === true ? "" : " [unconfirmed url]";
       console.log(
         `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country} (tier ${result.geo_tier})${groundFlag}`
       );
