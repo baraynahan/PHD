@@ -41,7 +41,7 @@ function safeErrorMessage(error) {
   for (const secret of [GEMINI_API_KEY, TELEGRAM_BOT_TOKEN, APMIX_API_KEY, TAVILY_API_KEY]) {
     if (secret) message = message.split(secret).join("***");
   }
-  return message.length > 300 ? `${message.slice(0, 300)}…` : message;
+  return message.length > 300 ? `${message.slice(0, 300)}â€¦` : message;
 }
 
 const CANDIDATE_PROFILE = `
@@ -49,9 +49,9 @@ The candidate is an Industrial Design graduate, university lecturer in
 service design, sustainability educator, and design researcher.
 
 The candidate's trajectory is:
-PRODUCT DESIGN → SUSTAINABLE DESIGN → SUSTAINABLE CONSUMPTION →
-PRODUCT LONGEVITY → CONSUMPTION SYSTEMS → OWNERSHIP / ACCESS →
-POST-GROWTH / DEGROWTH → SOCIAL + POLITICAL TRANSFORMATION.
+PRODUCT DESIGN â†’ SUSTAINABLE DESIGN â†’ SUSTAINABLE CONSUMPTION â†’
+PRODUCT LONGEVITY â†’ CONSUMPTION SYSTEMS â†’ OWNERSHIP / ACCESS â†’
+POST-GROWTH / DEGROWTH â†’ SOCIAL + POLITICAL TRANSFORMATION.
 
 Strong interests include degrowth, post-growth, political economy,
 sustainable consumption, alternative ownership/access, commons,
@@ -72,12 +72,33 @@ data science, AI, technical optimisation or pure technical LCA.
 `;
 
 const GEOGRAPHY = `
-Prioritise Netherlands, Belgium, Sweden, Denmark, Norway, Finland,
-United Kingdom, Germany, Italy, Switzerland and Austria.
-Then consider France, Ireland, Spain, Portugal, Luxembourg and Iceland,
-plus strong opportunities elsewhere. Geography is a preference, not a
-research-fit filter. Exclude the United States.
+Geography is a preference, not a research-fit filter:
+- Tier 1 (highest priority): Netherlands, Belgium, Sweden, Denmark, Norway,
+  Finland, United Kingdom, Germany, Italy, Switzerland and Austria.
+- Tier 2: France, Ireland, Spain, Portugal, Luxembourg, Iceland and other
+  European countries.
+- Tier 3 (also wanted): Canada, Australia and New Zealand.
+NEVER include positions in the United States.
 `;
+
+// Country -> tier, computed in code so the preference never depends on the model.
+const TIER1 = ["netherlands","belgium","sweden","denmark","norway","finland","united kingdom","uk","england","scotland","wales","northern ireland","germany","italy","switzerland","austria"];
+const TIER3 = ["canada","australia","new zealand"];
+const EUROPE_OTHER = ["france","ireland","spain","portugal","luxembourg","iceland","estonia","latvia","lithuania","poland","czech republic","czechia","slovenia","slovakia","hungary","greece","croatia","malta","cyprus","romania","bulgaria","liechtenstein"];
+
+function isUnitedStates(country) {
+  const c = String(country || "").toLowerCase().replace(/\./g, "").trim();
+  return /\b(united states|usa|us|america)\b/.test(c) && !/south america|latin america/.test(c);
+}
+
+function geoTier(country) {
+  const c = String(country || "").toLowerCase().trim();
+  const has = list => list.some(x => new RegExp(`\\b${x}\\b`).test(c));
+  if (has(TIER1)) return 1;
+  if (has(TIER3)) return 3;
+  if (has(EUROPE_OTHER) || c.includes("europe")) return 2;
+  return 4; // anywhere else (still allowed, lowest priority)
+}
 
 const SEARCH_STRATEGY = `
 Search broadly rather than only for industrial design PhDs. Search
@@ -99,6 +120,16 @@ Every result must be currently open, fully funded, have a specific PhD
 project, a real application/vacancy page, and a verifiable future deadline.
 Reject expired, self-funded, tuition-only, unclear-funding, generic,
 unverifiable or United States positions.
+
+For Canada, Australia and New Zealand, PhDs are often advertised as a funded
+supervisor project or a project-linked scholarship (e.g. "HDR scholarship",
+"Research Training Program stipend", "funded PhD project with Prof. X").
+Accept these when the project/topic is specific, funding (stipend) is stated
+and a dated application/scholarship deadline is given. Still reject generic
+"apply to our PhD programme" pages without a specific project.
+
+Always convert deadlines to ISO YYYY-MM-DD. Be careful: Canadian pages may use
+month/day/year, European and Australian pages use day/month/year.
 
 Score 0-100 using research-topic fit, degrowth/political/social fit,
 sustainability, design compatibility, consumption/ownership/systems,
@@ -166,9 +197,11 @@ function normalizeURL(url) {
   try {
     const parsed = new URL(String(url).trim());
     parsed.hash = "";
+    // Only strip tracking params. "ref"/"source" are left alone because some
+    // vacancy portals use them as the actual vacancy ID.
     for (const param of [
       "utm_source", "utm_medium", "utm_campaign", "utm_term",
-      "utm_content", "ref", "source"
+      "utm_content"
     ]) {
       parsed.searchParams.delete(param);
     }
@@ -231,7 +264,7 @@ function isFutureDeadline(deadline) {
 
 
 const GEMINI_DISCOVERY_ANGLES = [
-  `Find currently open, funded PhD/doctoral vacancies in Europe matching this profile:
+  `Find currently open, funded PhD/doctoral vacancies (Europe first, see geography below) matching this profile:
 ${CANDIDATE_PROFILE}
 Search broadly across ALL of these themes in one comprehensive Google Search pass:
 degrowth, post-growth, post-consumerism, political economy, sustainable consumption,
@@ -242,8 +275,8 @@ participatory/co-design, systemic design, critical design, alternative futures, 
 public policy, transition studies, sustainability science, STS, sociology, political science
 and environmental humanities where relevant. ${GEOGRAPHY}
 Prioritise official university vacancy pages. Exclude generic programmes and expired positions.`,
-  `Run a second independent search pass for currently open, funded PhD/doctoral vacancies in Europe
-matching this profile:
+  `Run a second independent search pass for currently open, funded PhD/doctoral vacancies matching this profile
+(Europe first, see geography below):
 ${CANDIDATE_PROFILE}
 Actively vary the search terms and look for opportunities that the first broad pass may miss,
 especially positions using less obvious terminology around societal transformation, sustainable
@@ -252,7 +285,22 @@ policy, social innovation and ecological transition. ${GEOGRAPHY}
 Prioritise official university vacancy pages. Exclude generic programmes and expired positions.`
 ];
 
-const GEMINI_MAX_PAGES = 32;
+// Dedicated pass for Tier 3, so Europe results can't crowd these out.
+const GEMINI_TIER3_ANGLES = [
+  `Find currently open, funded PhD/doctoral projects or project-linked PhD scholarships in
+CANADA, AUSTRALIA and NEW ZEALAND only (never the United States) matching this profile:
+${CANDIDATE_PROFILE}
+Themes: degrowth, post-growth, sustainable consumption, sufficiency, circular economy,
+product longevity, repair/reuse, sharing/access-based consumption, commons, social practices,
+transition design, social/service/systemic design, design justice, co-design, governance,
+public policy, sustainability transitions, STS, sociology, political economy.
+In Australia look for HDR / Research Training Program funded projects; in Canada look for
+funded supervisor-advertised PhD projects and studentships.
+Prioritise official university pages. Exclude generic programmes and expired positions.`
+];
+
+const GEMINI_MAX_PAGES = 32;      // Europe-first pages
+const TIER3_MAX_PAGES = 12;       // extra pages reserved for Canada/Australia/NZ
 const PAGE_TEXT_CHARS = 24000;
 const EXTRACTION_BATCH_SIZE = 8;
 const GEMINI_CALL_GAP_MS = 6500;
@@ -278,6 +326,17 @@ const TAVILY_QUERIES = [
   "PhD vacancy sharing economy access-based consumption research",
   "doctoral vacancy systemic design service design sustainability",
   "PhD position societal transformation ecological transition Europe"
+];
+
+// Tier 3 queries (Canada / Australia / New Zealand), searched separately.
+const TAVILY_TIER3_QUERIES = [
+  "funded PhD scholarship sustainable consumption Australia",
+  "HDR scholarship degrowth circular economy sustainability Australia",
+  "PhD project transition design social design Australia university",
+  "funded PhD position sustainability transitions Canada",
+  "PhD studentship sustainable consumption circular economy Canada university",
+  "funded PhD social innovation design justice Canada",
+  "PhD scholarship sustainability transitions consumption New Zealand"
 ];
 
 const TAVILY_MAX_RESULTS_PER_QUERY = 10;
@@ -313,12 +372,32 @@ async function fetchHitPages(hits, maxPages = GEMINI_MAX_PAGES) {
     try {
       const page=await fetchPage(rawURL);
       if (!page.ok || page.text.length<300) { skipped.push({...hit,reason:page.reason||"page too short"}); continue; }
-      if (!/phd|ph\.d|doctoral|doctorate/i.test(page.text)) { skipped.push({...hit,reason:"not obviously doctoral"}); continue; }
+      if (!/phd|ph\.d|doctoral|doctorate|doctor of philosophy|higher degree by research|\bhdr\b/i.test(page.text)) { skipped.push({...hit,reason:"not obviously doctoral"}); continue; }
       pages.push({...hit,...page,url:page.url||rawURL});
       if (pages.length>=maxPages) break;
     } catch(error) { skipped.push({...hit,reason:safeErrorMessage(error)}); }
   }
   return {pages,skipped};
+}
+
+// Fetches Europe-first pages and Tier 3 pages with separate budgets, so
+// Canada/Australia/NZ always get a fair share of the reading budget.
+async function gatherPages(mainHits, tier3Hits, mainMax) {
+  const main = await fetchHitPages(mainHits, mainMax);
+  const seen = new Set(main.pages.map(p => normalizeURL(p.url)));
+  const tier3 = await fetchHitPages(tier3Hits.filter(h => !seen.has(normalizeURL(h.url))), TIER3_MAX_PAGES);
+  const pages = [...main.pages, ...tier3.pages].map((page, index) => ({ ...page, id: index + 1 }));
+  return { pages, skipped: [...main.skipped, ...tier3.skipped], tier3Count: tier3.pages.length };
+}
+
+// Attaches the page text and marks the URL as grounded when the model's URL
+// matches a page we actually fetched (previously url_grounded was never set,
+// so it was always false).
+function attachPageData(items, batch) {
+  return items.map(item => {
+    const page = batch.find(p => normalizeURL(p.url) === normalizeURL(item.url));
+    return { ...item, original_text: page?.text || "", url_grounded: Boolean(page) };
+  });
 }
 
 async function geminiGenerate(prompt, useSearch=true) {
@@ -345,13 +424,13 @@ function collectGroundingHits(data) {
   return hits;
 }
 
-async function geminiDiscover() {
-  console.log("[Gemini] Google Search discovery starting...");
+async function geminiDiscover(angles = GEMINI_DISCOVERY_ANGLES, tag = "Europe-first") {
+  console.log(`[Gemini] Google Search discovery starting (${tag})...`);
   const allHits=[],seen=new Set();
-  for (let i=0;i<GEMINI_DISCOVERY_ANGLES.length;i++) {
+  for (let i=0;i<angles.length;i++) {
     if (i>0) await sleep(GEMINI_CALL_GAP_MS);
     const prompt=`You are the discovery stage of a PhD vacancy radar.
-${GEMINI_DISCOVERY_ANGLES[i]}
+${angles[i]}
 ${SEARCH_STRATEGY}
 ${RULES}
 Return a short textual list of the most relevant pages you found. Do not invent URLs.
@@ -361,9 +440,8 @@ The program will take URLs only from Google's grounding metadata, not from your 
       const url=normalizeURL(hit.url); if (!url || seen.has(url)) continue;
       seen.add(url); allHits.push({...hit,url});
     }
-    console.log(`[Gemini] angle ${i+1}/${GEMINI_DISCOVERY_ANGLES.length}: ${allHits.length} unique hits so far`);
+    console.log(`[Gemini] ${tag} angle ${i+1}/${angles.length}: ${allHits.length} unique hits so far`);
   }
-  if (!allHits.length) throw new Error("Gemini Google Search returned no grounded web pages.");
   return allHits;
 }
 
@@ -404,13 +482,13 @@ async function tavilySearch(query) {
   }
 }
 
-async function tavilyDiscover() {
+async function tavilyDiscover(queries = TAVILY_QUERIES, tag = "Europe-first") {
   if (!TAVILY_API_KEY) throw new Error("TAVILY_API_KEY is not configured.");
-  console.log("[DeepSeek] Tavily search discovery starting...");
+  console.log(`[DeepSeek] Tavily search discovery starting (${tag})...`);
   const allHits = [], seen = new Set();
-  for (let i = 0; i < TAVILY_QUERIES.length; i++) {
+  for (let i = 0; i < queries.length; i++) {
     if (i > 0) await sleep(TAVILY_CALL_GAP_MS);
-    const query = TAVILY_QUERIES[i];
+    const query = queries[i];
     const results = await tavilySearch(query);
     for (const item of results) {
       const url = normalizeURL(item.url);
@@ -418,9 +496,8 @@ async function tavilyDiscover() {
       seen.add(url);
       allHits.push({ title: String(item.title || url).trim(), url });
     }
-    console.log(`[DeepSeek] query ${i + 1}/${TAVILY_QUERIES.length} ("${query}"): ${allHits.length} unique hits so far`);
+    console.log(`[DeepSeek] ${tag} query ${i + 1}/${queries.length} ("${query}"): ${allHits.length} unique hits so far`);
   }
-  if (!allHits.length) throw new Error("Tavily search returned no results.");
   return allHits;
 }
 
@@ -462,11 +539,11 @@ ${page.text}
 if necessary to locate the relevant official university English/IELTS page, but never invent
 a URL or IELTS score. If no official IELTS requirement can be established, use the required fallback.`
     : `For language and IELTS fields, prefer official university sources. You do not have web
-search access beyond the page contents supplied below — do not guess or invent an IELTS
+search access beyond the page contents supplied below â€” do not guess or invent an IELTS
 score or a source URL. If the supplied page content does not state an official IELTS
 requirement, use the required fallback rather than guessing.`;
 
-  return `You are the extraction and verification stage of a funded European PhD vacancy radar.
+  return `You are the extraction and verification stage of a funded PhD vacancy radar (Europe first, plus Canada, Australia and New Zealand; never the United States).
 
 ${CANDIDATE_PROFILE}
 ${GEOGRAPHY}
@@ -475,7 +552,8 @@ ${URL_INTEGRITY_RULE}
 ${OUTPUT_RULES}
 
 Use the supplied page contents as primary evidence. A page is eligible only if it describes
-one specific PhD/doctoral vacancy or doctoral research position, funding is clearly stated,
+one specific PhD/doctoral vacancy, doctoral research position or (Canada/Australia/NZ) a specific
+funded PhD project / project-linked scholarship, funding is clearly stated,
 and the application deadline is explicitly stated and still in the future relative to today.
 Do not turn a generic programme, news article, lab page or directory into a vacancy.
 
@@ -511,6 +589,7 @@ function explainRejection(item) {
   if (!String(item.title || "").trim()) return "missing title";
   if (!String(item.university || "").trim()) return "missing university";
   if (!String(item.country || "").trim()) return "missing country";
+  if (isUnitedStates(item.country)) return "United States (excluded)";
   if (!normalizeURL(item.url)) return "missing/invalid url";
   const deadline = normalizeDeadline(item.deadline);
   if (!deadline) return `deadline not a recognizable date (got: ${JSON.stringify(item.deadline ?? "")})`;
@@ -608,6 +687,7 @@ function cleanResults(results) {
     const url = normalizeURL(item.url);
     const score = Number(item.overall_score);
     if (!title || !university || !country || !url) continue;
+    if (isUnitedStates(country)) continue; // hard block, never trust the prompt alone
     if (!isFutureDeadline(deadline)) continue;
     if (!Number.isFinite(score) || score < 60) continue;
 
@@ -616,6 +696,7 @@ function cleanResults(results) {
     const provider = providerLabelsOf(item.ai_provider).join(" + ") || "Unknown";
     const candidate = {
       title, university, country, city, deadline, url,
+      geo_tier: geoTier(country),
       funding: String(item.funding || "").trim(),
       overall_score: Math.round(score),
       why_it_matches: String(item.why_it_matches || item.fit_reason || "").trim(),
@@ -643,7 +724,11 @@ function cleanResults(results) {
   }
 
   const cleaned = Array.from(byIdentity.values());
-  cleaned.sort((a, b) => b.overall_score - a.overall_score || new Date(a.deadline) - new Date(b.deadline));
+  // Highest score first; on equal scores Europe (tier 1, then 2) beats tier 3.
+  cleaned.sort((a, b) =>
+    b.overall_score - a.overall_score ||
+    a.geo_tier - b.geo_tier ||
+    new Date(a.deadline) - new Date(b.deadline));
   return cleaned;
 }
 // Unchanged on purpose: verification stays informational-only. Nothing here
@@ -670,8 +755,8 @@ async function verifyPosition(position) {
       : "";
     const text = body.toLowerCase();
 
-    const phdSignal = /phd|ph\.d|doctoral|doctorate/.test(text);
-    const vacancySignal = /vacancy|position|fellowship|scholarship|researcher|job opening|apply/.test(text);
+    const phdSignal = /phd|ph\.d|doctoral|doctorate|doctor of philosophy|higher degree by research|\bhdr\b/.test(text);
+    const vacancySignal = /vacancy|position|fellowship|scholarship|studentship|stipend|researcher|job opening|apply/.test(text);
     const titleWords = String(position.title || "")
       .toLowerCase()
       .split(/\W+/)
@@ -718,7 +803,7 @@ async function verifyResults(results) {
     for (let j = 0; j < batch.length; j++) {
       verified.push({ ...batch[j], ...checked[j] });
       console.log(
-        `${checked[j].verification_status === "Verified" ? "✓" : "?"} ${batch[j].title}`
+        `${checked[j].verification_status === "Verified" ? "âœ“" : "?"} ${batch[j].title}`
       );
     }
   }
@@ -768,12 +853,15 @@ function loadExisting() {
 }
 
 async function callGemini() {
-  const hits = await geminiDiscover();
+  const mainHits = await geminiDiscover(GEMINI_DISCOVERY_ANGLES, "Europe-first");
+  await sleep(GEMINI_CALL_GAP_MS);
+  const tier3Hits = await geminiDiscover(GEMINI_TIER3_ANGLES, "Canada/Australia/NZ");
+  const hits = [...mainHits, ...tier3Hits];
+  if (!hits.length) throw new Error("Gemini Google Search returned no grounded web pages.");
   console.log(`[Gemini] ${hits.length} distinct search hits. Opening the pages...`);
 
-  const { pages: readable, skipped } = await fetchHitPages(hits, GEMINI_MAX_PAGES);
-  const pages = readable.slice(0, GEMINI_MAX_PAGES).map((page, index) => ({ ...page, id: index + 1 }));
-  console.log(`[Gemini] ${pages.length} readable PhD-related pages (of ${hits.length} hits); reading them now...`);
+  const { pages, skipped, tier3Count } = await gatherPages(mainHits, tier3Hits, GEMINI_MAX_PAGES);
+  console.log(`[Gemini] ${pages.length} readable PhD-related pages (${tier3Count} Canada/Australia/NZ) of ${hits.length} hits; reading them now...`);
 
   const results = [];
   let failedBatches = 0;
@@ -783,7 +871,7 @@ async function callGemini() {
     batches++;
     const batch = pages.slice(i, i + EXTRACTION_BATCH_SIZE);
     try {
-      results.push(...(await extractBatch(batch)).map(item => ({ ...item, original_text: batch.find(page => normalizeURL(page.url) === normalizeURL(item.url))?.text || "" })));
+      results.push(...attachPageData(await extractBatch(batch), batch));
     } catch (error) {
       failedBatches++;
       console.warn(`[Gemini] could not read pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
@@ -811,12 +899,14 @@ async function callApmix() {
     throw new Error("TAVILY_API_KEY is not configured (required for the DeepSeek/apmix provider's search).");
   }
 
-  const hits = await tavilyDiscover();
+  const mainHits = await tavilyDiscover(TAVILY_QUERIES, "Europe-first");
+  const tier3Hits = await tavilyDiscover(TAVILY_TIER3_QUERIES, "Canada/Australia/NZ");
+  const hits = [...mainHits, ...tier3Hits];
+  if (!hits.length) throw new Error("Tavily search returned no results.");
   console.log(`[DeepSeek] ${hits.length} distinct Tavily hits. Opening the pages...`);
 
-  const { pages: readable, skipped } = await fetchHitPages(hits, APMIX_MAX_PAGES);
-  const pages = readable.slice(0, APMIX_MAX_PAGES).map((page, index) => ({ ...page, id: index + 1 }));
-  console.log(`[DeepSeek] ${pages.length} readable PhD-related pages (of ${hits.length} hits); reading them now...`);
+  const { pages, skipped, tier3Count } = await gatherPages(mainHits, tier3Hits, APMIX_MAX_PAGES);
+  console.log(`[DeepSeek] ${pages.length} readable PhD-related pages (${tier3Count} Canada/Australia/NZ) of ${hits.length} hits; reading them now...`);
 
   const results = [];
   let failedBatches = 0;
@@ -826,7 +916,7 @@ async function callApmix() {
     batches++;
     const batch = pages.slice(i, i + EXTRACTION_BATCH_SIZE);
     try {
-      results.push(...(await extractApmixBatch(batch)).map(item => ({ ...item, original_text: batch.find(page => normalizeURL(page.url) === normalizeURL(item.url))?.text || "" })));
+      results.push(...attachPageData(await extractApmixBatch(batch), batch));
     } catch (error) {
       failedBatches++;
       console.warn(`[DeepSeek] could not read pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
@@ -955,35 +1045,35 @@ async function sendTelegramMessage(message) {
 
 function formatTelegramMessage(position, foundBy = [position.ai_provider]) {
   const languageLine = position.application_language === "Not English"
-    ? "⚠️ Language: Not English"
-    : `🗣️ Language: ${position.application_language || "Unknown"}`;
+    ? "âš ï¸ Language: Not English"
+    : `ðŸ—£ï¸ Language: ${position.application_language || "Unknown"}`;
 
   const groundingLine = position.url_grounded === false
-    ? "⚠️ URL not confirmed in search results — double-check before applying\n"
+    ? "âš ï¸ URL not confirmed in search results â€” double-check before applying\n"
     : "";
 
   return [
-    `⭐ EXCEPTIONAL PhD MATCH — ${position.overall_score}/100`,
+    `â­ EXCEPTIONAL PhD MATCH â€” ${position.overall_score}/100`,
     "",
-    `🎓 ${position.title}`,
+    `ðŸŽ“ ${position.title}`,
     "",
-    `🏛️ ${position.university}`,
-    `🌍 ${position.country}${position.city ? ` · ${position.city}` : ""}`,
-    `🤖 Found by: ${foundBy.filter(Boolean).join(" + ") || "Unknown"}`,
+    `ðŸ›ï¸ ${position.university}`,
+    `ðŸŒ ${position.country}${position.city ? ` Â· ${position.city}` : ""}`,
+    `ðŸ¤– Found by: ${foundBy.filter(Boolean).join(" + ") || "Unknown"}`,
     languageLine,
-    `📚 IELTS: ${position.ielts_requirement || "Not specified"}`,
-    `📅 Deadline: ${position.deadline || "Not specified"}`,
+    `ðŸ“š IELTS: ${position.ielts_requirement || "Not specified"}`,
+    `ðŸ“… Deadline: ${position.deadline || "Not specified"}`,
     "",
-    "💰 Funding:",
+    "ðŸ’° Funding:",
     position.funding || "Not specified",
     "",
-    "🎯 Why it matches:",
+    "ðŸŽ¯ Why it matches:",
     position.why_it_matches || "Strong match with your research profile.",
     "",
-    "🧭 Strategic fit:",
+    "ðŸ§­ Strategic fit:",
     position.strategic_fit || "Strong alignment with your research trajectory.",
     "",
-    groundingLine + "🔗 Apply:",
+    groundingLine + "ðŸ”— Apply:",
     position.url
   ].join("\n");
 }
@@ -1080,13 +1170,13 @@ async function main() {
   await notifyExceptionalMatches(verifiedResults);
 
   for (const label of PROVIDERS.map(p => p.label)) {
-    const mine = verifiedResults.filter(result => result.ai_provider === label);
+    const mine = verifiedResults.filter(result => providerLabelsOf(result.ai_provider).includes(label));
     if (!mine.length && !runs.some(run => run.label === label)) continue;
-    console.log(`\nTop matches — ${label}:`);
+    console.log(`\nTop matches â€” ${label}:`);
     for (const result of mine.slice(0, 10)) {
       const groundFlag = result.url_grounded === false ? " [ungrounded]" : "";
       console.log(
-        `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country}${groundFlag}`
+        `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country} (tier ${result.geo_tier})${groundFlag}`
       );
     }
   }
