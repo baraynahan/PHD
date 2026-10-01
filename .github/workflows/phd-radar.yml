@@ -10,8 +10,14 @@ on:
       - "notified.json"
       - "sources.json"
       - "**.md"
+      - "blocked.json"
 
   workflow_dispatch:
+    inputs:
+      cleanup_only:
+        description: "Cleanup only: re-check saved results + blocked.json, no Gemini/DeepSeek/Tavily calls"
+        type: boolean
+        default: false
 
   schedule:
     - cron: "0 6 * * 6"
@@ -64,6 +70,8 @@ jobs:
           TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # true only when you tick "Cleanup only" on a manual run
+          CLEANUP_ONLY: ${{ github.event.inputs.cleanup_only == 'true' }}
         run: |
           bun search.mjs
 
