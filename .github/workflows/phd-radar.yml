@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - main
+    # Don't burn API credits on pushes that only touch data/docs.
+    paths-ignore:
+      - "results.json"
+      - "notified.json"
+      - "sources.json"
+      - "**.md"
 
   workflow_dispatch:
 
@@ -23,6 +29,8 @@ jobs:
   search-and-deploy:
     name: Search, notify, and deploy
     runs-on: ubuntu-latest
+    # Tier 3 search adds a few minutes; hard stop so a hung request can't eat Actions minutes.
+    timeout-minutes: 45
 
     steps:
       # ----------------------------------------
@@ -42,7 +50,7 @@ jobs:
           bun-version: latest
 
       # ----------------------------------------
-      # 3. Run PhD search (Gemini + DeepSeek/Tavily) + Telegram
+      # 3. Run PhD search (Europe first + Canada/Australia/NZ, never US) + Telegram
       # ----------------------------------------
       - name: Run PhD search
         env:
