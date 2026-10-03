@@ -116,7 +116,7 @@ function safeErrorMessage(error) {
   for (const secret of [SEARCH_REVIEW.apiKey, SEARCH.apiKey, REVIEW.apiKey, TELEGRAM_BOT_TOKEN]) {
     if (secret) message = message.split(secret).join("***");
   }
-  return message.length > 300 ? `${message.slice(0, 300)}…` : message;
+  return message.length > 300 ? `${message.slice(0, 300)}â€¦` : message;
 }
 
 const CANDIDATE_PROFILE = `
@@ -124,9 +124,9 @@ The candidate is an Industrial Design graduate, university lecturer in
 service design, sustainability educator, and design researcher.
 
 The candidate's trajectory is:
-PRODUCT DESIGN → SUSTAINABLE DESIGN → SUSTAINABLE CONSUMPTION →
-PRODUCT LONGEVITY → CONSUMPTION SYSTEMS → OWNERSHIP / ACCESS →
-POST-GROWTH / DEGROWTH → SOCIAL + POLITICAL TRANSFORMATION.
+PRODUCT DESIGN â†’ SUSTAINABLE DESIGN â†’ SUSTAINABLE CONSUMPTION â†’
+PRODUCT LONGEVITY â†’ CONSUMPTION SYSTEMS â†’ OWNERSHIP / ACCESS â†’
+POST-GROWTH / DEGROWTH â†’ SOCIAL + POLITICAL TRANSFORMATION.
 
 Strong interests include degrowth, post-growth, political economy,
 sustainable consumption, alternative ownership/access, commons,
@@ -494,15 +494,40 @@ function attachPageData(items, batch) {
 // Generic AI call. Which API is used depends only on the provider config
 // (BASE_URL / MODEL / FORMAT / API_KEY), never on code.
 // ---------------------------------------------------------------------------
-async function aiGenerate(provider, prompt, { useSearch = false } = {}) {
+// allowEmpty: discovery only needs the search sources, not the reply text, so
+// an empty reply is fine there. Temporary failures (empty reply, rate limit,
+// server error) are retried a few times before giving up.
+const AI_MAX_ATTEMPTS = 3;
+async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = false } = {}) {
   if (!provider.configured) throw new Error(`${provider.name} is not configured (missing: ${provider.missing.join(", ")}).`);
-  if (provider.format === "gemini") return geminiFormatGenerate(provider, prompt, useSearch);
-  if (provider.format === "openai") return openaiFormatGenerate(provider, prompt);
-  throw new Error(`${provider.prefix}_FORMAT "${provider.format}" is not supported. Use "gemini" or "openai".`);
+  const call = provider.format === "gemini" ? () => geminiFormatGenerate(provider, prompt, useSearch, allowEmpty)
+    : provider.format === "openai" ? () => openaiFormatGenerate(provider, prompt, allowEmpty)
+    : null;
+  if (!call) throw new Error(`${provider.prefix}_FORMAT "${provider.format}" is not supported. Use "gemini" or "openai".`);
+  let lastError;
+  for (let attempt = 1; attempt <= AI_MAX_ATTEMPTS; attempt++) {
+    try {
+      return await call();
+    } catch (error) {
+      lastError = error;
+      if (!error.retryable || attempt === AI_MAX_ATTEMPTS) break;
+      const wait = 5000 * attempt;
+      console.warn(`[${provider.name}] attempt ${attempt}/${AI_MAX_ATTEMPTS} failed (${safeErrorMessage(error)}); retrying in ${wait / 1000}s...`);
+      await sleep(wait);
+    }
+  }
+  throw lastError;
 }
 
+function apiError(message, retryable) {
+  const error = new Error(message);
+  error.retryable = retryable;
+  return error;
+}
+const isRetryableStatus = status => status === 429 || status >= 500;
+
 // Google's native API. useSearch turns on Google Search grounding.
-async function geminiFormatGenerate(provider, prompt, useSearch) {
+async function geminiFormatGenerate(provider, prompt, useSearch, allowEmpty) {
   const base = provider.baseUrl.replace(/\/+$/, "");
   const endpoint = /:generatecontent$/i.test(base)
     ? base
@@ -518,15 +543,18 @@ async function geminiFormatGenerate(provider, prompt, useSearch) {
     body: JSON.stringify(body)
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.error?.message || `${provider.name} HTTP ${response.status}`);
+  if (!response.ok) throw apiError(data?.error?.message || `${provider.name} HTTP ${response.status}`, isRetryableStatus(response.status));
   const text = (data?.candidates || []).flatMap(c => c?.content?.parts || []).map(p => p?.text || "").join("\n").trim();
-  if (!text) throw new Error(`${provider.name} returned no text.`);
+  if (!text && !allowEmpty) {
+    const reason = data?.promptFeedback?.blockReason || data?.candidates?.[0]?.finishReason || "no reason given";
+    throw apiError(`${provider.name} returned no text (reason: ${reason}).`, true);
+  }
   return { text, data };
 }
 
 // Any OpenAI-compatible API (DeepSeek, OpenRouter, Groq, Mistral, apmix,
 // Perplexity, OpenAI, Gemini's /openai endpoint, ...).
-async function openaiFormatGenerate(provider, prompt) {
+async function openaiFormatGenerate(provider, prompt, allowEmpty) {
   const endpoint = endpointURL(provider.baseUrl, "/chat/completions");
   const response = await fetch(endpoint, {
     method: "POST",
@@ -541,9 +569,12 @@ async function openaiFormatGenerate(provider, prompt) {
     })
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data?.error?.message || `${provider.name} HTTP ${response.status}`);
+  if (!response.ok) throw apiError(data?.error?.message || `${provider.name} HTTP ${response.status}`, isRetryableStatus(response.status));
   const text = data?.choices?.[0]?.message?.content || "";
-  if (!text) throw new Error(`${provider.name} returned no text.`);
+  if (!text && !allowEmpty) {
+    const reason = data?.choices?.[0]?.finish_reason || "no reason given";
+    throw apiError(`${provider.name} returned no text (reason: ${reason}).`, true);
+  }
   return { text, data };
 }
 
@@ -577,7 +608,14 @@ ${RULES}
 ${DATE_CONTEXT}
 Return a list of at least 20 relevant, CURRENTLY OPEN vacancy pages you found. Do not invent URLs.
 The program will take URLs only from your web search tool's source metadata, not from your text.`;
-    const { data } = await aiGenerate(SEARCH_REVIEW, prompt, { useSearch: true });
+    // One failed search angle should not throw away the hits the others found.
+    let data;
+    try {
+      ({ data } = await aiGenerate(SEARCH_REVIEW, prompt, { useSearch: true, allowEmpty: true }));
+    } catch (error) {
+      console.warn(`[${SEARCH_REVIEW.name}] ${tag} angle ${i + 1}/${angles.length} failed, continuing: ${safeErrorMessage(error)}`);
+      continue;
+    }
     for (const hit of collectGroundingHits(data)) {
       const url = normalizeURL(hit.url); if (!url || seen.has(url)) continue;
       seen.add(url); allHits.push({ ...hit, url });
@@ -680,7 +718,7 @@ ${page.text}
 if necessary to locate the relevant official university English/IELTS page, but never invent
 a URL or IELTS score. If no official IELTS requirement can be established, use the required fallback.`
     : `For language and IELTS fields, prefer official university sources. You do not have web
-search access beyond the page contents supplied below — do not guess or invent an IELTS
+search access beyond the page contents supplied below â€” do not guess or invent an IELTS
 score or a source URL. If the supplied page content does not state an official IELTS
 requirement, use the required fallback rather than guessing.`;
 
@@ -945,7 +983,7 @@ async function verifyResults(results) {
     for (let j = 0; j < batch.length; j++) {
       verified.push({ ...batch[j], ...checked[j] });
       console.log(
-        `${checked[j].verification_status === "Verified" ? "✓" : "?"} ${batch[j].title}`
+        `${checked[j].verification_status === "Verified" ? "âœ“" : "?"} ${batch[j].title}`
       );
     }
   }
@@ -1166,35 +1204,35 @@ async function sendTelegramMessage(message) {
 
 function formatTelegramMessage(position, foundBy = [position.ai_provider]) {
   const languageLine = position.application_language === "Not English"
-    ? "⚠️ Language: Not English"
-    : `🗣️ Language: ${position.application_language || "Unknown"}`;
+    ? "âš ï¸ Language: Not English"
+    : `ðŸ—£ï¸ Language: ${position.application_language || "Unknown"}`;
 
   const groundingLine = position.url_grounded === false
-    ? "⚠️ URL not confirmed in search results — double-check before applying\n"
+    ? "âš ï¸ URL not confirmed in search results â€” double-check before applying\n"
     : "";
 
   return [
-    `⭐ EXCEPTIONAL PhD MATCH — ${position.overall_score}/100`,
+    `â­ EXCEPTIONAL PhD MATCH â€” ${position.overall_score}/100`,
     "",
-    `🎓 ${position.title}`,
+    `ðŸŽ“ ${position.title}`,
     "",
-    `🏛️ ${position.university}`,
-    `🌍 ${position.country}${position.city ? ` · ${position.city}` : ""}`,
-    `🤖 Found by: ${foundBy.filter(Boolean).join(" + ") || "Unknown"}`,
+    `ðŸ›ï¸ ${position.university}`,
+    `ðŸŒ ${position.country}${position.city ? ` Â· ${position.city}` : ""}`,
+    `ðŸ¤– Found by: ${foundBy.filter(Boolean).join(" + ") || "Unknown"}`,
     languageLine,
-    `📚 IELTS: ${position.ielts_requirement || "Not specified"}`,
-    `📅 Deadline: ${position.deadline || "Not specified"}`,
+    `ðŸ“š IELTS: ${position.ielts_requirement || "Not specified"}`,
+    `ðŸ“… Deadline: ${position.deadline || "Not specified"}`,
     "",
-    "💰 Funding:",
+    "ðŸ’° Funding:",
     position.funding || "Not specified",
     "",
-    "🎯 Why it matches:",
+    "ðŸŽ¯ Why it matches:",
     position.why_it_matches || "Strong match with your research profile.",
     "",
-    "🧭 Strategic fit:",
+    "ðŸ§­ Strategic fit:",
     position.strategic_fit || "Strong alignment with your research trajectory.",
     "",
-    groundingLine + "🔗 Apply:",
+    groundingLine + "ðŸ”— Apply:",
     position.url
   ].join("\n");
 }
@@ -1293,7 +1331,7 @@ async function main() {
   for (const label of PROVIDERS.map(p => p.label)) {
     const mine = verifiedResults.filter(result => providerLabelsOf(result.ai_provider).includes(label));
     if (!mine.length && !runs.some(run => run.label === label)) continue;
-    console.log(`\nTop matches — ${label}:`);
+    console.log(`\nTop matches â€” ${label}:`);
     for (const result of mine.slice(0, 10)) {
       const groundFlag = result.url_grounded === true ? "" : " [unconfirmed url]";
       console.log(
