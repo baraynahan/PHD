@@ -4,26 +4,88 @@ import {
   writeFileSync
 } from "node:fs";
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const RESULTS_FILE = "results.json";
 const NOTIFIED_FILE = "notified.json";
 const SOURCES_FILE = "sources.json";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-// New: apmix.ai gives us DeepSeek; Tavily gives DeepSeek the web search it
-// doesn't have natively (mirrors what Gemini gets for free via groundingMetadata).
-const APMIX_API_KEY = process.env.APMIX_API_KEY;
-const APMIX_MODEL = process.env.APMIX_MODEL || "deepseek-v4-flash-free";
-const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
+// ============================================================================
+// PROVIDER CONFIGURATION
+// Nothing about WHICH company/API is used is written in this file. Every
+// provider is described only by GitHub Variables + Secrets, so switching
+// provider = change the variables/secret, no code edits.
+//
+// There are three provider slots:
+//
+//   SEARCH_REVIEW_*  one AI that searches the web itself AND reviews the pages
+//                    (pipeline 1)
+//   SEARCH_*         a search-only API that returns links (pipeline 2, step 1)
+//   REVIEW_*         an AI that only reviews/scores the pages found by SEARCH_*
+//                    (pipeline 2, step 2)
+//
+// Per slot:
+//   <SLOT>_NAME      label shown on the dashboard / Telegram (any text)
+//   <SLOT>_BASE_URL  API link (base URL or the full endpoint URL)
+//   <SLOT>_MODEL     model name (AI slots only)
+//   <SLOT>_FORMAT    optional: how to talk to the API. Auto-detected from the
+//                    link when empty.
+//                      AI slots:    "gemini" (Google native API, with Google
+//                                   Search grounding) or "openai"
+//                                   (any OpenAI-compatible /chat/completions API)
+//                      Search slot: "tavily", "serper" or "brave"
+//   <SLOT>_API_KEY   secret
+// ============================================================================
 
-// Labels stored in results.json / shown on the dashboard.
-const LABEL_GEMINI = "Gemini";
-const LABEL_APMIX = "DeepSeek";
+function envValue(name) {
+  return String(process.env[name] || "").trim();
+}
 
-// The models don't know today's date on their own (Gemini 2.5 Flash thinks it's
+function detectFormat(baseUrl, kind) {
+  const url = baseUrl.toLowerCase();
+  if (kind === "search") {
+    if (url.includes("serper")) return "serper";
+    if (url.includes("brave")) return "brave";
+    return "tavily";
+  }
+  // Google's own API (not its /openai compatibility endpoint) uses the native format.
+  if (url.includes("generativelanguage.googleapis.com") && !url.includes("/openai")) return "gemini";
+  return "openai";
+}
+
+function readProviderConfig(prefix, { kind = "ai", defaultName }) {
+  const baseUrl = envValue(`${prefix}_BASE_URL`);
+  const apiKey = envValue(`${prefix}_API_KEY`);
+  const model = envValue(`${prefix}_MODEL`);
+  const missing = [];
+  if (!baseUrl) missing.push(`${prefix}_BASE_URL (variable)`);
+  if (kind === "ai" && !model) missing.push(`${prefix}_MODEL (variable)`);
+  if (!apiKey) missing.push(`${prefix}_API_KEY (secret)`);
+  return {
+    prefix,
+    kind,
+    name: envValue(`${prefix}_NAME`) || defaultName,
+    baseUrl,
+    apiKey,
+    model,
+    format: (envValue(`${prefix}_FORMAT`) || detectFormat(baseUrl, kind)).toLowerCase(),
+    missing,
+    configured: missing.length === 0
+  };
+}
+
+const SEARCH_REVIEW = readProviderConfig("SEARCH_REVIEW", { kind: "ai", defaultName: "Search+Review AI" });
+const SEARCH = readProviderConfig("SEARCH", { kind: "search", defaultName: "Search API" });
+const REVIEW = readProviderConfig("REVIEW", { kind: "ai", defaultName: "Review AI" });
+
+// Joins a base URL with an API path, unless the full endpoint was already given.
+function endpointURL(baseUrl, path) {
+  const base = baseUrl.replace(/\/+$/, "");
+  return base.toLowerCase().endsWith(path.toLowerCase()) ? base : `${base}${path}`;
+}
+
+// The models don't know today's date on their own (they often think it's
 // ~2024/2025), so they happily surface closed vacancies. Tell them explicitly.
 const TODAY = new Date().toISOString().slice(0, 10);
 const THIS_YEAR = Number(TODAY.slice(0, 4));
@@ -37,10 +99,13 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-if (!GEMINI_API_KEY && !APMIX_API_KEY) {
+if (!SEARCH_REVIEW.configured && !(SEARCH.configured && REVIEW.configured)) {
   throw new Error(
-    "Configure at least one provider: set GEMINI_API_KEY, and/or " +
-    "APMIX_API_KEY together with TAVILY_API_KEY."
+    "No provider is fully configured. Set the SEARCH_REVIEW_* variables + secret, " +
+    "and/or the SEARCH_* and REVIEW_* variables + secrets.\n" +
+    `Missing for search+review provider: ${SEARCH_REVIEW.missing.join(", ") || "nothing"}\n` +
+    `Missing for search provider: ${SEARCH.missing.join(", ") || "nothing"}\n` +
+    `Missing for review provider: ${REVIEW.missing.join(", ") || "nothing"}`
   );
 }
 
@@ -48,10 +113,10 @@ if (!GEMINI_API_KEY && !APMIX_API_KEY) {
 // so never let an API key or a wall of response JSON leak into it.
 function safeErrorMessage(error) {
   let message = String(error?.message || error || "Unknown error");
-  for (const secret of [GEMINI_API_KEY, TELEGRAM_BOT_TOKEN, APMIX_API_KEY, TAVILY_API_KEY]) {
+  for (const secret of [SEARCH_REVIEW.apiKey, SEARCH.apiKey, REVIEW.apiKey, TELEGRAM_BOT_TOKEN]) {
     if (secret) message = message.split(secret).join("***");
   }
-  return message.length > 300 ? `${message.slice(0, 300)}â€¦` : message;
+  return message.length > 300 ? `${message.slice(0, 300)}…` : message;
 }
 
 const CANDIDATE_PROFILE = `
@@ -59,9 +124,9 @@ The candidate is an Industrial Design graduate, university lecturer in
 service design, sustainability educator, and design researcher.
 
 The candidate's trajectory is:
-PRODUCT DESIGN â†’ SUSTAINABLE DESIGN â†’ SUSTAINABLE CONSUMPTION â†’
-PRODUCT LONGEVITY â†’ CONSUMPTION SYSTEMS â†’ OWNERSHIP / ACCESS â†’
-POST-GROWTH / DEGROWTH â†’ SOCIAL + POLITICAL TRANSFORMATION.
+PRODUCT DESIGN → SUSTAINABLE DESIGN → SUSTAINABLE CONSUMPTION →
+PRODUCT LONGEVITY → CONSUMPTION SYSTEMS → OWNERSHIP / ACCESS →
+POST-GROWTH / DEGROWTH → SOCIAL + POLITICAL TRANSFORMATION.
 
 Strong interests include degrowth, post-growth, political economy,
 sustainable consumption, alternative ownership/access, commons,
@@ -196,7 +261,7 @@ Return ONLY a valid JSON array. Every object MUST contain:
   "language_source_url": "...",
   "ielts_requirement": "...",
   "ielts_source_url": "...",
-  "ai_provider": "Gemini | DeepSeek",
+  "ai_provider": "...",
   "original_text": "The cleaned text captured directly from the vacancy page used for this result."
 }
 
@@ -276,7 +341,7 @@ function isFutureDeadline(deadline) {
 }
 
 
-const GEMINI_DISCOVERY_ANGLES = [
+const SEARCH_REVIEW_ANGLES = [
   `Find currently open, funded PhD/doctoral vacancies (Europe first, see geography below) matching this profile:
 ${CANDIDATE_PROFILE}
 Search broadly across ALL of these themes in one comprehensive Google Search pass:
@@ -299,7 +364,7 @@ Prioritise official university vacancy pages. Exclude generic programmes and exp
 ];
 
 // Dedicated pass for Tier 3, so Europe results can't crowd these out.
-const GEMINI_TIER3_ANGLES = [
+const SEARCH_REVIEW_TIER3_ANGLES = [
   `Find currently open, funded PhD/doctoral projects or project-linked PhD scholarships in
 CANADA, AUSTRALIA and NEW ZEALAND only (never the United States) matching this profile:
 ${CANDIDATE_PROFILE}
@@ -318,17 +383,17 @@ Include listings on findaphd.com, universityaffairs.ca, and official university 
 scholarship pages. Exclude generic programmes and expired positions.`
 ];
 
-const GEMINI_MAX_PAGES = 32;      // Europe-first pages
+const SEARCH_REVIEW_MAX_PAGES = 32;      // Europe-first pages
 const TIER3_MAX_PAGES = 12;       // extra pages reserved for Canada/Australia/NZ
 const PAGE_TEXT_CHARS = 24000;
 const EXTRACTION_BATCH_SIZE = 8;
-const GEMINI_CALL_GAP_MS = 6500;
+const SEARCH_REVIEW_CALL_GAP_MS = 6500;
 const PAGE_USER_AGENT = "Mozilla/5.0 (compatible; PhD-Radar/1.0)";
 
-// Tavily takes literal search queries (not free-form instructions like
-// Gemini's search tool), so this is a fixed query list covering the same
-// ground as SEARCH_STRATEGY + GEOGRAPHY.
-const TAVILY_QUERIES = [
+// A search-only API takes literal search queries (not free-form instructions
+// like an AI with its own search tool), so this is a fixed query list covering
+// the same ground as SEARCH_STRATEGY + GEOGRAPHY.
+const SEARCH_QUERIES = [
   "fully funded PhD position sustainable consumption",
   `PhD vacancy ${THIS_YEAR + 1} start sustainability consumption degrowth`,
   `doctoral position ${THIS_YEAR + 1} sustainability transitions social science Europe`,
@@ -350,7 +415,7 @@ const TAVILY_QUERIES = [
 ];
 
 // Tier 3 queries (Canada / Australia / New Zealand), searched separately.
-const TAVILY_TIER3_QUERIES = [
+const SEARCH_TIER3_QUERIES = [
   `PhD scholarship ${THIS_YEAR + 1} sustainability consumption Australia findaphd`,
   `PhD position ${THIS_YEAR + 1} sustainability transitions Canada findaphd`,
   `funded PhD ${THIS_YEAR + 1} design sustainability Australia university scholarship closing date`,
@@ -364,10 +429,10 @@ const TAVILY_TIER3_QUERIES = [
   "PhD scholarship sustainability transitions consumption New Zealand"
 ];
 
-const TAVILY_MAX_RESULTS_PER_QUERY = 10;
-const TAVILY_CALL_GAP_MS = 600;
-const APMIX_MAX_PAGES = 32;
-const APMIX_CALL_GAP_MS = 3000;
+const SEARCH_MAX_RESULTS_PER_QUERY = 10;
+const SEARCH_CALL_GAP_MS = 600;
+const REVIEW_MAX_PAGES = 32;
+const REVIEW_CALL_GAP_MS = 3000;
 
 async function fetchPage(url) {
   const controller = new AbortController();
@@ -390,7 +455,7 @@ async function fetchPage(url) {
   } finally { clearTimeout(timeout); }
 }
 
-async function fetchHitPages(hits, maxPages = GEMINI_MAX_PAGES) {
+async function fetchHitPages(hits, maxPages = SEARCH_REVIEW_MAX_PAGES) {
   const pages=[], skipped=[], seen=new Set();
   for (const hit of hits) {
     const rawURL=normalizeURL(hit.url); if (!rawURL || seen.has(rawURL)) continue; seen.add(rawURL);
@@ -425,134 +490,183 @@ function attachPageData(items, batch) {
   });
 }
 
-async function geminiGenerate(prompt, useSearch=true) {
-  if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not configured.");
-  const endpoint=`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
-  const body={contents:[{role:"user",parts:[{text:prompt}]}],
-    ...(useSearch ? {tools:[{google_search:{}}]} : {}),
-    generationConfig:{temperature:0.1,responseMimeType:"text/plain"}};
-  const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-  const data=await response.json();
-  if (!response.ok) throw new Error(data?.error?.message || `Gemini HTTP ${response.status}`);
-  const text=(data?.candidates||[]).flatMap(c=>c?.content?.parts||[]).map(p=>p?.text||"").join("\n").trim();
-  if (!text) throw new Error("Gemini returned no text.");
-  return {text,data};
+// ---------------------------------------------------------------------------
+// Generic AI call. Which API is used depends only on the provider config
+// (BASE_URL / MODEL / FORMAT / API_KEY), never on code.
+// ---------------------------------------------------------------------------
+async function aiGenerate(provider, prompt, { useSearch = false } = {}) {
+  if (!provider.configured) throw new Error(`${provider.name} is not configured (missing: ${provider.missing.join(", ")}).`);
+  if (provider.format === "gemini") return geminiFormatGenerate(provider, prompt, useSearch);
+  if (provider.format === "openai") return openaiFormatGenerate(provider, prompt);
+  throw new Error(`${provider.prefix}_FORMAT "${provider.format}" is not supported. Use "gemini" or "openai".`);
 }
 
+// Google's native API. useSearch turns on Google Search grounding.
+async function geminiFormatGenerate(provider, prompt, useSearch) {
+  const base = provider.baseUrl.replace(/\/+$/, "");
+  const endpoint = /:generatecontent$/i.test(base)
+    ? base
+    : `${base}/models/${encodeURIComponent(provider.model)}:generateContent`;
+  const body = {
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    ...(useSearch ? { tools: [{ google_search: {} }] } : {}),
+    generationConfig: { temperature: 0.1, responseMimeType: "text/plain" }
+  };
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": provider.apiKey },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error?.message || `${provider.name} HTTP ${response.status}`);
+  const text = (data?.candidates || []).flatMap(c => c?.content?.parts || []).map(p => p?.text || "").join("\n").trim();
+  if (!text) throw new Error(`${provider.name} returned no text.`);
+  return { text, data };
+}
+
+// Any OpenAI-compatible API (DeepSeek, OpenRouter, Groq, Mistral, apmix,
+// Perplexity, OpenAI, Gemini's /openai endpoint, ...).
+async function openaiFormatGenerate(provider, prompt) {
+  const endpoint = endpointURL(provider.baseUrl, "/chat/completions");
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${provider.apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: provider.model,
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.1
+    })
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error?.message || `${provider.name} HTTP ${response.status}`);
+  const text = data?.choices?.[0]?.message?.content || "";
+  if (!text) throw new Error(`${provider.name} returned no text.`);
+  return { text, data };
+}
+
+// Pulls the real web pages an AI's built-in search used, whatever API shape
+// the provider returns them in.
 function collectGroundingHits(data) {
-  const hits=[];
-  for (const candidate of data?.candidates||[]) {
-    for (const chunk of candidate?.groundingMetadata?.groundingChunks||[]) {
-      if (chunk?.web?.uri) hits.push({title:String(chunk.web.title||chunk.web.uri),url:chunk.web.uri});
-    }
+  const hits = [];
+  const add = (url, title) => { if (url) hits.push({ title: String(title || url), url: String(url) }); };
+  // Gemini native: grounding metadata
+  for (const candidate of data?.candidates || []) {
+    for (const chunk of candidate?.groundingMetadata?.groundingChunks || []) add(chunk?.web?.uri, chunk?.web?.title);
+  }
+  // OpenAI-compatible search models (e.g. Perplexity, OpenAI search models)
+  for (const item of data?.search_results || []) add(item?.url, item?.title);
+  for (const item of data?.citations || []) typeof item === "string" ? add(item) : add(item?.url, item?.title);
+  for (const choice of data?.choices || []) {
+    for (const ann of choice?.message?.annotations || []) add(ann?.url_citation?.url || ann?.url, ann?.url_citation?.title || ann?.title);
   }
   return hits;
 }
 
-async function geminiDiscover(angles = GEMINI_DISCOVERY_ANGLES, tag = "Europe-first") {
-  console.log(`[Gemini] Google Search discovery starting (${tag})...`);
-  const allHits=[],seen=new Set();
-  for (let i=0;i<angles.length;i++) {
-    if (i>0) await sleep(GEMINI_CALL_GAP_MS);
-    const prompt=`You are the discovery stage of a PhD vacancy radar.
+async function searchReviewDiscover(angles = SEARCH_REVIEW_ANGLES, tag = "Europe-first") {
+  console.log(`[${SEARCH_REVIEW.name}] web search discovery starting (${tag})...`);
+  const allHits = [], seen = new Set();
+  for (let i = 0; i < angles.length; i++) {
+    if (i > 0) await sleep(SEARCH_REVIEW_CALL_GAP_MS);
+    const prompt = `You are the discovery stage of a PhD vacancy radar.
 ${angles[i]}
 ${SEARCH_STRATEGY}
 ${RULES}
 ${DATE_CONTEXT}
 Return a list of at least 20 relevant, CURRENTLY OPEN vacancy pages you found. Do not invent URLs.
-The program will take URLs only from Google's grounding metadata, not from your text.`;
-    const {data}=await geminiGenerate(prompt,true);
+The program will take URLs only from your web search tool's source metadata, not from your text.`;
+    const { data } = await aiGenerate(SEARCH_REVIEW, prompt, { useSearch: true });
     for (const hit of collectGroundingHits(data)) {
-      const url=normalizeURL(hit.url); if (!url || seen.has(url)) continue;
-      seen.add(url); allHits.push({...hit,url});
+      const url = normalizeURL(hit.url); if (!url || seen.has(url)) continue;
+      seen.add(url); allHits.push({ ...hit, url });
     }
-    console.log(`[Gemini] ${tag} angle ${i+1}/${angles.length}: ${allHits.length} unique hits so far`);
+    console.log(`[${SEARCH_REVIEW.name}] ${tag} angle ${i + 1}/${angles.length}: ${allHits.length} unique hits so far`);
   }
   return allHits;
 }
 
-// --- Tavily (search) + apmix (DeepSeek) -----------------------------------
-// Tavily plays the same role here that Gemini's built-in google_search tool
-// plays above: it turns queries into a set of candidate URLs. Those URLs
-// then go through the same fetchHitPages() used by Gemini, so DeepSeek's
-// extraction step reads real page text, not just a Tavily snippet.
+// --- Search-only API + review-only AI -------------------------------------
+// The search API plays the same role the search+review AI's built-in search
+// plays above: it turns queries into candidate URLs. Those URLs then go
+// through the same fetchHitPages(), so the review AI reads real page text,
+// not just a search snippet.
 
-async function tavilySearch(query) {
+// Each search format returns its results in a different shape; all are
+// normalised to [{ title, url }].
+async function webSearch(query) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20000);
+  const n = SEARCH_MAX_RESULTS_PER_QUERY;
   try {
-    const response = await fetch("https://api.tavily.com/search", {
-      method: "POST",
-      signal: controller.signal,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        api_key: TAVILY_API_KEY,
-        query,
-        search_depth: "advanced",
-        max_results: TAVILY_MAX_RESULTS_PER_QUERY,
-        include_answer: false,
-        include_raw_content: false,
-        time_range: "year"
-      })
-    });
-    const data = await response.json();
+    let response, pick;
+    if (SEARCH.format === "tavily") {
+      response = await fetch(endpointURL(SEARCH.baseUrl, "/search"), {
+        method: "POST", signal: controller.signal,
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SEARCH.apiKey}` },
+        body: JSON.stringify({
+          api_key: SEARCH.apiKey, query, search_depth: "advanced", max_results: n,
+          include_answer: false, include_raw_content: false, time_range: "year"
+        })
+      });
+      pick = data => (data.results || []).map(r => ({ title: r.title, url: r.url }));
+    } else if (SEARCH.format === "serper") {
+      response = await fetch(endpointURL(SEARCH.baseUrl, "/search"), {
+        method: "POST", signal: controller.signal,
+        headers: { "Content-Type": "application/json", "X-API-KEY": SEARCH.apiKey },
+        body: JSON.stringify({ q: query, num: n, tbs: "qdr:y" })
+      });
+      pick = data => (data.organic || []).map(r => ({ title: r.title, url: r.link }));
+    } else if (SEARCH.format === "brave") {
+      const url = new URL(endpointURL(SEARCH.baseUrl, "/res/v1/web/search"));
+      url.searchParams.set("q", query);
+      url.searchParams.set("count", String(Math.min(n, 20)));
+      url.searchParams.set("freshness", "py");
+      response = await fetch(url, {
+        signal: controller.signal,
+        headers: { "Accept": "application/json", "X-Subscription-Token": SEARCH.apiKey }
+      });
+      pick = data => (data.web?.results || []).map(r => ({ title: r.title, url: r.url }));
+    } else {
+      throw new Error(`SEARCH_FORMAT "${SEARCH.format}" is not supported. Use "tavily", "serper" or "brave".`);
+    }
+    const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      console.warn(`[Tavily] error for query "${query}": ${response.status} ${safeErrorMessage(JSON.stringify(data))}`);
+      console.warn(`[${SEARCH.name}] error for query "${query}": ${response.status} ${safeErrorMessage(JSON.stringify(data))}`);
       return [];
     }
-    return Array.isArray(data.results) ? data.results : [];
+    return pick(data).filter(r => r.url);
   } catch (error) {
-    console.warn(`[Tavily] request failed for query "${query}": ${safeErrorMessage(error)}`);
+    if (String(error?.message || "").includes("SEARCH_FORMAT")) throw error;
+    console.warn(`[${SEARCH.name}] request failed for query "${query}": ${safeErrorMessage(error)}`);
     return [];
   } finally {
     clearTimeout(timeout);
   }
 }
 
-async function tavilyDiscover(queries = TAVILY_QUERIES, tag = "Europe-first") {
-  if (!TAVILY_API_KEY) throw new Error("TAVILY_API_KEY is not configured.");
-  console.log(`[DeepSeek] Tavily search discovery starting (${tag})...`);
+async function searchDiscover(queries = SEARCH_QUERIES, tag = "Europe-first") {
+  if (!SEARCH.configured) throw new Error(`${SEARCH.name} is not configured (missing: ${SEARCH.missing.join(", ")}).`);
+  console.log(`[${REVIEW.name}] ${SEARCH.name} search discovery starting (${tag})...`);
   const allHits = [], seen = new Set();
   for (let i = 0; i < queries.length; i++) {
-    if (i > 0) await sleep(TAVILY_CALL_GAP_MS);
+    if (i > 0) await sleep(SEARCH_CALL_GAP_MS);
     const query = queries[i];
-    const results = await tavilySearch(query);
+    const results = await webSearch(query);
     for (const item of results) {
       const url = normalizeURL(item.url);
       if (!url || seen.has(url)) continue;
       seen.add(url);
       allHits.push({ title: String(item.title || url).trim(), url });
     }
-    console.log(`[DeepSeek] ${tag} query ${i + 1}/${queries.length} ("${query}"): ${allHits.length} unique hits so far`);
+    console.log(`[${REVIEW.name}] ${tag} query ${i + 1}/${queries.length} ("${query}"): ${allHits.length} unique hits so far`);
   }
   return allHits;
 }
 
-async function apmixGenerate(prompt) {
-  if (!APMIX_API_KEY) throw new Error("APMIX_API_KEY is not configured.");
-  const endpoint = "https://api.apmix.ai/v1/chat/completions";
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${APMIX_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: APMIX_MODEL,
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.1
-    })
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data?.error?.message || `APMix HTTP ${response.status}`);
-  const text = data?.choices?.[0]?.message?.content || "";
-  if (!text) throw new Error("APMix returned no text.");
-  return { text, data };
-}
-
-// hasSearchTool=false swaps out the "you may use Google Search" line for one
-// telling DeepSeek it only has the supplied page text, since apmix has no
-// search tool of its own.
+// hasSearchTool=false swaps out the "you may use web search" line for one
+// telling the review-only AI it only has the supplied page text.
 function buildExtractionPrompt(pages, { hasSearchTool = true } = {}) {
   const pageBlocks=pages.map(page=>`--- PAGE ${page.id} ---
 TITLE: ${page.title||""}
@@ -562,11 +676,11 @@ ${page.text}
 --- END PAGE ${page.id} ---`).join("\n\n");
 
   const languageNote = hasSearchTool
-    ? `For language and IELTS fields, prefer official university sources. You may use Google Search
+    ? `For language and IELTS fields, prefer official university sources. You may use web search
 if necessary to locate the relevant official university English/IELTS page, but never invent
 a URL or IELTS score. If no official IELTS requirement can be established, use the required fallback.`
     : `For language and IELTS fields, prefer official university sources. You do not have web
-search access beyond the page contents supplied below â€” do not guess or invent an IELTS
+search access beyond the page contents supplied below — do not guess or invent an IELTS
 score or a source URL. If the supplied page content does not state an official IELTS
 requirement, use the required fallback rather than guessing.`;
 
@@ -594,16 +708,16 @@ ${pageBlocks}`;
 }
 
 async function extractBatch(pages) {
-  const {text}=await geminiGenerate(buildExtractionPrompt(pages),true);
-  const parsed=extractJSON(text);
-  if (!Array.isArray(parsed)) throw new Error("Gemini extraction response was not an array.");
+  const { text } = await aiGenerate(SEARCH_REVIEW, buildExtractionPrompt(pages, { hasSearchTool: true }), { useSearch: true });
+  const parsed = extractJSON(text);
+  if (!Array.isArray(parsed)) throw new Error(`${SEARCH_REVIEW.name} extraction response was not an array.`);
   return parsed;
 }
 
-async function extractApmixBatch(pages) {
-  const { text } = await apmixGenerate(buildExtractionPrompt(pages, { hasSearchTool: false }));
+async function extractReviewBatch(pages) {
+  const { text } = await aiGenerate(REVIEW, buildExtractionPrompt(pages, { hasSearchTool: false }));
   const parsed = extractJSON(text);
-  if (!Array.isArray(parsed)) throw new Error("DeepSeek extraction response was not an array.");
+  if (!Array.isArray(parsed)) throw new Error(`${REVIEW.name} extraction response was not an array.`);
   return parsed;
 }
 
@@ -628,14 +742,14 @@ function explainRejection(item) {
   return "passes";
 }
 
-const PROVIDER_LABELS = [LABEL_GEMINI, LABEL_APMIX];
-
+// Provider labels are whatever names are set in the variables, so any name
+// works (old results keep the label they were saved with).
 function providerLabelsOf(value) {
   const raw = String(value || "").trim();
   if (!raw) return [];
-  const labels = raw.split(/\s*\+\s*/)
-    .map(part => PROVIDER_LABELS.find(label => label.toLowerCase() === part.trim().toLowerCase()))
-    .filter(Boolean);
+  const labels = raw.split(/\s+\+\s+/)
+    .map(part => part.trim())
+    .filter(part => part && part.toLowerCase() !== "unknown");
   return [...new Set(labels)];
 }
 
@@ -831,7 +945,7 @@ async function verifyResults(results) {
     for (let j = 0; j < batch.length; j++) {
       verified.push({ ...batch[j], ...checked[j] });
       console.log(
-        `${checked[j].verification_status === "Verified" ? "âœ“" : "?"} ${batch[j].title}`
+        `${checked[j].verification_status === "Verified" ? "✓" : "?"} ${batch[j].title}`
       );
     }
   }
@@ -875,111 +989,90 @@ function saveJSON(file, value) {
 }
 
 // Keep every provider's prior results (cleanResults already keys each entry
-// by "provider|url", so Gemini and DeepSeek rows never collide).
+// by vacancy identity, so rows from different providers merge cleanly).
 function loadExisting() {
   return cleanResults(loadJSON(RESULTS_FILE, []));
 }
 
-async function callGemini() {
-  const mainHits = await geminiDiscover(GEMINI_DISCOVERY_ANGLES, "Europe-first");
-  await sleep(GEMINI_CALL_GAP_MS);
-  const tier3Hits = await geminiDiscover(GEMINI_TIER3_ANGLES, "Canada/Australia/NZ");
+// Shared by both pipelines: open the pages, then have an AI review them.
+async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract, hitsLabel }) {
   const hits = [...mainHits, ...tier3Hits];
-  if (!hits.length) throw new Error("Gemini Google Search returned no grounded web pages.");
-  console.log(`[Gemini] ${hits.length} distinct search hits. Opening the pages...`);
+  console.log(`[${label}] ${hits.length} distinct ${hitsLabel}. Opening the pages...`);
 
-  const { pages, skipped, tier3Count } = await gatherPages(mainHits, tier3Hits, GEMINI_MAX_PAGES);
-  console.log(`[Gemini] ${pages.length} readable PhD-related pages (${tier3Count} Canada/Australia/NZ) of ${hits.length} hits; reading them now...`);
+  const { pages, tier3Count } = await gatherPages(mainHits, tier3Hits, mainMax);
+  console.log(`[${label}] ${pages.length} readable PhD-related pages (${tier3Count} Canada/Australia/NZ) of ${hits.length} hits; reading them now...`);
 
   const results = [];
   let failedBatches = 0;
   let batches = 0;
   for (let i = 0; i < pages.length; i += EXTRACTION_BATCH_SIZE) {
-    if (i > 0) await sleep(GEMINI_CALL_GAP_MS);
+    if (i > 0) await sleep(gapMs);
     batches++;
     const batch = pages.slice(i, i + EXTRACTION_BATCH_SIZE);
     try {
-      results.push(...attachPageData(await extractBatch(batch), batch));
+      results.push(...attachPageData(await extract(batch), batch));
     } catch (error) {
       failedBatches++;
-      console.warn(`[Gemini] could not read pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
+      console.warn(`[${label}] could not read pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
     }
   }
   if (batches > 0 && failedBatches === batches) {
-    throw new Error("Gemini found pages but could not read any of them.");
+    throw new Error(`${label} found pages but could not read any of them.`);
   }
 
-  const detail = `${hits.length} search hits, ${pages.length} readable pages, ` +
+  const detail = `${hits.length} ${hitsLabel}, ${pages.length} readable pages, ` +
     `${results.length} qualified` +
     (failedBatches ? `, ${failedBatches}/${batches} read batches failed` : "");
-  console.log(`[Gemini] ${detail}`);
+  console.log(`[${label}] ${detail}`);
 
   return {
     results,
-    // The real pages Gemini's search led to (not the Google redirect links).
     sources: pages.map(page => ({ title: page.title || page.url, url: page.url })),
     detail
   };
 }
 
-async function callApmix() {
-  if (!TAVILY_API_KEY) {
-    throw new Error("TAVILY_API_KEY is not configured (required for the DeepSeek/apmix provider's search).");
+// Pipeline 1: one AI searches the web itself and reviews the pages.
+async function callSearchReviewProvider() {
+  const mainHits = await searchReviewDiscover(SEARCH_REVIEW_ANGLES, "Europe-first");
+  await sleep(SEARCH_REVIEW_CALL_GAP_MS);
+  const tier3Hits = await searchReviewDiscover(SEARCH_REVIEW_TIER3_ANGLES, "Canada/Australia/NZ");
+  if (!mainHits.length && !tier3Hits.length) {
+    throw new Error(`${SEARCH_REVIEW.name} returned no web sources. This slot needs an AI with built-in web search.`);
   }
+  return reviewPages({
+    label: SEARCH_REVIEW.name, mainHits, tier3Hits, mainMax: SEARCH_REVIEW_MAX_PAGES,
+    gapMs: SEARCH_REVIEW_CALL_GAP_MS, extract: extractBatch, hitsLabel: "search hits"
+  });
+}
 
-  const mainHits = await tavilyDiscover(TAVILY_QUERIES, "Europe-first");
-  const tier3Hits = await tavilyDiscover(TAVILY_TIER3_QUERIES, "Canada/Australia/NZ");
-  const hits = [...mainHits, ...tier3Hits];
-  if (!hits.length) throw new Error("Tavily search returned no results.");
-  console.log(`[DeepSeek] ${hits.length} distinct Tavily hits. Opening the pages...`);
-
-  const { pages, skipped, tier3Count } = await gatherPages(mainHits, tier3Hits, APMIX_MAX_PAGES);
-  console.log(`[DeepSeek] ${pages.length} readable PhD-related pages (${tier3Count} Canada/Australia/NZ) of ${hits.length} hits; reading them now...`);
-
-  const results = [];
-  let failedBatches = 0;
-  let batches = 0;
-  for (let i = 0; i < pages.length; i += EXTRACTION_BATCH_SIZE) {
-    if (i > 0) await sleep(APMIX_CALL_GAP_MS);
-    batches++;
-    const batch = pages.slice(i, i + EXTRACTION_BATCH_SIZE);
-    try {
-      results.push(...attachPageData(await extractApmixBatch(batch), batch));
-    } catch (error) {
-      failedBatches++;
-      console.warn(`[DeepSeek] could not read pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
-    }
-  }
-  if (batches > 0 && failedBatches === batches) {
-    throw new Error("DeepSeek found pages but could not read any of them.");
-  }
-
-  const detail = `${hits.length} Tavily hits, ${pages.length} readable pages, ` +
-    `${results.length} qualified` +
-    (failedBatches ? `, ${failedBatches}/${batches} read batches failed` : "");
-  console.log(`[DeepSeek] ${detail}`);
-
-  return {
-    results,
-    sources: pages.map(page => ({ title: page.title || page.url, url: page.url })),
-    detail
-  };
+// Pipeline 2: search-only API finds pages, review-only AI reviews them.
+async function callSearchThenReviewProvider() {
+  const mainHits = await searchDiscover(SEARCH_QUERIES, "Europe-first");
+  const tier3Hits = await searchDiscover(SEARCH_TIER3_QUERIES, "Canada/Australia/NZ");
+  if (!mainHits.length && !tier3Hits.length) throw new Error(`${SEARCH.name} search returned no results.`);
+  return reviewPages({
+    label: REVIEW.name, mainHits, tier3Hits, mainMax: REVIEW_MAX_PAGES,
+    gapMs: REVIEW_CALL_GAP_MS, extract: extractReviewBatch, hitsLabel: `${SEARCH.name} hits`
+  });
 }
 
 const PROVIDERS = [
   {
-    id: "gemini",
-    label: LABEL_GEMINI,
-    model: GEMINI_MODEL,
-    apiKey: GEMINI_API_KEY,
-    call: callGemini
+    id: "search_review",
+    label: SEARCH_REVIEW.name,
+    model: SEARCH_REVIEW.model,
+    configured: SEARCH_REVIEW.configured,
+    missing: SEARCH_REVIEW.missing,
+    call: callSearchReviewProvider
   },
   {
-    id: "apmix",
-    label: LABEL_APMIX,
-    model: APMIX_MODEL,
-    apiKey: APMIX_API_KEY,
-    call: callApmix
+    id: "search_then_review",
+    label: REVIEW.name,
+    model: `${REVIEW.model || "?"} (search: ${SEARCH.name})`,
+    configured: SEARCH.configured && REVIEW.configured,
+    missing: [...SEARCH.missing, ...REVIEW.missing],
+    call: callSearchThenReviewProvider
   }
 ];
 
@@ -998,9 +1091,9 @@ async function runProvider(provider) {
     sources: []
   };
 
-  if (!provider.apiKey) {
+  if (!provider.configured) {
     run.status = "skipped";
-    run.error = "API key not configured";
+    run.error = `not configured (missing: ${provider.missing.join(", ")})`;
     console.warn(`[${provider.label}] skipped: ${run.error}`);
     return run;
   }
@@ -1073,35 +1166,35 @@ async function sendTelegramMessage(message) {
 
 function formatTelegramMessage(position, foundBy = [position.ai_provider]) {
   const languageLine = position.application_language === "Not English"
-    ? "âš ï¸ Language: Not English"
-    : `ðŸ—£ï¸ Language: ${position.application_language || "Unknown"}`;
+    ? "⚠️ Language: Not English"
+    : `🗣️ Language: ${position.application_language || "Unknown"}`;
 
   const groundingLine = position.url_grounded === false
-    ? "âš ï¸ URL not confirmed in search results â€” double-check before applying\n"
+    ? "⚠️ URL not confirmed in search results — double-check before applying\n"
     : "";
 
   return [
-    `â­ EXCEPTIONAL PhD MATCH â€” ${position.overall_score}/100`,
+    `⭐ EXCEPTIONAL PhD MATCH — ${position.overall_score}/100`,
     "",
-    `ðŸŽ“ ${position.title}`,
+    `🎓 ${position.title}`,
     "",
-    `ðŸ›ï¸ ${position.university}`,
-    `ðŸŒ ${position.country}${position.city ? ` Â· ${position.city}` : ""}`,
-    `ðŸ¤– Found by: ${foundBy.filter(Boolean).join(" + ") || "Unknown"}`,
+    `🏛️ ${position.university}`,
+    `🌍 ${position.country}${position.city ? ` · ${position.city}` : ""}`,
+    `🤖 Found by: ${foundBy.filter(Boolean).join(" + ") || "Unknown"}`,
     languageLine,
-    `ðŸ“š IELTS: ${position.ielts_requirement || "Not specified"}`,
-    `ðŸ“… Deadline: ${position.deadline || "Not specified"}`,
+    `📚 IELTS: ${position.ielts_requirement || "Not specified"}`,
+    `📅 Deadline: ${position.deadline || "Not specified"}`,
     "",
-    "ðŸ’° Funding:",
+    "💰 Funding:",
     position.funding || "Not specified",
     "",
-    "ðŸŽ¯ Why it matches:",
+    "🎯 Why it matches:",
     position.why_it_matches || "Strong match with your research profile.",
     "",
-    "ðŸ§­ Strategic fit:",
+    "🧭 Strategic fit:",
     position.strategic_fit || "Strong alignment with your research trajectory.",
     "",
-    groundingLine + "ðŸ”— Apply:",
+    groundingLine + "🔗 Apply:",
     position.url
   ].join("\n");
 }
@@ -1200,7 +1293,7 @@ async function main() {
   for (const label of PROVIDERS.map(p => p.label)) {
     const mine = verifiedResults.filter(result => providerLabelsOf(result.ai_provider).includes(label));
     if (!mine.length && !runs.some(run => run.label === label)) continue;
-    console.log(`\nTop matches â€” ${label}:`);
+    console.log(`\nTop matches — ${label}:`);
     for (const result of mine.slice(0, 10)) {
       const groundFlag = result.url_grounded === true ? "" : " [unconfirmed url]";
       console.log(
