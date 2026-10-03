@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       cleanup_only:
-        description: "Cleanup only: re-check saved results + blocked.json, no Gemini/DeepSeek/Tavily calls"
+        description: "Cleanup only: re-check saved results + blocked.json, no AI/search API calls"
         type: boolean
         default: false
 
@@ -60,14 +60,38 @@ jobs:
       # ----------------------------------------
       - name: Run PhD search
         env:
-          # Gemini (Google Search grounding)
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          # DeepSeek via apmix.ai, grounded on Tavily web search.
-          # If either of these two is missing, this provider is skipped
-          # (or shown as failed in sources.json) and Gemini still runs.
-          APMIX_API_KEY: ${{ secrets.APMIX_API_KEY }}
-          APMIX_MODEL: deepseek-v4-flash-free
-          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          # ------------------------------------------------------------
+          # All provider settings come from repo Settings > Secrets and
+          # variables > Actions. To switch provider, change the Variables
+          # (+ the API key Secret). No code edits needed.
+          #   *_BASE_URL : API link (base URL or full endpoint)
+          #   *_MODEL    : model name
+          #   *_FORMAT   : optional, auto-detected from the link
+          #                AI: gemini | openai   Search: tavily | serper | brave
+          #   *_NAME     : label shown on dashboard / Telegram
+          # A pipeline whose settings are missing is just skipped.
+          # ------------------------------------------------------------
+
+          # Pipeline 1: one AI that does BOTH search and review
+          SEARCH_REVIEW_NAME: ${{ vars.SEARCH_REVIEW_NAME }}
+          SEARCH_REVIEW_BASE_URL: ${{ vars.SEARCH_REVIEW_BASE_URL }}
+          SEARCH_REVIEW_MODEL: ${{ vars.SEARCH_REVIEW_MODEL }}
+          SEARCH_REVIEW_FORMAT: ${{ vars.SEARCH_REVIEW_FORMAT }}
+          SEARCH_REVIEW_API_KEY: ${{ secrets.SEARCH_REVIEW_API_KEY }}
+
+          # Pipeline 2, step 1: search-only API (finds the links)
+          SEARCH_NAME: ${{ vars.SEARCH_NAME }}
+          SEARCH_BASE_URL: ${{ vars.SEARCH_BASE_URL }}
+          SEARCH_FORMAT: ${{ vars.SEARCH_FORMAT }}
+          SEARCH_API_KEY: ${{ secrets.SEARCH_API_KEY }}
+
+          # Pipeline 2, step 2: review-only AI (reads + scores the pages)
+          REVIEW_NAME: ${{ vars.REVIEW_NAME }}
+          REVIEW_BASE_URL: ${{ vars.REVIEW_BASE_URL }}
+          REVIEW_MODEL: ${{ vars.REVIEW_MODEL }}
+          REVIEW_FORMAT: ${{ vars.REVIEW_FORMAT }}
+          REVIEW_API_KEY: ${{ secrets.REVIEW_API_KEY }}
+
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           # true only when you tick "Cleanup only" on a manual run
