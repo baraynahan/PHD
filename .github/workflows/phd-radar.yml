@@ -4,13 +4,15 @@ on:
   push:
     branches:
       - main
-    # Don't burn API credits on pushes that only touch data/docs.
     paths-ignore:
       - "results.json"
       - "notified.json"
       - "sources.json"
-      - "**.md"
+      - "seen.json"
+      - "universities.json"
+      - "archive.json"
       - "blocked.json"
+      - "**.md"
 
   workflow_dispatch:
     inputs:
@@ -20,7 +22,8 @@ on:
         default: false
 
   schedule:
-    - cron: "0 6 * * 6"
+    # Twice a week: Tuesday and Saturday, 06:00 UTC.
+    - cron: "0 6 * * 2,6"
 
 permissions:
   contents: write
@@ -35,57 +38,34 @@ jobs:
   search-and-deploy:
     name: Search, notify, and deploy
     runs-on: ubuntu-latest
-    # Tier 3 search adds a few minutes; hard stop so a hung request can't eat Actions minutes.
     timeout-minutes: 45
 
     steps:
-      # ----------------------------------------
-      # 1. Get repository
-      # ----------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
-      # ----------------------------------------
-      # 2. Install Bun
-      # ----------------------------------------
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      # ----------------------------------------
-      # 3. Run PhD search (Europe first + Canada/Australia/NZ, never US) + Telegram
-      # ----------------------------------------
       - name: Run PhD search
+        # A provider failure should not throw away the results that DID come in.
+        continue-on-error: true
         env:
-          # ------------------------------------------------------------
-          # All provider settings come from repo Settings > Secrets and
-          # variables > Actions. To switch provider, change the Variables
-          # (+ the API key Secret). No code edits needed.
-          #   *_BASE_URL : API link (base URL or full endpoint)
-          #   *_MODEL    : model name
-          #   *_FORMAT   : optional, auto-detected from the link
-          #                AI: gemini | openai   Search: tavily | serper | brave
-          #   *_NAME     : label shown on dashboard / Telegram
-          # A pipeline whose settings are missing is just skipped.
-          # ------------------------------------------------------------
-
-          # Pipeline 1: one AI that does BOTH search and review
           SEARCH_REVIEW_NAME: ${{ vars.SEARCH_REVIEW_NAME }}
           SEARCH_REVIEW_BASE_URL: ${{ vars.SEARCH_REVIEW_BASE_URL }}
           SEARCH_REVIEW_MODEL: ${{ vars.SEARCH_REVIEW_MODEL }}
           SEARCH_REVIEW_FORMAT: ${{ vars.SEARCH_REVIEW_FORMAT }}
           SEARCH_REVIEW_API_KEY: ${{ secrets.SEARCH_REVIEW_API_KEY }}
 
-          # Pipeline 2, step 1: search-only API (finds the links)
           SEARCH_NAME: ${{ vars.SEARCH_NAME }}
           SEARCH_BASE_URL: ${{ vars.SEARCH_BASE_URL }}
           SEARCH_FORMAT: ${{ vars.SEARCH_FORMAT }}
           SEARCH_API_KEY: ${{ secrets.SEARCH_API_KEY }}
 
-          # Pipeline 2, step 2: review-only AI (reads + scores the pages)
           REVIEW_NAME: ${{ vars.REVIEW_NAME }}
           REVIEW_BASE_URL: ${{ vars.REVIEW_BASE_URL }}
           REVIEW_MODEL: ${{ vars.REVIEW_MODEL }}
@@ -94,37 +74,35 @@ jobs:
 
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          # true only when you tick "Cleanup only" on a manual run
           CLEANUP_ONLY: ${{ github.event.inputs.cleanup_only == 'true' }}
         run: |
           bun search.mjs
 
-      # ----------------------------------------
-      # 4. Save updated results
-      # ----------------------------------------
       - name: Commit updated results
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add results.json notified.json
+          for f in results.json notified.json sources.json seen.json universities.json archive.json; do
+            [ -f "$f" ] && git add "$f"
+          done
 
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
             git commit -m "Update PhD radar results [skip ci]"
 
-            # The repository can change while the radar is running.
-            # Rebase onto the latest main, then retry the push if another
-            # commit lands between fetch/rebase and push.
             for attempt in 1 2 3 4 5; do
               echo "Preparing push (attempt $attempt/5)..."
               git fetch origin main
 
               if ! git rebase origin/main; then
                 echo "Rebase conflict detected. Resolving generated result files..."
-                git checkout --theirs results.json notified.json
-                git add results.json notified.json
+                git checkout --theirs results.json notified.json sources.json seen.json universities.json archive.json 2>/dev/null || true
+                for f in results.json notified.json sources.json seen.json universities.json archive.json; do
+                  [ -f "$f" ] && git add "$f"
+                done
                 GIT_EDITOR=true git rebase --continue
               fi
 
@@ -143,24 +121,18 @@ jobs:
             done
           fi
 
-      # ----------------------------------------
-      # 5. Configure GitHub Pages
-      # ----------------------------------------
       - name: Setup GitHub Pages
+        if: always()
         uses: actions/configure-pages@v5
 
-      # ----------------------------------------
-      # 6. Upload dashboard
-      # ----------------------------------------
       - name: Upload Pages artifact
+        if: always()
         uses: actions/upload-pages-artifact@v4
         with:
           path: "."
 
-      # ----------------------------------------
-      # 7. Deploy dashboard
-      # ----------------------------------------
       - name: Deploy to GitHub Pages
+        if: always()
         id: deployment
         uses: actions/deploy-pages@v4
         with:
