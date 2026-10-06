@@ -7,40 +7,19 @@ import {
 const RESULTS_FILE = "results.json";
 const NOTIFIED_FILE = "notified.json";
 const SOURCES_FILE = "sources.json";
+const SEEN_FILE = "seen.json";
+const UNIVERSITIES_FILE = "universities.json";
+const ARCHIVE_FILE = "archive.json";
+const BLOCKED_FILE = "blocked.json";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+const CLEANUP_ONLY = String(process.env.CLEANUP_ONLY || "").toLowerCase() === "true";
 
 // ============================================================================
-// PROVIDER CONFIGURATION
-// Nothing about WHICH company/API is used is written in this file. Every
-// provider is described only by GitHub Variables + Secrets, so switching
-// provider = change the variables/secret, no code edits.
-//
-// There are three provider slots:
-//
-//   SEARCH_REVIEW_*  one AI that searches the web itself AND reviews the pages
-//                    (pipeline 1)
-//   SEARCH_*         a search-only API that returns links (pipeline 2, step 1)
-//   REVIEW_*         an AI that only reviews/scores the pages found by SEARCH_*
-//                    (pipeline 2, step 2)
-//
-// Per slot:
-//   <SLOT>_NAME      label shown on the dashboard / Telegram (any text)
-//   <SLOT>_BASE_URL  API link (base URL or the full endpoint URL)
-//   <SLOT>_MODEL     model name (AI slots only)
-//   <SLOT>_FORMAT    optional: how to talk to the API. Auto-detected from the
-//                    link when empty.
-//                      AI slots:    "gemini" (Google native API, with Google
-//                                   Search grounding) or "openai"
-//                                   (any OpenAI-compatible /chat/completions API)
-//                      Search slot: "tavily", "serper" or "brave"
-//   <SLOT>_API_KEY   secret
+// PROVIDER CONFIGURATION (unchanged — the good part)
 // ============================================================================
-
-function envValue(name) {
-  return String(process.env[name] || "").trim();
-}
+function envValue(name) { return String(process.env[name] || "").trim(); }
 
 function detectFormat(baseUrl, kind) {
   const url = baseUrl.toLowerCase();
@@ -49,7 +28,6 @@ function detectFormat(baseUrl, kind) {
     if (url.includes("brave")) return "brave";
     return "tavily";
   }
-  // Google's own API (not its /openai compatibility endpoint) uses the native format.
   if (url.includes("generativelanguage.googleapis.com") && !url.includes("/openai")) return "gemini";
   return "openai";
 }
@@ -63,12 +41,9 @@ function readProviderConfig(prefix, { kind = "ai", defaultName }) {
   if (kind === "ai" && !model) missing.push(`${prefix}_MODEL (variable)`);
   if (!apiKey) missing.push(`${prefix}_API_KEY (secret)`);
   return {
-    prefix,
-    kind,
+    prefix, kind,
     name: envValue(`${prefix}_NAME`) || defaultName,
-    baseUrl,
-    apiKey,
-    model,
+    baseUrl, apiKey, model,
     format: (envValue(`${prefix}_FORMAT`) || detectFormat(baseUrl, kind)).toLowerCase(),
     missing,
     configured: missing.length === 0
@@ -79,14 +54,11 @@ const SEARCH_REVIEW = readProviderConfig("SEARCH_REVIEW", { kind: "ai", defaultN
 const SEARCH = readProviderConfig("SEARCH", { kind: "search", defaultName: "Search API" });
 const REVIEW = readProviderConfig("REVIEW", { kind: "ai", defaultName: "Review AI" });
 
-// Joins a base URL with an API path, unless the full endpoint was already given.
 function endpointURL(baseUrl, path) {
   const base = baseUrl.replace(/\/+$/, "");
   return base.toLowerCase().endsWith(path.toLowerCase()) ? base : `${base}${path}`;
 }
 
-// The models don't know today's date on their own (they often think it's
-// ~2024/2025), so they happily surface closed vacancies. Tell them explicitly.
 const TODAY = new Date().toISOString().slice(0, 10);
 const THIS_YEAR = Number(TODAY.slice(0, 4));
 const DATE_CONTEXT = `
@@ -95,9 +67,7 @@ are useful. Prefer vacancies posted in the last 3 months and PhDs starting in
 ${THIS_YEAR} or ${THIS_YEAR + 1}. Ignore anything that closed before ${TODAY}.
 `;
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 if (!SEARCH_REVIEW.configured && !(SEARCH.configured && REVIEW.configured)) {
   throw new Error(
@@ -109,24 +79,25 @@ if (!SEARCH_REVIEW.configured && !(SEARCH.configured && REVIEW.configured)) {
   );
 }
 
-// Error text ends up in sources.json, which is published on GitHub Pages,
-// so never let an API key or a wall of response JSON leak into it.
 function safeErrorMessage(error) {
   let message = String(error?.message || error || "Unknown error");
   for (const secret of [SEARCH_REVIEW.apiKey, SEARCH.apiKey, REVIEW.apiKey, TELEGRAM_BOT_TOKEN]) {
     if (secret) message = message.split(secret).join("***");
   }
-  return message.length > 300 ? `${message.slice(0, 300)}â€¦` : message;
+  return message.length > 300 ? `${message.slice(0, 300)}…` : message;
 }
 
+// ============================================================================
+// PROFILE / GEOGRAPHY / RULES
+// ============================================================================
 const CANDIDATE_PROFILE = `
 The candidate is an Industrial Design graduate, university lecturer in
 service design, sustainability educator, and design researcher.
 
 The candidate's trajectory is:
-PRODUCT DESIGN â†’ SUSTAINABLE DESIGN â†’ SUSTAINABLE CONSUMPTION â†’
-PRODUCT LONGEVITY â†’ CONSUMPTION SYSTEMS â†’ OWNERSHIP / ACCESS â†’
-POST-GROWTH / DEGROWTH â†’ SOCIAL + POLITICAL TRANSFORMATION.
+PRODUCT DESIGN → SUSTAINABLE DESIGN → SUSTAINABLE CONSUMPTION →
+PRODUCT LONGEVITY → CONSUMPTION SYSTEMS → OWNERSHIP / ACCESS →
+POST-GROWTH / DEGROWTH → SOCIAL + POLITICAL TRANSFORMATION.
 
 Strong interests include degrowth, post-growth, political economy,
 sustainable consumption, alternative ownership/access, commons,
@@ -156,7 +127,6 @@ Geography is a preference, not a research-fit filter:
 NEVER include positions in the United States.
 `;
 
-// Country -> tier, computed in code so the preference never depends on the model.
 const TIER1 = ["netherlands","belgium","sweden","denmark","norway","finland","united kingdom","uk","england","scotland","wales","northern ireland","germany","italy","switzerland","austria"];
 const TIER3 = ["canada","australia","new zealand"];
 const EUROPE_OTHER = ["france","ireland","spain","portugal","luxembourg","iceland","estonia","latvia","lithuania","poland","czech republic","czechia","slovenia","slovakia","hungary","greece","croatia","malta","cyprus","romania","bulgaria","liechtenstein"];
@@ -172,7 +142,7 @@ function geoTier(country) {
   if (has(TIER1)) return 1;
   if (has(TIER3)) return 3;
   if (has(EUROPE_OTHER) || c.includes("europe")) return 2;
-  return 4; // anywhere else (still allowed, lowest priority)
+  return 4;
 }
 
 const SEARCH_STRATEGY = `
@@ -192,95 +162,86 @@ not a generic programme.
 
 const RULES = `
 Every result must be currently open, fully funded, have a specific PhD
-project, a real application/vacancy page, and a verifiable future deadline.
-Reject expired, self-funded, tuition-only, unclear-funding, generic,
-unverifiable or United States positions.
+project, a real application/vacancy page, and a verifiable future deadline
+— UNLESS the deadline is "rolling" (open until filled / continuous basis),
+in which case say so explicitly and it will still be accepted.
 
 For Canada, Australia and New Zealand, PhDs are often advertised as a funded
 supervisor project or a project-linked scholarship (e.g. "HDR scholarship",
 "Research Training Program stipend", "funded PhD project with Prof. X").
-Accept these when the project/topic is specific, funding (stipend) is stated
-and a dated application/scholarship deadline is given. Still reject generic
-"apply to our PhD programme" pages without a specific project.
+Accept these when the project/topic is specific and funding (stipend) is stated.
+Still reject generic "apply to our PhD programme" pages without a specific project.
 
 Always convert deadlines to ISO YYYY-MM-DD. Be careful: Canadian pages may use
 month/day/year, European and Australian pages use day/month/year.
 
-Score 0-100 using research-topic fit, degrowth/political/social fit,
-sustainability, design compatibility, consumption/ownership/systems,
-methods, candidate background and funding quality. Return only scores 60+.
-Be strict: a position whose core topic is unrelated to the profile (e.g. auditing,
-finance, AI/organisational studies, health, engineering) must score below 60 even if
-it mentions sustainability once. Reserve 85+ for genuinely central fits.
+Score 0-100 using the five sub-scores below; be strict: a position whose core
+topic is unrelated to the profile (e.g. auditing, finance, AI/organisational
+studies, health, engineering) must score below 60 even if it mentions
+sustainability once. Reserve 85+ for genuinely central fits.
 
-IMPORTANT LANGUAGE AND IELTS RULES:
-1. Determine the actual language of the PhD position/application.
+IMPORTANT LANGUAGE RULES:
+1. Determine the actual language of the PhD position/application from the
+   supplied page text.
 2. Do NOT reject or filter a position because of its language.
-3. If the position is not in English, explicitly mark it as "Not English".
+3. If the position is not in English, mark it as "Not English".
 4. If it is in English, mark it as "English".
 5. If the language cannot be verified, mark it as "Unknown".
-6. Search the university's official website for English-language / IELTS /
-   English proficiency requirements for applicants to this PhD or the
-   relevant doctoral programme.
-7. Only report an IELTS requirement when it is supported by an official
-   university source. Do not guess or infer a score.
-8. If an official university source does not specify IELTS, write
-   "Not specified on official university website".
-9. Include the official university page URL used for the IELTS information
-   when one was found.
-10. An IELTS requirement is informational only and must never affect the
-    score or eligibility filtering.
 `;
 
 const URL_INTEGRITY_RULE = `
 CRITICAL URL RULE:
-The "url" field must be copied EXACTLY, character-for-character, from the
-specific search result / page you actually used for that listing. Do not
-"clean up", shorten, guess, reconstruct, or normalise it into what you
-think the university's vacancy page pattern usually looks like. Do not
-substitute the university's generic careers homepage if you are not
-certain it is the exact vacancy page. If you are not fully sure of the
-exact URL, lower your confidence in that result rather than inventing or
-tidying the URL.
+Every page supplied to you below already has a "page_id" and a URL in its
+header. Do NOT invent, guess, clean up, shorten, or normalise URLs. Your
+"url" field MUST be copied character-for-character from the PAGE header
+whose "page_id" you are citing. If you are not fully sure of the exact
+URL, still copy the PAGE header URL verbatim — never a different one.
 `;
 
 const OUTPUT_RULES = `
 Return ONLY a valid JSON array. Every object MUST contain:
 {
+  "page_id": <integer — the PAGE number from the header you used>,
   "title": "...",
   "university": "...",
   "country": "...",
   "city": "...",
-  "deadline": "YYYY-MM-DD",
-  "url": "...",
+  "deadline": "YYYY-MM-DD (or empty if the deadline is rolling/unknown)",
+  "deadline_type": "dated | rolling | unknown",
+  "start_date": "...",
+  "url": "... (copy verbatim from the PAGE header)",
   "funding": "...",
-  "overall_score": 0,
+  "supervisor": "...",
+  "classification": "...",
+  "research_area": "...",
+  "application_language": "English | Not English | Unknown",
+  "topic_fit": 0,       // 0-20: core research topic overlap with the profile
+  "politics_fit": 0,    // 0-20: degrowth / political economy / social transformation fit
+  "design_fit": 0,      // 0-20: design / service / systemic / transition / social design fit
+  "methods_fit": 0,     // 0-20: qualitative / participatory / theoretical / mixed methods fit
+  "funding_quality": 0, // 0-20: clarity + level of funding (fully funded + stipend = 15+)
   "why_it_matches": "...",
   "strategic_fit": "...",
-  "application_language": "English | Not English | Unknown",
-  "language_source_url": "...",
-  "ielts_requirement": "...",
-  "ielts_source_url": "...",
-  "ai_provider": "...",
-  "original_text": "The cleaned text captured directly from the vacancy page used for this result."
+  "why_it_is_not_perfect": "...",
+  "eligible": true,
+  "reject_reason": ""   // short reason if eligible=false, otherwise empty
 }
 
-Use an empty string for source URLs when no official source was found.
-The application/vacancy URL must be the real position page. Do not invent
-information, dates, IELTS scores, language status or URLs.
+The five sub-scores are summed in code to produce overall_score (0-100).
+Do not output overall_score yourself.
+Use an empty string for any field you could not determine from the page text.
+Do not invent information, dates, IELTS scores, language status or URLs.
 `;
 
+// ============================================================================
+// URL / DATE HELPERS
+// ============================================================================
 function normalizeURL(url) {
   if (!url) return "";
   try {
     const parsed = new URL(String(url).trim());
     parsed.hash = "";
-    // Only strip tracking params. "ref"/"source" are left alone because some
-    // vacancy portals use them as the actual vacancy ID.
-    for (const param of [
-      "utm_source", "utm_medium", "utm_campaign", "utm_term",
-      "utm_content"
-    ]) {
+    for (const param of ["utm_source","utm_medium","utm_campaign","utm_term","utm_content"]) {
       parsed.searchParams.delete(param);
     }
     return parsed.toString().replace(/\/$/, "");
@@ -290,225 +251,356 @@ function normalizeURL(url) {
 }
 
 const MONTH_NUMBER = {
-  jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4,
-  may: 5, jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8,
-  sep: 9, sept: 9, september: 9, oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12
+  jan:1,january:1,feb:2,february:2,mar:3,march:3,apr:4,april:4,
+  may:5,jun:6,june:6,jul:7,july:7,aug:8,august:8,
+  sep:9,sept:9,september:9,oct:10,october:10,nov:11,november:11,dec:12,december:12
 };
 
 function isRealCalendarDate(year, month, day) {
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+  const d = new Date(Date.UTC(year, month - 1, day));
+  return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day;
 }
-
 function toISODate(year, month, day) {
   return isRealCalendarDate(year, month, day)
-    ? `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+    ? `${String(year).padStart(4,"0")}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`
     : "";
 }
 
-// We ask the model for YYYY-MM-DD, but real vacancy pages state dates in all
-// sorts of formats, and a model won't always convert one perfectly. This is a
-// safety net: it recognizes the ISO format we asked for, plus the handful of
-// formats vacancy pages actually use, and normalizes them all to ISO. Text
-// that isn't a real calendar date in a recognizable shape returns "" (the
-// same as if no deadline were given at all).
-function normalizeDeadline(raw) {
-  const text = String(raw || "").trim();
+const DATE_NOISE = /\b(deadline|closing date|closes|close|apply by|applications? by|application|until|before|at|midnight|noon|cet|cest|eet|utc|gmt|bst|aest|aedt|nzst|local time|time)\b|\d{1,2}:\d{2}(:\d{2})?\s*(am|pm)?/gi;
+
+function inferYear(month, day) {
+  const candidate = toISODate(THIS_YEAR, month, day);
+  return candidate && candidate > TODAY ? THIS_YEAR : THIS_YEAR + 1;
+}
+
+function normalizeDeadline(raw, { dayFirst = true } = {}) {
+  const text = String(raw || "")
+    .replace(DATE_NOISE, " ")
+    .replace(/[,;()]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!text) return "";
+  let m;
 
-  let m = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-  if (m) return toISODate(+m[1], +m[2], +m[3]);
+  // 2026-11-15, 2026/11/15, 2026.11.15
+  if ((m = text.match(/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/)))
+    return toISODate(+m[1], +m[2], +m[3]);
 
-  m = text.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/); // 31.01.2027 / 31/01/2027 (day-month-year, the common EU order)
-  if (m) return toISODate(+m[3], +m[2], +m[1]);
+  // 15-11-2026, 15/11/2026, 15.11.2026
+  if ((m = text.match(/(\d{1,2})[-./](\d{1,2})[-./](\d{4})/))) {
+    const a = +m[1], b = +m[2];
+    if (a > 12) return toISODate(+m[3], b, a);
+    if (b > 12) return toISODate(+m[3], a, b);
+    return dayFirst ? toISODate(+m[3], b, a) : toISODate(+m[3], a, b);
+  }
 
-  m = text.match(/^(\d{4})[./](\d{1,2})[./](\d{1,2})$/); // 2027/01/31
-  if (m) return toISODate(+m[1], +m[2], +m[3]);
+  // 15 November 2026 / 15 Nov / 15th November
+  if ((m = text.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9})\.?(?:\s+(\d{4}))?/))) {
+    const mon = MONTH_NUMBER[m[2].toLowerCase()];
+    if (mon) return toISODate(+(m[3] || inferYear(mon, +m[1])), mon, +m[1]);
+  }
 
-  m = text.match(/^(\d{1,2})(?:st|nd|rd|th)?[\s-]+([A-Za-z]+)\.?[\s,-]+(\d{4})$/); // 31 January 2027 / 31 Jan 2027
-  if (m && MONTH_NUMBER[m[2].toLowerCase()]) return toISODate(+m[3], MONTH_NUMBER[m[2].toLowerCase()], +m[1]);
-
-  m = text.match(/^([A-Za-z]+)\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})$/); // January 31, 2027 / Jan 31 2027
-  if (m && MONTH_NUMBER[m[1].toLowerCase()]) return toISODate(+m[3], MONTH_NUMBER[m[1].toLowerCase()], +m[2]);
+  // November 15, 2026 / Nov 15
+  if ((m = text.match(/([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?(?:\s+(\d{4}))?/))) {
+    const mon = MONTH_NUMBER[m[1].toLowerCase()];
+    if (mon) return toISODate(+(m[3] || inferYear(mon, +m[2])), mon, +m[2]);
+  }
 
   return "";
 }
 
 function isFutureDeadline(deadline) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(deadline || ""))) return false;
-  const date = new Date(`${deadline}T23:59:59`);
-  return Number.isFinite(date.getTime()) && date.getTime() > Date.now();
+  const d = new Date(`${deadline}T23:59:59`);
+  return Number.isFinite(d.getTime()) && d.getTime() > Date.now();
 }
 
+const ROLLING_RE = /open until filled|until the position is filled|rolling (basis|deadline|review)|continuous (basis|intake|review)|applications? (are )?reviewed (on a )?(continuous|rolling)|no (fixed |set )?deadline|as soon as possible|ongoing recruitment|applications? (are )?welcome at any time/i;
 
-const SEARCH_REVIEW_ANGLES = [
-  `Find currently open, funded PhD/doctoral vacancies (Europe first, see geography below) matching this profile:
-${CANDIDATE_PROFILE}
-Search broadly across ALL of these themes in one comprehensive Google Search pass:
-degrowth, post-growth, post-consumerism, political economy, sustainable consumption,
-product longevity, repair/reuse, circular economy, sustainable lifestyles, social practices,
-consumption systems, alternative ownership/access, commons, sharing systems, sufficiency,
-service systems, product-service systems, transition design, social design, design justice,
-participatory/co-design, systemic design, critical design, alternative futures, governance,
-public policy, transition studies, sustainability science, STS, sociology, political science
-and environmental humanities where relevant. ${GEOGRAPHY}
-Prioritise official university vacancy pages. Exclude generic programmes and expired positions.`,
-  `Run a second independent search pass for currently open, funded PhD/doctoral vacancies matching this profile
-(Europe first, see geography below):
-${CANDIDATE_PROFILE}
-Actively vary the search terms and look for opportunities that the first broad pass may miss,
-especially positions using less obvious terminology around societal transformation, sustainable
-lifestyles, consumption practices, ownership/access, commons, service systems, governance,
-policy, social innovation and ecological transition. ${GEOGRAPHY}
-Prioritise official university vacancy pages. Exclude generic programmes and expired positions.`
-];
+// ============================================================================
+// FETCHING
+// ============================================================================
+const FETCH_CONCURRENCY = 10;
+const HOST_GAP_MS = 1200;
+const MAX_PAGES = 250;
+const TIER3_MAX_PAGES = 80;
+const PAGE_TEXT_CHARS = 12000;
+const PAGE_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
-// Dedicated pass for Tier 3, so Europe results can't crowd these out.
-const SEARCH_REVIEW_TIER3_ANGLES = [
-  `Find currently open, funded PhD/doctoral projects or project-linked PhD scholarships in
-CANADA, AUSTRALIA and NEW ZEALAND only (never the United States) matching this profile:
-${CANDIDATE_PROFILE}
-Themes: degrowth, post-growth, sustainable consumption, sufficiency, circular economy,
-product longevity, repair/reuse, sharing/access-based consumption, commons, social practices,
-transition design, social/service/systemic design, design justice, co-design, governance,
-public policy, sustainability transitions, STS, sociology, political economy.
-In Australia look for HDR / Research Training Program funded projects; in Canada look for
-funded supervisor-advertised PhD projects and studentships.
-Prioritise official university pages. Exclude generic programmes and expired positions.`,
-  `Second pass for CANADA, AUSTRALIA and NEW ZEALAND only (never the United States): find funded
-PhD projects/scholarships in sociology, geography, environmental studies, sustainability,
-design, planning or political science departments on sustainable consumption, circular
-economy, degrowth, sufficiency, social practices, sharing/commons, transitions or social design.
-Include listings on findaphd.com, universityaffairs.ca, and official university HDR/graduate
-scholarship pages. Exclude generic programmes and expired positions.`
-];
+async function mapPool(items, limit, worker) {
+  const out = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    for (;;) {
+      const i = next++;
+      if (i >= items.length) return;
+      out[i] = await worker(items[i], i);
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
 
-const SEARCH_REVIEW_MAX_PAGES = 32;      // Europe-first pages
-const TIER3_MAX_PAGES = 12;       // extra pages reserved for Canada/Australia/NZ
-const PAGE_TEXT_CHARS = 24000;
-const EXTRACTION_BATCH_SIZE = 8;
-const SEARCH_REVIEW_CALL_GAP_MS = 6500;
-const PAGE_USER_AGENT = "Mozilla/5.0 (compatible; PhD-Radar/1.0)";
+const hostChain = new Map();
+function perHost(url, task) {
+  let host;
+  try { host = new URL(url).host; } catch { host = "invalid"; }
+  const prev = hostChain.get(host) || Promise.resolve();
+  const run = prev.then(task, task);
+  hostChain.set(host, run.then(() => sleep(HOST_GAP_MS), () => sleep(HOST_GAP_MS)));
+  return run;
+}
 
-// A search-only API takes literal search queries (not free-form instructions
-// like an AI with its own search tool), so this is a fixed query list covering
-// the same ground as SEARCH_STRATEGY + GEOGRAPHY.
-const SEARCH_QUERIES = [
-  "fully funded PhD position sustainable consumption",
-  `PhD vacancy ${THIS_YEAR + 1} start sustainability consumption degrowth`,
-  `doctoral position ${THIS_YEAR + 1} sustainability transitions social science Europe`,
-  "open PhD vacancy degrowth post-growth Europe",
-  "PhD position circular economy ownership access commons",
-  "doctoral position sufficiency social practices sustainability",
-  "PhD vacancy transition design social design justice",
-  "fully funded PhD political economy sustainability transformation",
-  "doctoral position product longevity repair reuse consumption",
-  "PhD position service systems product-service systems sustainability",
-  "open doctoral vacancy participatory co-design governance policy",
-  "fully funded PhD Netherlands Sweden Denmark sustainability design",
-  "PhD vacancy Germany UK Switzerland Austria sustainable consumption",
-  "open PhD position alternative futures critical design sustainability",
-  "fully funded PhD sustainable lifestyles social design Europe",
-  "PhD vacancy sharing economy access-based consumption research",
-  "doctoral vacancy systemic design service design sustainability",
-  "PhD position societal transformation ecological transition Europe"
-];
+function flattenLd(node, out = []) {
+  if (Array.isArray(node)) node.forEach(n => flattenLd(n, out));
+  else if (node && typeof node === "object") {
+    out.push(node);
+    if (node["@graph"]) flattenLd(node["@graph"], out);
+  }
+  return out;
+}
 
-// Tier 3 queries (Canada / Australia / New Zealand), searched separately.
-const SEARCH_TIER3_QUERIES = [
-  `PhD scholarship ${THIS_YEAR + 1} sustainability consumption Australia findaphd`,
-  `PhD position ${THIS_YEAR + 1} sustainability transitions Canada findaphd`,
-  `funded PhD ${THIS_YEAR + 1} design sustainability Australia university scholarship closing date`,
-  `PhD opportunity ${THIS_YEAR + 1} sustainability social science Canada universityaffairs.ca`,
-  "funded PhD scholarship sustainable consumption Australia",
-  "HDR scholarship degrowth circular economy sustainability Australia",
-  "PhD project transition design social design Australia university",
-  "funded PhD position sustainability transitions Canada",
-  "PhD studentship sustainable consumption circular economy Canada university",
-  "funded PhD social innovation design justice Canada",
-  "PhD scholarship sustainability transitions consumption New Zealand"
-];
+function extractJobPosting(html) {
+  const re = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let m;
+  while ((m = re.exec(html))) {
+    try {
+      for (const node of flattenLd(JSON.parse(m[1].trim()))) {
+        const t = node["@type"];
+        const types = Array.isArray(t) ? t : [t];
+        if (types.some(x => String(x).toLowerCase() === "jobposting")) {
+          return {
+            title: node.title || "",
+            organization: node.hiringOrganization?.name || "",
+            country: node.jobLocation?.address?.addressCountry?.name
+                  || node.jobLocation?.address?.addressCountry || "",
+            city: node.jobLocation?.address?.addressLocality || "",
+            posted: node.datePosted || "",
+            validThrough: node.validThrough || "",
+            employmentType: node.employmentType || ""
+          };
+        }
+      }
+    } catch {}
+  }
+  return null;
+}
 
-const SEARCH_MAX_RESULTS_PER_QUERY = 10;
-const SEARCH_CALL_GAP_MS = 600;
-const REVIEW_MAX_PAGES = 32;
-const REVIEW_CALL_GAP_MS = 3000;
+function extractMainText(html) {
+  const main = html.match(/<main[\s\S]*?<\/main>/i)
+    || html.match(/<article[\s\S]*?<\/article>/i)
+    || html.match(/<div[^>]+(?:id|class)=["'][^"']*(?:content|vacanc|job|main)[^"']*["'][\s\S]*?<\/div>/i);
+  const source = main ? main[0] : html;
+  return source
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ").trim();
+}
+
+function keywordWindow(text, max) {
+  if (text.length <= max) return text;
+  const lower = text.toLowerCase();
+  const anchors = ["deadline", "closing date", "apply", "application", "funding", "stipend", "salary", "supervisor"];
+  let best = 0;
+  for (const a of anchors) {
+    const i = lower.indexOf(a);
+    if (i !== -1 && (best === 0 || i < best)) best = i;
+  }
+  const start = Math.max(0, best - Math.floor(max / 4));
+  return text.slice(start, start + max);
+}
 
 async function fetchPage(url) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 18000);
   try {
-    const response = await fetch(url, { redirect: "follow", signal: controller.signal,
-      headers: { "User-Agent": PAGE_USER_AGENT, "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8" } });
+    const response = await fetch(url, {
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        "User-Agent": PAGE_USER_AGENT,
+        "Accept": "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-GB,en;q=0.9"
+      }
+    });
     const finalURL = normalizeURL(response.url || url);
     const contentType = String(response.headers.get("content-type") || "");
-    if (!response.ok || !contentType.includes("text"))
-      return { ok:false, url:finalURL, title:"", text:"", reason:`HTTP ${response.status} / ${contentType || "unknown content type"}` };
+    if (!response.ok || !contentType.includes("text")) {
+      return { ok: false, url: finalURL, title: "", text: "", jobPosting: null, reason: `HTTP ${response.status} / ${contentType || "unknown content type"}` };
+    }
     const html = await response.text();
-    const text = html.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ")
-      .replace(/<noscript[\s\S]*?<\/noscript>/gi," ").replace(/<svg[\s\S]*?<\/svg>/gi," ")
-      .replace(/<[^>]+>/g," ").replace(/&nbsp;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"')
-      .replace(/&#39;/gi,"'").replace(/\s+/g," ").trim();
     const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-    const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim() : "";
-    return { ok:true, url:finalURL, title, text:text.slice(0,PAGE_TEXT_CHARS), reason:"" };
-  } finally { clearTimeout(timeout); }
-}
-
-async function fetchHitPages(hits, maxPages = SEARCH_REVIEW_MAX_PAGES) {
-  const pages=[], skipped=[], seen=new Set();
-  for (const hit of hits) {
-    const rawURL=normalizeURL(hit.url); if (!rawURL || seen.has(rawURL)) continue; seen.add(rawURL);
-    try {
-      const page=await fetchPage(rawURL);
-      if (!page.ok || page.text.length<300) { skipped.push({...hit,reason:page.reason||"page too short"}); continue; }
-      if (!/phd|ph\.d|doctoral|doctorate|doctor of philosophy|higher degree by research|\bhdr\b/i.test(page.text)) { skipped.push({...hit,reason:"not obviously doctoral"}); continue; }
-      pages.push({...hit,...page,url:page.url||rawURL});
-      if (pages.length>=maxPages) break;
-    } catch(error) { skipped.push({...hit,reason:safeErrorMessage(error)}); }
+    const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
+    const jobPosting = extractJobPosting(html);
+    const text = keywordWindow(extractMainText(html), PAGE_TEXT_CHARS);
+    return { ok: true, url: finalURL, title, text, jobPosting, reason: "" };
+  } finally {
+    clearTimeout(timeout);
   }
-  return {pages,skipped};
 }
 
-// Fetches Europe-first pages and Tier 3 pages with separate budgets, so
-// Canada/Australia/NZ always get a fair share of the reading budget.
-async function gatherPages(mainHits, tier3Hits, mainMax) {
-  const main = await fetchHitPages(mainHits, mainMax);
-  const seen = new Set(main.pages.map(p => normalizeURL(p.url)));
-  const tier3 = await fetchHitPages(tier3Hits.filter(h => !seen.has(normalizeURL(h.url))), TIER3_MAX_PAGES);
+const DOCTORAL_RE = /phd|ph\.d|doctoral|doctorate|doctor of philosophy|higher degree by research|\bhdr\b|promotion|promovend|doktorand/i;
+
+async function fetchHitPages(hits, maxPages, seen) {
+  const unique = [];
+  const seenURLs = new Set();
+  for (const hit of hits) {
+    const u = normalizeURL(hit.url);
+    if (!u || seenURLs.has(u)) continue;
+    seenURLs.add(u);
+    unique.push({ ...hit, url: u });
+  }
+
+  // Sort: never-seen first, then stale results, then second chances.
+  const scored = unique.map(hit => {
+    const entry = seen[hit.url];
+    if (!entry) return { hit, rank: 0 };
+    const ageDays = (Date.now() - Date.parse(entry.last_checked || 0)) / 86400000;
+    if (entry.outcome === "result") return { hit, rank: 1 + ageDays / 1000 };
+    if (String(entry.outcome || "").startsWith("skipped")) return { hit, rank: 2 + ageDays / 1000 };
+    return { hit, rank: 3 + ageDays / 1000 };
+  });
+  scored.sort((a, b) => a.rank - b.rank);
+
+  const queue = scored.slice(0, maxPages * 3).map(s => s.hit);
+  const fetched = await mapPool(queue, FETCH_CONCURRENCY, hit =>
+    perHost(hit.url, async () => {
+      try { return { ...hit, ...(await fetchPage(hit.url)) }; }
+      catch (e) { return { ...hit, ok: false, reason: safeErrorMessage(e) }; }
+    })
+  );
+
+  const pages = [], skipped = [];
+  for (const p of fetched) {
+    if (!p.ok || !p.text || p.text.length < 300) {
+      skipped.push({ ...p, reason: p.reason || "page too short" });
+      continue;
+    }
+    if (!DOCTORAL_RE.test(p.text) && !p.jobPosting) {
+      skipped.push({ ...p, reason: "not obviously doctoral" });
+      continue;
+    }
+    pages.push(p);
+    if (pages.length >= maxPages) break;
+  }
+  return { pages, skipped };
+}
+
+async function gatherPages(mainHits, tier3Hits, mainMax, seen) {
+  const main = await fetchHitPages(mainHits, mainMax, seen);
+  const seenURLs = new Set(main.pages.map(p => normalizeURL(p.url)));
+  const tier3 = await fetchHitPages(tier3Hits.filter(h => !seenURLs.has(normalizeURL(h.url))), TIER3_MAX_PAGES, seen);
   const pages = [...main.pages, ...tier3.pages].map((page, index) => ({ ...page, id: index + 1 }));
   return { pages, skipped: [...main.skipped, ...tier3.skipped], tier3Count: tier3.pages.length };
 }
 
-// Attaches the page text and marks the URL as grounded when the model's URL
-// matches a page we actually fetched (previously url_grounded was never set,
-// so it was always false).
-function attachPageData(items, batch) {
-  return items.map(item => {
-    const page = batch.find(p => normalizeURL(p.url) === normalizeURL(item.url));
-    return { ...item, original_text: page?.text || "", url_grounded: Boolean(page) };
-  });
+// ============================================================================
+// PRE-SCREEN (free, code-side) — rank pages before spending AI tokens
+// ============================================================================
+const THEME_WEIGHTS = [
+  [/degrowth|post-?growth|post-?consumer|sufficiency/gi, 7],
+  [/sustainable consumption|consumption practice|product longevity|repair|reuse|circular econom/gi, 5],
+  [/transition design|social design|design justice|co-?design|participatory design|service design|product-?service system/gi, 5],
+  [/commons|sharing econom|access-?based|ownership model|collaborative consumption/gi, 4],
+  [/socio-?technical transition|transition studies|social practice theor|political ecolog|political econom/gi, 4],
+  [/sustainab\w+|governance|public policy|lifestyle/gi, 1]
+];
+const ANTI_WEIGHTS = [
+  [/machine learning|deep learning|neural network|large language model/gi, -6],
+  [/catalys|nanomaterial|polymer synthesis|finite element|computational fluid|crystallograph/gi, -6],
+  [/clinical trial|randomised controlled|oncolog|epidemiolog/gi, -5]
+];
+const FUNDING_RE = /fully funded|stipend|salary|scholarship|tariff|collective labour|tv-?l|studentship|tax-?free|per annum|gross monthly/i;
+
+function prescreen(page) {
+  const text = `${page.title || ""} ${page.text || ""}`;
+  let score = 0;
+  for (const [re, w] of [...THEME_WEIGHTS, ...ANTI_WEIGHTS]) {
+    score += Math.min(3, (text.match(re) || []).length) * w;
+  }
+  if (FUNDING_RE.test(text)) score += 4;
+  if (page.jobPosting?.validThrough) score += 4;
+  return score;
 }
 
-// ---------------------------------------------------------------------------
-// Generic AI call. Which API is used depends only on the provider config
-// (BASE_URL / MODEL / FORMAT / API_KEY), never on code.
-// ---------------------------------------------------------------------------
-// allowEmpty: discovery only needs the search sources, not the reply text, so
-// an empty reply is fine there. Temporary failures (empty reply, rate limit,
-// server error) are retried a few times before giving up.
+function rankByPrescreen(pages) {
+  return pages
+    .map(p => ({ ...p, prescreen: prescreen(p) }))
+    .sort((a, b) => b.prescreen - a.prescreen);
+}
+
+// ============================================================================
+// QUERY GENERATOR (rotating weekly)
+// ============================================================================
+const THEMES = [
+  "degrowth", "post-growth", "sustainable consumption", "sufficiency",
+  "product longevity", "repair and reuse", "circular economy", "sharing economy",
+  "access-based consumption", "commons", "social practices", "sustainable lifestyles",
+  "transition design", "social design", "design justice", "participatory design",
+  "product-service systems", "systemic design", "sustainability transitions",
+  "political economy of sustainability", "consumption governance", "social innovation"
+];
+
+const FRAMES = [
+  t => `fully funded PhD position ${t}`,
+  t => `PhD vacancy ${t} ${THIS_YEAR + 1}`,
+  t => `doctoral researcher position ${t} deadline`,
+  t => `PhD studentship ${t} stipend`
+];
+
+const SITES = [
+  "academictransfer.com", "jobs.ac.uk", "euraxess.ec.europa.eu",
+  "findaphd.com", "jobbnorge.no", "academicpositions.com"
+];
+
+const TIER3_SITES = ["findaphd.com", "universityaffairs.ca"];
+
+function weekIndex() {
+  const start = Date.UTC(THIS_YEAR, 0, 1);
+  return Math.floor((Date.now() - start) / (7 * 86400000));
+}
+
+function queriesForRun(count) {
+  const all = [];
+  for (const t of THEMES) for (const f of FRAMES) all.push(f(t));
+  for (const t of THEMES) for (const s of SITES) all.push(`site:${s} PhD ${t}`);
+  const start = (weekIndex() * count) % all.length;
+  return Array.from({ length: Math.min(count, all.length) }, (_, i) => all[(start + i) % all.length]);
+}
+
+function tier3QueriesForRun(count) {
+  const all = [];
+  for (const t of THEMES) {
+    all.push(`fully funded PhD ${t} Australia findaphd`);
+    all.push(`PhD scholarship ${THIS_YEAR + 1} ${t} Canada university`);
+    for (const s of TIER3_SITES) all.push(`site:${s} PhD ${t}`);
+  }
+  const start = (weekIndex() * count) % all.length;
+  return Array.from({ length: Math.min(count, all.length) }, (_, i) => all[(start + i) % all.length]);
+}
+
+// ============================================================================
+// AI CALLS
+// ============================================================================
 const AI_MAX_ATTEMPTS = 3;
+
 async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = false } = {}) {
   if (!provider.configured) throw new Error(`${provider.name} is not configured (missing: ${provider.missing.join(", ")}).`);
-  const call = provider.format === "gemini" ? () => geminiFormatGenerate(provider, prompt, useSearch, allowEmpty)
-    : provider.format === "openai" ? () => openaiFormatGenerate(provider, prompt, allowEmpty)
+  const call = provider.format === "gemini"
+    ? () => geminiFormatGenerate(provider, prompt, useSearch, allowEmpty)
+    : provider.format === "openai"
+    ? () => openaiFormatGenerate(provider, prompt, allowEmpty)
     : null;
-  if (!call) throw new Error(`${provider.prefix}_FORMAT "${provider.format}" is not supported. Use "gemini" or "openai".`);
+  if (!call) throw new Error(`${provider.prefix}_FORMAT "${provider.format}" is not supported.`);
   let lastError;
   for (let attempt = 1; attempt <= AI_MAX_ATTEMPTS; attempt++) {
-    try {
-      return await call();
-    } catch (error) {
+    try { return await call(); }
+    catch (error) {
       lastError = error;
       if (!error.retryable || attempt === AI_MAX_ATTEMPTS) break;
       const wait = 5000 * attempt;
@@ -520,13 +612,12 @@ async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = fa
 }
 
 function apiError(message, retryable) {
-  const error = new Error(message);
-  error.retryable = retryable;
-  return error;
+  const e = new Error(message);
+  e.retryable = retryable;
+  return e;
 }
-const isRetryableStatus = status => status === 429 || status >= 500;
+const isRetryableStatus = s => s === 429 || s >= 500;
 
-// Google's native API. useSearch turns on Google Search grounding.
 async function geminiFormatGenerate(provider, prompt, useSearch, allowEmpty) {
   const base = provider.baseUrl.replace(/\/+$/, "");
   const endpoint = /:generatecontent$/i.test(base)
@@ -552,16 +643,11 @@ async function geminiFormatGenerate(provider, prompt, useSearch, allowEmpty) {
   return { text, data };
 }
 
-// Any OpenAI-compatible API (DeepSeek, OpenRouter, Groq, Mistral, apmix,
-// Perplexity, OpenAI, Gemini's /openai endpoint, ...).
 async function openaiFormatGenerate(provider, prompt, allowEmpty) {
   const endpoint = endpointURL(provider.baseUrl, "/chat/completions");
   const response = await fetch(endpoint, {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${provider.apiKey}`,
-      "Content-Type": "application/json"
-    },
+    headers: { "Authorization": `Bearer ${provider.apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: provider.model,
       messages: [{ role: "user", content: prompt }],
@@ -578,16 +664,12 @@ async function openaiFormatGenerate(provider, prompt, allowEmpty) {
   return { text, data };
 }
 
-// Pulls the real web pages an AI's built-in search used, whatever API shape
-// the provider returns them in.
 function collectGroundingHits(data) {
   const hits = [];
   const add = (url, title) => { if (url) hits.push({ title: String(title || url), url: String(url) }); };
-  // Gemini native: grounding metadata
   for (const candidate of data?.candidates || []) {
     for (const chunk of candidate?.groundingMetadata?.groundingChunks || []) add(chunk?.web?.uri, chunk?.web?.title);
   }
-  // OpenAI-compatible search models (e.g. Perplexity, OpenAI search models)
   for (const item of data?.search_results || []) add(item?.url, item?.title);
   for (const item of data?.citations || []) typeof item === "string" ? add(item) : add(item?.url, item?.title);
   for (const choice of data?.choices || []) {
@@ -596,9 +678,54 @@ function collectGroundingHits(data) {
   return hits;
 }
 
-async function searchReviewDiscover(angles = SEARCH_REVIEW_ANGLES, tag = "Europe-first") {
+// ============================================================================
+// DISCOVERY
+// ============================================================================
+const SEARCH_REVIEW_ANGLES = [
+  `Find currently open, funded PhD/doctoral vacancies (Europe first) matching this profile:
+${CANDIDATE_PROFILE}
+Search broadly across ALL of these themes in one comprehensive Google Search pass:
+degrowth, post-growth, post-consumerism, political economy, sustainable consumption,
+product longevity, repair/reuse, circular economy, sustainable lifestyles, social practices,
+consumption systems, alternative ownership/access, commons, sharing systems, sufficiency,
+service systems, product-service systems, transition design, social design, design justice,
+participatory/co-design, systemic design, critical design, alternative futures, governance,
+public policy, transition studies, sustainability science, STS, sociology, political science
+and environmental humanities where relevant. ${GEOGRAPHY}
+Prioritise official university vacancy pages. Exclude generic programmes and expired positions.`,
+  `Run a second independent search pass for currently open, funded PhD/doctoral vacancies matching
+this profile (Europe first): ${CANDIDATE_PROFILE}
+Actively vary the search terms and look for opportunities the first pass may miss, especially
+positions using less obvious terminology around societal transformation, sustainable lifestyles,
+consumption practices, ownership/access, commons, service systems, governance, policy, social
+innovation and ecological transition. ${GEOGRAPHY}
+Prioritise official university vacancy pages.`
+];
+
+const SEARCH_REVIEW_TIER3_ANGLES = [
+  `Find currently open, funded PhD/doctoral projects or project-linked PhD scholarships in
+CANADA, AUSTRALIA and NEW ZEALAND only (never the United States) matching this profile:
+${CANDIDATE_PROFILE}
+Themes: degrowth, post-growth, sustainable consumption, sufficiency, circular economy,
+product longevity, repair/reuse, sharing/access-based consumption, commons, social practices,
+transition design, social/service/systemic design, design justice, co-design, governance,
+public policy, sustainability transitions, STS, sociology, political economy.
+In Australia look for HDR / Research Training Program funded projects; in Canada look for
+funded supervisor-advertised PhD projects and studentships.`
+];
+
+const SEARCH_REVIEW_MAX_PAGES = MAX_PAGES;
+const SEARCH_REVIEW_CALL_GAP_MS = 6500;
+const SEARCH_MAX_RESULTS_PER_QUERY = 20;
+const SEARCH_CALL_GAP_MS = 400;
+const REVIEW_MAX_PAGES = MAX_PAGES;
+const REVIEW_CALL_GAP_MS = 3000;
+const EXTRACTION_BATCH_SIZE = 6;
+const AI_REVIEW_BUDGET = 120;
+
+async function searchReviewDiscover(angles, tag = "Europe-first") {
   console.log(`[${SEARCH_REVIEW.name}] web search discovery starting (${tag})...`);
-  const allHits = [], seen = new Set();
+  const allHits = [], seenURLs = new Set();
   for (let i = 0; i < angles.length; i++) {
     if (i > 0) await sleep(SEARCH_REVIEW_CALL_GAP_MS);
     const prompt = `You are the discovery stage of a PhD vacancy radar.
@@ -608,7 +735,6 @@ ${RULES}
 ${DATE_CONTEXT}
 Return a list of at least 20 relevant, CURRENTLY OPEN vacancy pages you found. Do not invent URLs.
 The program will take URLs only from your web search tool's source metadata, not from your text.`;
-    // One failed search angle should not throw away the hits the others found.
     let data;
     try {
       ({ data } = await aiGenerate(SEARCH_REVIEW, prompt, { useSearch: true, allowEmpty: true }));
@@ -617,22 +743,17 @@ The program will take URLs only from your web search tool's source metadata, not
       continue;
     }
     for (const hit of collectGroundingHits(data)) {
-      const url = normalizeURL(hit.url); if (!url || seen.has(url)) continue;
-      seen.add(url); allHits.push({ ...hit, url });
+      const url = normalizeURL(hit.url);
+      if (!url || seenURLs.has(url)) continue;
+      if (/vertexaisearch\.cloud\.google\.com|grounding-api-redirect/.test(url)) continue;
+      seenURLs.add(url);
+      allHits.push({ ...hit, url });
     }
     console.log(`[${SEARCH_REVIEW.name}] ${tag} angle ${i + 1}/${angles.length}: ${allHits.length} unique hits so far`);
   }
   return allHits;
 }
 
-// --- Search-only API + review-only AI -------------------------------------
-// The search API plays the same role the search+review AI's built-in search
-// plays above: it turns queries into candidate URLs. Those URLs then go
-// through the same fetchHitPages(), so the review AI reads real page text,
-// not just a search snippet.
-
-// Each search format returns its results in a different shape; all are
-// normalised to [{ title, url }].
 async function webSearch(query) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20000);
@@ -643,29 +764,23 @@ async function webSearch(query) {
       response = await fetch(endpointURL(SEARCH.baseUrl, "/search"), {
         method: "POST", signal: controller.signal,
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SEARCH.apiKey}` },
-        body: JSON.stringify({
-          api_key: SEARCH.apiKey, query, search_depth: "advanced", max_results: n,
-          include_answer: false, include_raw_content: false, time_range: "year"
-        })
+        body: JSON.stringify({ api_key: SEARCH.apiKey, query, search_depth: "advanced", max_results: n, include_answer: false, include_raw_content: false, time_range: "year" })
       });
-      pick = data => (data.results || []).map(r => ({ title: r.title, url: r.url }));
+      pick = d => (d.results || []).map(r => ({ title: r.title, url: r.url }));
     } else if (SEARCH.format === "serper") {
       response = await fetch(endpointURL(SEARCH.baseUrl, "/search"), {
         method: "POST", signal: controller.signal,
         headers: { "Content-Type": "application/json", "X-API-KEY": SEARCH.apiKey },
         body: JSON.stringify({ q: query, num: n, tbs: "qdr:y" })
       });
-      pick = data => (data.organic || []).map(r => ({ title: r.title, url: r.link }));
+      pick = d => (d.organic || []).map(r => ({ title: r.title, url: r.link }));
     } else if (SEARCH.format === "brave") {
       const url = new URL(endpointURL(SEARCH.baseUrl, "/res/v1/web/search"));
       url.searchParams.set("q", query);
       url.searchParams.set("count", String(Math.min(n, 20)));
       url.searchParams.set("freshness", "py");
-      response = await fetch(url, {
-        signal: controller.signal,
-        headers: { "Accept": "application/json", "X-Subscription-Token": SEARCH.apiKey }
-      });
-      pick = data => (data.web?.results || []).map(r => ({ title: r.title, url: r.url }));
+      response = await fetch(url, { signal: controller.signal, headers: { "Accept": "application/json", "X-Subscription-Token": SEARCH.apiKey } });
+      pick = d => (d.web?.results || []).map(r => ({ title: r.title, url: r.url }));
     } else {
       throw new Error(`SEARCH_FORMAT "${SEARCH.format}" is not supported. Use "tavily", "serper" or "brave".`);
     }
@@ -684,43 +799,46 @@ async function webSearch(query) {
   }
 }
 
-async function searchDiscover(queries = SEARCH_QUERIES, tag = "Europe-first") {
+async function searchDiscover(queries, tag = "Europe-first") {
   if (!SEARCH.configured) throw new Error(`${SEARCH.name} is not configured (missing: ${SEARCH.missing.join(", ")}).`);
   console.log(`[${REVIEW.name}] ${SEARCH.name} search discovery starting (${tag})...`);
-  const allHits = [], seen = new Set();
+  const allHits = [], seenURLs = new Set();
   for (let i = 0; i < queries.length; i++) {
     if (i > 0) await sleep(SEARCH_CALL_GAP_MS);
     const query = queries[i];
     const results = await webSearch(query);
     for (const item of results) {
       const url = normalizeURL(item.url);
-      if (!url || seen.has(url)) continue;
-      seen.add(url);
+      if (!url || seenURLs.has(url)) continue;
+      seenURLs.add(url);
       allHits.push({ title: String(item.title || url).trim(), url });
     }
-    console.log(`[${REVIEW.name}] ${tag} query ${i + 1}/${queries.length} ("${query}"): ${allHits.length} unique hits so far`);
+    if ((i + 1) % 10 === 0) console.log(`[${REVIEW.name}] ${tag} query ${i + 1}/${queries.length}: ${allHits.length} unique hits so far`);
   }
   return allHits;
 }
 
-// hasSearchTool=false swaps out the "you may use web search" line for one
-// telling the review-only AI it only has the supplied page text.
-function buildExtractionPrompt(pages, { hasSearchTool = true } = {}) {
-  const pageBlocks=pages.map(page=>`--- PAGE ${page.id} ---
-TITLE: ${page.title||""}
+// ============================================================================
+// EXTRACTION PROMPT
+// ============================================================================
+function buildExtractionPrompt(pages) {
+  const pageBlocks = pages.map(page => {
+    const jp = page.jobPosting
+      ? `STRUCTURED DATA (schema.org JobPosting):\n${JSON.stringify({
+          title: page.jobPosting.title,
+          organization: page.jobPosting.organization,
+          country: page.jobPosting.country,
+          city: page.jobPosting.city,
+          posted: page.jobPosting.posted,
+          validThrough: page.jobPosting.validThrough
+        }, null, 2)}\n`
+      : "";
+    return `--- PAGE ${page.id} ---
 URL: ${page.url}
-CONTENT:
+${jp}CONTENT:
 ${page.text}
---- END PAGE ${page.id} ---`).join("\n\n");
-
-  const languageNote = hasSearchTool
-    ? `For language and IELTS fields, prefer official university sources. You may use web search
-if necessary to locate the relevant official university English/IELTS page, but never invent
-a URL or IELTS score. If no official IELTS requirement can be established, use the required fallback.`
-    : `For language and IELTS fields, prefer official university sources. You do not have web
-search access beyond the page contents supplied below â€” do not guess or invent an IELTS
-score or a source URL. If the supplied page content does not state an official IELTS
-requirement, use the required fallback rather than guessing.`;
+--- END PAGE ${page.id} ---`;
+  }).join("\n\n");
 
   return `You are the extraction and verification stage of a funded PhD vacancy radar (Europe first, plus Canada, Australia and New Zealand; never the United States).
 
@@ -730,15 +848,18 @@ ${RULES}
 ${URL_INTEGRITY_RULE}
 ${OUTPUT_RULES}
 
-Use the supplied page contents as primary evidence. A page is eligible only if it describes
-one specific PhD/doctoral vacancy, doctoral research position or (Canada/Australia/NZ) a specific
-funded PhD project / project-linked scholarship, funding is clearly stated,
-and the application deadline is explicitly stated and still in the future (after ${TODAY}).
+Use the supplied page contents as primary evidence. If STRUCTURED DATA is present, prefer its
+"validThrough" over any date mentioned in prose. A page is eligible only if it describes one
+specific PhD/doctoral vacancy, or (Canada/Australia/NZ) a specific funded PhD project /
+project-linked scholarship, funding is clearly stated, and either the deadline is explicitly
+stated and in the future (after ${TODAY}) OR the position is explicitly rolling / open until
+filled (in which case set deadline_type="rolling").
+
 ${DATE_CONTEXT}
+
 Do not turn a generic programme, news article, lab page or directory into a vacancy.
 
-For "url", copy the URL from the supplied PAGE header exactly.
-${languageNote}
+For "url", copy the URL from the PAGE header you cite in "page_id" — character for character.
 
 Return ONLY a JSON array. Do not use Markdown fences.
 
@@ -746,24 +867,76 @@ ${pageBlocks}`;
 }
 
 async function extractBatch(pages) {
-  const { text } = await aiGenerate(SEARCH_REVIEW, buildExtractionPrompt(pages, { hasSearchTool: true }), { useSearch: true });
+  const { text } = await aiGenerate(SEARCH_REVIEW, buildExtractionPrompt(pages));
   const parsed = extractJSON(text);
   if (!Array.isArray(parsed)) throw new Error(`${SEARCH_REVIEW.name} extraction response was not an array.`);
   return parsed;
 }
 
 async function extractReviewBatch(pages) {
-  const { text } = await aiGenerate(REVIEW, buildExtractionPrompt(pages, { hasSearchTool: false }));
+  const { text } = await aiGenerate(REVIEW, buildExtractionPrompt(pages));
   const parsed = extractJSON(text);
   if (!Array.isArray(parsed)) throw new Error(`${REVIEW.name} extraction response was not an array.`);
   return parsed;
 }
 
+// ============================================================================
+// IELTS CACHE (per university, 180-day refresh)
+// ============================================================================
+const IELTS_REFRESH_DAYS = 180;
+let universitiesCache = {};
 
-// Same checks cleanResults applies, but reports WHY each raw item was
-// dropped instead of just dropping it. Used only for the one-line diagnostic
-// printed when a provider returns items but none survive cleaning, so a
-// silent "0 passed validation" always comes with a reason on the next run.
+function loadUniversitiesCache() {
+  try { universitiesCache = JSON.parse(readFileSync(UNIVERSITIES_FILE, "utf8")) || {}; }
+  catch { universitiesCache = {}; }
+}
+function saveUniversitiesCache() {
+  writeFileSync(UNIVERSITIES_FILE, JSON.stringify(universitiesCache, null, 2) + "\n");
+}
+
+function bestSearchAI() {
+  if (SEARCH_REVIEW.configured && SEARCH_REVIEW.format === "gemini") return SEARCH_REVIEW;
+  if (REVIEW.configured && REVIEW.format === "gemini") return REVIEW;
+  return null;
+}
+
+async function lookupIelts(university, country) {
+  const key = String(university || "").toLowerCase().trim();
+  if (!key) return { ielts_requirement: "Not specified on official university website", ielts_source_url: "" };
+  const cached = universitiesCache[key];
+  if (cached && cached.checked_at && (Date.now() - Date.parse(cached.checked_at)) / 86400000 < IELTS_REFRESH_DAYS) {
+    return { ielts_requirement: cached.ielts_requirement, ielts_source_url: cached.ielts_source_url || "" };
+  }
+  const ai = bestSearchAI();
+  if (!ai) return { ielts_requirement: "Not specified on official university website", ielts_source_url: "" };
+
+  const prompt = `You are looking up the official English-language / IELTS requirement for PhD applicants at "${university}" (${country || "unknown country"}).
+Use web search to find an OFFICIAL university page (e.g. a graduate school, admissions or English requirements page).
+Return ONLY valid JSON with this shape:
+{"ielts_requirement": "<e.g. 6.5 overall, no band below 6.0>", "ielts_source_url": "<https://...>"}
+If you cannot find an official university source, return:
+{"ielts_requirement": "Not specified on official university website", "ielts_source_url": ""}
+Do not invent scores or URLs.`;
+
+  try {
+    const { text } = await aiGenerate(ai, prompt, { useSearch: true });
+    const parsed = extractJSON(text);
+    const result = {
+      ielts_requirement: String(parsed?.ielts_requirement || "Not specified on official university website").trim(),
+      ielts_source_url: normalizeURL(parsed?.ielts_source_url || "")
+    };
+    universitiesCache[key] = { ...result, checked_at: new Date().toISOString() };
+    saveUniversitiesCache();
+    return result;
+  } catch (error) {
+    console.warn(`IELTS lookup failed for ${university}: ${safeErrorMessage(error)}`);
+    return { ielts_requirement: "Not specified on official university website", ielts_source_url: "" };
+  }
+}
+
+// ============================================================================
+// VALIDATION HELPERS
+// ============================================================================
 function explainRejection(item) {
   if (!item || typeof item !== "object") return "not an object";
   if (!String(item.title || "").trim()) return "missing title";
@@ -771,30 +944,34 @@ function explainRejection(item) {
   if (!String(item.country || "").trim()) return "missing country";
   if (isUnitedStates(item.country)) return "United States (excluded)";
   if (!normalizeURL(item.url)) return "missing/invalid url";
+  if (item.eligible === false) return `model marked ineligible: ${item.reject_reason || "no reason"}`;
+  const subScore = subScoreOf(item);
+  if (subScore === null) {
+    const legacy = Number(item.overall_score);
+    if (!Number.isFinite(legacy)) return "no score";
+    if (legacy < 60) return `overall_score ${legacy} is below 60`;
+  } else if (subScore < 60) return `score ${subScore} is below 60`;
   const deadline = normalizeDeadline(item.deadline);
-  if (!deadline) return `deadline not a recognizable date (got: ${JSON.stringify(item.deadline ?? "")})`;
-  if (!isFutureDeadline(deadline)) return `deadline already passed (${deadline})`;
-  const score = Number(item.overall_score);
-  if (!Number.isFinite(score)) return `overall_score is not a number (got: ${JSON.stringify(item.overall_score ?? "")})`;
-  if (score < 60) return `overall_score ${score} is below 60`;
+  const rolling = item.deadline_type === "rolling" || ROLLING_RE.test(item.original_text || "");
+  if (!rolling && !isFutureDeadline(deadline)) return `deadline not future and not rolling (got: ${JSON.stringify(item.deadline ?? "")})`;
   return "passes";
 }
 
-// Provider labels are whatever names are set in the variables, so any name
-// works (old results keep the label they were saved with).
+function subScoreOf(item) {
+  const keys = ["topic_fit", "politics_fit", "design_fit", "methods_fit", "funding_quality"];
+  const values = keys.map(k => Number(item?.[k]));
+  if (values.every(v => Number.isFinite(v))) {
+    return Math.round(values.reduce((a, b) => a + b, 0));
+  }
+  return null;
+}
+
 function providerLabelsOf(value) {
   const raw = String(value || "").trim();
   if (!raw) return [];
-  const labels = raw.split(/\s+\+\s+/)
-    .map(part => part.trim())
-    .filter(part => part && part.toLowerCase() !== "unknown");
-  return [...new Set(labels)];
+  return [...new Set(raw.split(/\s+\+\s+/).map(p => p.trim()).filter(p => p && p.toLowerCase() !== "unknown"))];
 }
-
-function providerLabelOf(value) {
-  return providerLabelsOf(value)[0] || "";
-}
-
+function providerLabelOf(value) { return providerLabelsOf(value)[0] || ""; }
 function mergeProviderLabels(a, b) {
   const labels = [...providerLabelsOf(a), ...providerLabelsOf(b)];
   return [...new Set(labels)].join(" + ") || "Unknown";
@@ -824,11 +1001,9 @@ function chooseBetterResult(a, b) {
   const scoreB = Number(b?.overall_score || 0);
   const verifiedA = a?.verification_status === "Verified";
   const verifiedB = b?.verification_status === "Verified";
-
   if (verifiedA !== verifiedB) return verifiedB ? b : a;
   if (scoreB > scoreA) return b;
   if (scoreA > scoreB) return a;
-
   const textA = String(a?.original_text || "");
   const textB = String(b?.original_text || "");
   return textB.length > textA.length ? b : a;
@@ -837,9 +1012,10 @@ function chooseBetterResult(a, b) {
 function mergeResultRecords(a, b) {
   const better = chooseBetterResult(a, b);
   const other = better === a ? b : a;
+  const firstSeen = [a.first_seen, b.first_seen].filter(Boolean).sort()[0] || new Date().toISOString();
   const merged = {
-    ...other,
-    ...better,
+    ...other, ...better,
+    first_seen: firstSeen,
     ai_provider: mergeProviderLabels(a.ai_provider, b.ai_provider),
     ai_model: [a.ai_model, b.ai_model].map(v => String(v || "").trim()).filter(Boolean).filter((v, i, arr) => arr.indexOf(v) === i).join(" + "),
     original_text: String(better.original_text || other.original_text || "").trim(),
@@ -849,7 +1025,6 @@ function mergeResultRecords(a, b) {
   if (!String(merged.verification_note || "").trim()) merged.verification_note = String(other.verification_note || "").trim();
   if (!String(merged.verification_url || "").trim()) merged.verification_url = normalizeURL(other.verification_url);
   if (!String(merged.ielts_source_url || "").trim()) merged.ielts_source_url = normalizeURL(other.ielts_source_url);
-  if (!String(merged.language_source_url || "").trim()) merged.language_source_url = normalizeURL(other.language_source_url);
   return merged;
 }
 
@@ -859,106 +1034,140 @@ function cleanResults(results) {
 
   for (const item of results) {
     if (!item || typeof item !== "object") continue;
+    if (item.eligible === false) continue;
+
     const title = String(item.title || "").trim();
     const university = String(item.university || "").trim();
     const country = String(item.country || "").trim();
     const city = String(item.city || "").trim();
-    const deadline = normalizeDeadline(item.deadline);
     const url = normalizeURL(item.url);
-    const score = Number(item.overall_score);
     if (!title || !university || !country || !url) continue;
-    if (isUnitedStates(country)) continue; // hard block, never trust the prompt alone
-    if (!isFutureDeadline(deadline)) continue;
+    if (isUnitedStates(country)) continue;
+
+    const subScore = subScoreOf(item);
+    const score = subScore !== null ? subScore : Number(item.overall_score);
     if (!Number.isFinite(score) || score < 60) continue;
+
+    const deadline = normalizeDeadline(item.deadline);
+    const rolling = item.deadline_type === "rolling" || ROLLING_RE.test(item.original_text || "");
+    const dated = isFutureDeadline(deadline);
+    if (!dated && !rolling) continue;
+    const deadline_type = dated ? "dated" : (rolling ? "rolling" : "unknown");
+    const storedDeadline = dated ? deadline : "";
 
     const language = ["English", "Not English", "Unknown"].includes(String(item.application_language || ""))
       ? String(item.application_language) : "Unknown";
     const provider = providerLabelsOf(item.ai_provider).join(" + ") || "Unknown";
+
     const candidate = {
-      title, university, country, city, deadline, url,
+      title, university, country, city, url,
+      deadline: storedDeadline,
+      deadline_type,
+      start_date: String(item.start_date || "").trim(),
       geo_tier: geoTier(country),
       funding: String(item.funding || "").trim(),
       overall_score: Math.round(score),
-      why_it_matches: String(item.why_it_matches || item.fit_reason || "").trim(),
-      original_text: String(item.original_text || "").trim(),
+      topic_fit: Number(item.topic_fit) || 0,
+      politics_fit: Number(item.politics_fit) || 0,
+      design_fit: Number(item.design_fit) || 0,
+      methods_fit: Number(item.methods_fit) || 0,
+      funding_quality: Number(item.funding_quality) || 0,
+      why_it_matches: String(item.why_it_matches || "").trim(),
+      original_text: String(item.original_text || "").slice(0, 6000),
       strategic_fit: String(item.strategic_fit || "").trim(),
       why_it_is_not_perfect: String(item.why_it_is_not_perfect || "").trim(),
       supervisor: String(item.supervisor || "").trim(),
       classification: String(item.classification || "").trim(),
       research_area: String(item.research_area || "").trim(),
       application_language: language,
-      language_source_url: normalizeURL(item.language_source_url),
       ielts_requirement: String(item.ielts_requirement || "Not specified on official university website").trim(),
       ielts_source_url: normalizeURL(item.ielts_source_url),
       ai_provider: provider,
       ai_model: String(item.ai_model || "").trim(),
       url_grounded: item.url_grounded === true,
+      first_seen: String(item.first_seen || new Date().toISOString()),
       verification_status: ["Verified", "Not verified"].includes(String(item.verification_status || "")) ? String(item.verification_status) : "Not verified",
       verification_checked_at: String(item.verification_checked_at || "").trim(),
       verification_note: String(item.verification_note || "").trim(),
       verification_url: normalizeURL(item.verification_url)
     };
+
     const identity = resultIdentity(candidate);
     const previous = byIdentity.get(identity);
     byIdentity.set(identity, previous ? mergeResultRecords(previous, candidate) : candidate);
   }
 
   const cleaned = Array.from(byIdentity.values());
-  // Highest score first; on equal scores Europe (tier 1, then 2) beats tier 3.
   cleaned.sort((a, b) =>
     b.overall_score - a.overall_score ||
     a.geo_tier - b.geo_tier ||
-    new Date(a.deadline) - new Date(b.deadline));
+    new Date(a.deadline || "9999-12-31") - new Date(b.deadline || "9999-12-31"));
   return cleaned;
 }
-// Unchanged on purpose: verification stays informational-only. Nothing here
-// removes a result, it only labels it so you can judge for yourself.
+
+// ============================================================================
+// VERIFICATION
+// ============================================================================
+const CLOSED_RE = /no longer (available|accepting)|this (vacancy|position) (is closed|has closed)|applications (are )?closed|position (has been|was) filled/i;
+const VERIFY_FRESH_DAYS = 3;
+
 async function verifyPosition(position) {
   const checkedAt = new Date().toISOString();
+  // Reuse a recent verification to save fetch budget for new pages.
+  if (position.verification_checked_at) {
+    const ageDays = (Date.now() - Date.parse(position.verification_checked_at)) / 86400000;
+    if (ageDays < VERIFY_FRESH_DAYS && position.verification_status) {
+      return {
+        verification_status: position.verification_status,
+        verification_checked_at: position.verification_checked_at,
+        verification_note: position.verification_note,
+        verification_url: position.verification_url
+      };
+    }
+  }
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     const response = await fetch(position.url, {
-      method: "GET",
-      redirect: "follow",
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "PhD-Radar/1.0 vacancy-check"
-      }
+      method: "GET", redirect: "follow", signal: controller.signal,
+      headers: { "User-Agent": PAGE_USER_AGENT, "Accept-Language": "en-GB,en;q=0.9" }
     });
     clearTimeout(timeout);
 
     const finalURL = normalizeURL(response.url || position.url);
     const contentType = String(response.headers.get("content-type") || "");
-    const body = contentType.includes("text/")
-      ? (await response.text()).slice(0, 250000)
-      : "";
+    const body = contentType.includes("text/") ? (await response.text()).slice(0, 250000) : "";
     const text = body.toLowerCase();
 
-    const phdSignal = /phd|ph\.d|doctoral|doctorate|doctor of philosophy|higher degree by research|\bhdr\b/.test(text);
+    if (response.status === 404 || response.status === 410 || CLOSED_RE.test(text)) {
+      return {
+        verification_status: "Closed",
+        verification_checked_at: checkedAt,
+        verification_note: response.status === 404 || response.status === 410
+          ? `HTTP ${response.status}`
+          : "Page text indicates the position is closed.",
+        verification_url: finalURL
+      };
+    }
+
+    const phdSignal = DOCTORAL_RE.test(text);
     const vacancySignal = /vacancy|position|fellowship|scholarship|studentship|stipend|researcher|job opening|apply/.test(text);
-    const titleWords = String(position.title || "")
-      .toLowerCase()
-      .split(/\W+/)
-      .filter(word => word.length >= 5)
-      .slice(0, 8);
-    const titleSignal = titleWords.length === 0 ||
-      titleWords.filter(word => text.includes(word)).length >= Math.min(2, titleWords.length);
+    const titleWords = String(position.title || "").toLowerCase().split(/\W+/).filter(w => w.length >= 5).slice(0, 8);
+    const titleSignal = titleWords.length === 0 || titleWords.filter(w => text.includes(w)).length >= Math.min(2, titleWords.length);
 
     if (response.ok && phdSignal && vacancySignal && titleSignal) {
       return {
         verification_status: "Verified",
         verification_checked_at: checkedAt,
-        verification_note: `HTTP ${response.status}; page contains PhD/doctoral and vacancy/position signals`,
+        verification_note: `HTTP ${response.status}; PhD/doctoral + vacancy signals present`,
         verification_url: finalURL
       };
     }
-
     return {
       verification_status: "Not verified",
       verification_checked_at: checkedAt,
       verification_note: response.ok
-        ? "Page is reachable, but the automated content check could not confirm that it is a PhD vacancy page."
+        ? "Page reachable, but automated content check could not confirm a PhD vacancy."
         : `HTTP ${response.status}`,
       verification_url: finalURL
     };
@@ -966,132 +1175,199 @@ async function verifyPosition(position) {
     return {
       verification_status: "Not verified",
       verification_checked_at: checkedAt,
-      verification_note: error?.name === "AbortError"
-        ? "Verification timed out."
-        : `Could not fetch page: ${String(error?.message || error)}`,
+      verification_note: error?.name === "AbortError" ? "Verification timed out." : `Could not fetch page: ${String(error?.message || error)}`,
       verification_url: normalizeURL(position.url)
     };
   }
 }
 
 async function verifyResults(results) {
-  console.log(`Verifying ${results.length} results (informational only; no results will be removed)...`);
+  console.log(`Verifying ${results.length} results (informational only)...`);
   const verified = [];
   for (let i = 0; i < results.length; i += 5) {
     const batch = results.slice(i, i + 5);
     const checked = await Promise.all(batch.map(verifyPosition));
-    for (let j = 0; j < batch.length; j++) {
-      verified.push({ ...batch[j], ...checked[j] });
-      console.log(
-        `${checked[j].verification_status === "Verified" ? "âœ“" : "?"} ${batch[j].title}`
-      );
-    }
+    for (let j = 0; j < batch.length; j++) verified.push({ ...batch[j], ...checked[j] });
   }
   return verified;
 }
 
+// ============================================================================
+// JSON / FILE HELPERS
+// ============================================================================
 function extractJSON(text) {
-  let cleaned = String(text || "")
-    .trim()
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/\s*```$/i, "")
-    .trim();
-
-  try {
-    return JSON.parse(cleaned);
-  } catch {}
-
+  const cleaned = String(text || "").trim()
+    .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
+  try { return JSON.parse(cleaned); } catch {}
   const first = cleaned.indexOf("[");
   const last = cleaned.lastIndexOf("]");
   if (first !== -1 && last !== -1) {
-    try {
-      return JSON.parse(cleaned.slice(first, last + 1));
-    } catch {}
+    try { return JSON.parse(cleaned.slice(first, last + 1)); } catch {}
   }
-
+  // Also try a single object (for IELTS lookup).
+  const of = cleaned.indexOf("{");
+  const ol = cleaned.lastIndexOf("}");
+  if (of !== -1 && ol !== -1) {
+    try { return JSON.parse(cleaned.slice(of, ol + 1)); } catch {}
+  }
   throw new Error("Could not extract valid JSON from AI response.");
 }
 
 function loadJSON(file, fallback) {
   if (!existsSync(file)) return fallback;
-  try {
-    return JSON.parse(readFileSync(file, "utf8"));
-  } catch {
-    return fallback;
-  }
+  try { return JSON.parse(readFileSync(file, "utf8")); } catch { return fallback; }
 }
-
 function saveJSON(file, value) {
   writeFileSync(file, JSON.stringify(value, null, 2) + "\n");
 }
 
-// Keep every provider's prior results (cleanResults already keys each entry
-// by vacancy identity, so rows from different providers merge cleanly).
-function loadExisting() {
-  return cleanResults(loadJSON(RESULTS_FILE, []));
+function loadExisting() { return cleanResults(loadJSON(RESULTS_FILE, [])); }
+
+// ============================================================================
+// PAGE-JOIN (kill hallucinated URLs)
+// ============================================================================
+function attachPageData(items, batch) {
+  return items.map(item => {
+    const byId = item.page_id != null ? batch.find(p => p.id === Number(item.page_id)) : null;
+    const byURL = batch.find(p => normalizeURL(p.url) === normalizeURL(item.url));
+    const page = byId || byURL;
+    return page
+      ? { ...item, url: page.url, original_text: page.text, url_grounded: true }
+      : { ...item, url_grounded: false };
+  });
 }
 
-// Shared by both pipelines: open the pages, then have an AI review them.
-async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract, hitsLabel }) {
-  const hits = [...mainHits, ...tier3Hits];
-  console.log(`[${label}] ${hits.length} distinct ${hitsLabel}. Opening the pages...`);
+// ============================================================================
+// SEEN CACHE
+// ============================================================================
+let seenCache = {};
+function loadSeen() { seenCache = loadJSON(SEEN_FILE, {}) || {}; }
+function saveSeen() { saveJSON(SEEN_FILE, seenCache); }
+function updateSeen(pages, skipped, results) {
+  const now = new Date().toISOString();
+  const byURL = new Map(pages.map(p => [normalizeURL(p.url), p]));
+  for (const p of pages) {
+    const u = normalizeURL(p.url);
+    const prev = seenCache[u] || { first_seen: now, checks: 0 };
+    seenCache[u] = { ...prev, last_checked: now, checks: (prev.checks || 0) + 1, outcome: "reviewed-no-result" };
+  }
+  for (const s of skipped) {
+    const u = normalizeURL(s.url);
+    if (!u) continue;
+    const prev = seenCache[u] || { first_seen: now, checks: 0 };
+    seenCache[u] = { ...prev, last_checked: now, checks: (prev.checks || 0) + 1, outcome: `skipped:${(s.reason || "unknown").slice(0, 80)}` };
+  }
+  for (const r of results) {
+    const u = normalizeURL(r.url);
+    if (!u) continue;
+    const prev = seenCache[u] || { first_seen: now, checks: 0 };
+    seenCache[u] = { ...prev, last_checked: now, checks: (prev.checks || 0) + 1, outcome: "result" };
+  }
+}
 
-  const { pages, tier3Count } = await gatherPages(mainHits, tier3Hits, mainMax);
-  console.log(`[${label}] ${pages.length} readable PhD-related pages (${tier3Count} Canada/Australia/NZ) of ${hits.length} hits; reading them now...`);
+// ============================================================================
+// BLOCKED
+// ============================================================================
+function loadBlocked() {
+  const raw = loadJSON(BLOCKED_FILE, { domains: [], urls: [] });
+  return {
+    domains: Array.isArray(raw.domains) ? raw.domains.map(d => String(d).toLowerCase()) : [],
+    urls: Array.isArray(raw.urls) ? raw.urls.map(u => normalizeURL(u)) : []
+  };
+}
+function isBlocked(url, blocked) {
+  const u = normalizeURL(url);
+  if (blocked.urls.includes(u)) return true;
+  try {
+    const host = new URL(u).host.toLowerCase();
+    return blocked.domains.some(d => host === d || host.endsWith(`.${d}`));
+  } catch { return false; }
+}
+function filterBlocked(hits, blocked) {
+  if (!blocked.domains.length && !blocked.urls.length) return hits;
+  const before = hits.length;
+  const kept = hits.filter(h => !isBlocked(h.url, blocked));
+  if (before !== kept.length) console.log(`[blocked] ${before - kept.length} hits removed by blocked.json`);
+  return kept;
+}
+
+// ============================================================================
+// REVIEW + BATCHING
+// ============================================================================
+async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract, hitsLabel, blocked, stats }) {
+  const blockedFilteredMain = filterBlocked(mainHits, blocked);
+  const blockedFilteredTier3 = filterBlocked(tier3Hits, blocked);
+  const hits = [...blockedFilteredMain, ...blockedFilteredTier3];
+  console.log(`[${label}] ${hits.length} distinct ${hitsLabel}. Opening the pages...`);
+  stats.hits_total = hits.length;
+
+  const { pages, tier3Count, skipped } = await gatherPages(blockedFilteredMain, blockedFilteredTier3, mainMax, seenCache);
+  console.log(`[${label}] ${pages.length} readable PhD-related pages (${tier3Count} Canada/Australia/NZ) of ${hits.length} hits.`);
+  stats.pages_read = pages.length;
+  stats.fetch_skipped = tally(skipped.map(s => s.reason));
+
+  const ranked = rankByPrescreen(pages);
+  const toReview = ranked.slice(0, AI_REVIEW_BUDGET);
+  stats.prescreen_dropped = ranked.length - toReview.length;
+  stats.sent_to_ai = toReview.length;
 
   const results = [];
   let failedBatches = 0;
   let batches = 0;
-  for (let i = 0; i < pages.length; i += EXTRACTION_BATCH_SIZE) {
+  for (let i = 0; i < toReview.length; i += EXTRACTION_BATCH_SIZE) {
     if (i > 0) await sleep(gapMs);
     batches++;
-    const batch = pages.slice(i, i + EXTRACTION_BATCH_SIZE);
+    const batch = toReview.slice(i, i + EXTRACTION_BATCH_SIZE);
     try {
-      results.push(...attachPageData(await extract(batch), batch));
+      const raw = await extract(batch);
+      results.push(...attachPageData(raw, batch));
     } catch (error) {
       failedBatches++;
       console.warn(`[${label}] could not read pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
     }
   }
+  stats.batches_failed = failedBatches;
+  stats.ai_returned = results.length;
+
   if (batches > 0 && failedBatches === batches) {
     throw new Error(`${label} found pages but could not read any of them.`);
   }
 
-  const detail = `${hits.length} ${hitsLabel}, ${pages.length} readable pages, ` +
-    `${results.length} qualified` +
-    (failedBatches ? `, ${failedBatches}/${batches} read batches failed` : "");
-  console.log(`[${label}] ${detail}`);
-
-  return {
-    results,
-    sources: pages.map(page => ({ title: page.title || page.url, url: page.url })),
-    detail
-  };
+  updateSeen(pages, skipped, results);
+  return { results, sources: pages.map(p => ({ title: p.title || p.url, url: p.url })), pages };
 }
 
-// Pipeline 1: one AI searches the web itself and reviews the pages.
-async function callSearchReviewProvider() {
+function tally(items) {
+  const m = new Map();
+  for (const item of items) m.set(item, (m.get(item) || 0) + 1);
+  return Object.fromEntries(m);
+}
+
+// ============================================================================
+// PIPELINES
+// ============================================================================
+async function callSearchReviewProvider(blocked, stats) {
   const mainHits = await searchReviewDiscover(SEARCH_REVIEW_ANGLES, "Europe-first");
   await sleep(SEARCH_REVIEW_CALL_GAP_MS);
   const tier3Hits = await searchReviewDiscover(SEARCH_REVIEW_TIER3_ANGLES, "Canada/Australia/NZ");
   if (!mainHits.length && !tier3Hits.length) {
-    throw new Error(`${SEARCH_REVIEW.name} returned no web sources. This slot needs an AI with built-in web search.`);
+    throw new Error(`${SEARCH_REVIEW.name} returned no web sources.`);
   }
   return reviewPages({
     label: SEARCH_REVIEW.name, mainHits, tier3Hits, mainMax: SEARCH_REVIEW_MAX_PAGES,
-    gapMs: SEARCH_REVIEW_CALL_GAP_MS, extract: extractBatch, hitsLabel: "search hits"
+    gapMs: SEARCH_REVIEW_CALL_GAP_MS, extract: extractBatch, hitsLabel: "search hits", blocked, stats
   });
 }
 
-// Pipeline 2: search-only API finds pages, review-only AI reviews them.
-async function callSearchThenReviewProvider() {
-  const mainHits = await searchDiscover(SEARCH_QUERIES, "Europe-first");
-  const tier3Hits = await searchDiscover(SEARCH_TIER3_QUERIES, "Canada/Australia/NZ");
+async function callSearchThenReviewProvider(blocked, stats) {
+  const mainQueries = queriesForRun(60);
+  const tier3Queries = tier3QueriesForRun(20);
+  const mainHits = await searchDiscover(mainQueries, "Europe-first");
+  const tier3Hits = await searchDiscover(tier3Queries, "Canada/Australia/NZ");
   if (!mainHits.length && !tier3Hits.length) throw new Error(`${SEARCH.name} search returned no results.`);
   return reviewPages({
     label: REVIEW.name, mainHits, tier3Hits, mainMax: REVIEW_MAX_PAGES,
-    gapMs: REVIEW_CALL_GAP_MS, extract: extractReviewBatch, hitsLabel: `${SEARCH.name} hits`
+    gapMs: REVIEW_CALL_GAP_MS, extract: extractReviewBatch, hitsLabel: `${SEARCH.name} hits`, blocked, stats
   });
 }
 
@@ -1114,46 +1390,47 @@ const PROVIDERS = [
   }
 ];
 
-// Runs one provider and never throws: a failure is recorded on the returned
-// object so the other provider's results are still kept.
-async function runProvider(provider) {
+async function runProvider(provider, blocked) {
   const run = {
-    id: provider.id,
-    label: provider.label,
-    model: provider.model,
-    status: "ok",
-    error: "",
-    returned: 0,
-    detail: "",
-    results: [],
-    sources: []
+    id: provider.id, label: provider.label, model: provider.model,
+    status: "ok", error: "", returned: 0, detail: "",
+    results: [], sources: [], stats: {}
   };
-
   if (!provider.configured) {
     run.status = "skipped";
     run.error = `not configured (missing: ${provider.missing.join(", ")})`;
     console.warn(`[${provider.label}] skipped: ${run.error}`);
     return run;
   }
-
   console.log(`[${provider.label}] starting (model: ${provider.model})`);
   try {
-    const response = await provider.call();
+    const response = await provider.call(blocked, run.stats);
     const rawResults = Array.isArray(response.results) ? response.results : [];
     run.returned = rawResults.length;
-    run.sources = Array.isArray(response.sources) ? response.sources : [];
-    run.detail = String(response.detail || "");
-    run.results = cleanResults(
-      rawResults.map(result => ({ ...result, ai_provider: provider.label }))
-    );
-    console.log(`[${provider.label}] returned ${run.returned} results, ${run.results.length} passed validation.`);
-    if (run.returned > 0 && run.results.length === 0) {
-      const reasons = rawResults.map(explainRejection);
-      const tally = new Map();
-      for (const reason of reasons) tally.set(reason, (tally.get(reason) || 0) + 1);
-      console.log(`[${provider.label}] why none passed: ` +
-        Array.from(tally, ([reason, count]) => `${count}x ${reason}`).join("; "));
+    run.sources = response.sources;
+    run.detail = `${run.stats.pages_read || 0} pages read, ${run.stats.sent_to_ai || 0} sent to AI`;
+
+    // Enforce url_grounded BEFORE cleanResults, so hallucinated URLs are dropped
+    // here and don't poison the persisted history.
+    const grounded = rawResults.filter(r => r.url_grounded === true);
+    if (grounded.length < rawResults.length) {
+      console.log(`[${provider.label}] dropped ${rawResults.length - grounded.length} ungrounded (hallucinated-url) results.`);
     }
+
+    const withIelts = [];
+    for (const r of grounded) {
+      const ielts = await lookupIelts(r.university, r.country);
+      withIelts.push({
+        ...r,
+        ielts_requirement: ielts.ielts_requirement,
+        ielts_source_url: ielts.ielts_source_url,
+        ai_provider: provider.label
+      });
+    }
+    run.results = cleanResults(withIelts);
+    run.stats.ai_returned = rawResults.length;
+    run.stats.rejected = tally(rawResults.map(explainRejection));
+    console.log(`[${provider.label}] returned ${run.returned} results, ${run.results.length} passed validation.`);
   } catch (error) {
     run.status = "failed";
     run.error = safeErrorMessage(error);
@@ -1162,39 +1439,37 @@ async function runProvider(provider) {
   return run;
 }
 
-// Runs the selected providers at the same time.
-async function callAllProviders() {
-  const selected = PROVIDERS;
-  console.log(`AI providers: ${selected.map(p => `${p.label} (${p.model})`).join(", ")}`);
-  const runs = await Promise.all(selected.map(runProvider));
-
-  if (!runs.some(run => run.status === "ok")) {
-    throw new Error(
-      "No AI provider succeeded: " +
-      runs.map(run => `${run.label}: ${run.error || run.status}`).join(" | ")
-    );
+async function callAllProviders(blocked) {
+  console.log(`AI providers: ${PROVIDERS.map(p => `${p.label} (${p.model})`).join(", ")}`);
+  const runs = await Promise.all(PROVIDERS.map(p => runProvider(p, blocked)));
+  if (!runs.some(r => r.status === "ok")) {
+    throw new Error("No AI provider succeeded: " + runs.map(r => `${r.label}: ${r.error || r.status}`).join(" | "));
   }
   return runs;
 }
 
-async function sendTelegramMessage(message) {
+// ============================================================================
+// TELEGRAM
+// ============================================================================
+async function sendTelegramMessage(message, attempt = 1) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.log("Telegram secrets are not configured. Skipping Telegram.");
     return false;
   }
-  const endpoint =
-    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+  const endpoint = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: TELEGRAM_CHAT_ID,
-      text: message,
-      disable_web_page_preview: false
-    })
+    body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, disable_web_page_preview: false })
   });
-  const data = await response.json();
+  const data = await response.json().catch(() => ({}));
   if (!data.ok) {
+    if (data.error_code === 429 && attempt < 3) {
+      const retryAfter = Number(data.parameters?.retry_after || 5);
+      console.warn(`Telegram 429, retrying after ${retryAfter}s (attempt ${attempt})`);
+      await sleep(retryAfter * 1000);
+      return sendTelegramMessage(message, attempt + 1);
+    }
     console.error("Telegram API error:", JSON.stringify(data, null, 2));
     return false;
   }
@@ -1202,37 +1477,35 @@ async function sendTelegramMessage(message) {
   return true;
 }
 
-function formatTelegramMessage(position, foundBy = [position.ai_provider]) {
+function formatTelegramMessage(position, foundBy) {
   const languageLine = position.application_language === "Not English"
-    ? "âš ï¸ Language: Not English"
-    : `ðŸ—£ï¸ Language: ${position.application_language || "Unknown"}`;
-
+    ? "⚠️ Language: Not English"
+    : `🗣️ Language: ${position.application_language || "Unknown"}`;
   const groundingLine = position.url_grounded === false
-    ? "âš ï¸ URL not confirmed in search results â€” double-check before applying\n"
+    ? "⚠️ URL not confirmed in search results — double-check before applying\n"
     : "";
-
   return [
-    `â­ EXCEPTIONAL PhD MATCH â€” ${position.overall_score}/100`,
+    `⭐ EXCEPTIONAL PhD MATCH — ${position.overall_score}/100`,
     "",
-    `ðŸŽ“ ${position.title}`,
+    `🎓 ${position.title}`,
     "",
-    `ðŸ›ï¸ ${position.university}`,
-    `ðŸŒ ${position.country}${position.city ? ` Â· ${position.city}` : ""}`,
-    `ðŸ¤– Found by: ${foundBy.filter(Boolean).join(" + ") || "Unknown"}`,
+    `🏛️ ${position.university}`,
+    `🌍 ${position.country}${position.city ? ` · ${position.city}` : ""}`,
+    `🤖 Found by: ${foundBy.filter(Boolean).join(" + ") || "Unknown"}`,
     languageLine,
-    `ðŸ“š IELTS: ${position.ielts_requirement || "Not specified"}`,
-    `ðŸ“… Deadline: ${position.deadline || "Not specified"}`,
+    `📚 IELTS: ${position.ielts_requirement || "Not specified"}`,
+    `📅 Deadline: ${position.deadline || (position.deadline_type === "rolling" ? "Rolling / open until filled" : "Not specified")}`,
     "",
-    "ðŸ’° Funding:",
+    "💰 Funding:",
     position.funding || "Not specified",
     "",
-    "ðŸŽ¯ Why it matches:",
+    "🎯 Why it matches:",
     position.why_it_matches || "Strong match with your research profile.",
     "",
-    "ðŸ§­ Strategic fit:",
+    "🧭 Strategic fit:",
     position.strategic_fit || "Strong alignment with your research trajectory.",
     "",
-    groundingLine + "ðŸ”— Apply:",
+    groundingLine + "🔗 Apply:",
     position.url
   ].join("\n");
 }
@@ -1241,7 +1514,7 @@ async function notifyExceptionalMatches(results) {
   const notified = loadJSON(NOTIFIED_FILE, {});
   let changed = false;
 
-    const byURL = new Map();
+  const byURL = new Map();
   for (const position of results.filter(x => Number(x.overall_score) >= 90)) {
     const url = normalizeURL(position.url);
     const entry = byURL.get(url) || { best: position, providers: [] };
@@ -1253,97 +1526,135 @@ async function notifyExceptionalMatches(results) {
   for (const [url, { best, providers }] of byURL) {
     const previousScore = Number(notified[url]?.score || 0);
     if (previousScore >= Number(best.overall_score)) continue;
-
     if (await sendTelegramMessage(formatTelegramMessage(best, providers))) {
-      notified[url] = {
-        score: Number(best.overall_score),
-        notified_at: new Date().toISOString()
-      };
+      notified[url] = { score: Number(best.overall_score), notified_at: new Date().toISOString() };
       changed = true;
     }
   }
-
   if (changed) saveJSON(NOTIFIED_FILE, notified);
 }
 
+// ============================================================================
+// ARCHIVE
+// ============================================================================
+function updateArchive(results) {
+  const archive = loadJSON(ARCHIVE_FILE, {});
+  for (const r of results) {
+    if (r.verification_status === "Closed") {
+      archive[normalizeURL(r.url)] = { ...r, archived_at: new Date().toISOString() };
+    }
+  }
+  saveJSON(ARCHIVE_FILE, archive);
+}
+
+// ============================================================================
+// MAIN
+// ============================================================================
 async function main() {
   console.log("======================================");
-  console.log("PH D RADAR");
+  console.log("PHD RADAR");
   console.log("======================================");
+
+  loadSeen();
+  loadUniversitiesCache();
+  const blocked = loadBlocked();
 
   const existingResults = loadExisting();
   console.log(`Existing active positions: ${existingResults.length}`);
 
-  console.log(`Running new search across ${PROVIDERS.map(p => p.label).join(" + ")}...`);
-  const runs = await callAllProviders();
+  const globalStats = {};
 
-  const sourcesByProvider = new Map(runs.map(run => [run.id, run.sources]));
+  let runs;
+  if (CLEANUP_ONLY) {
+    console.log("CLEANUP_ONLY=true: re-verifying saved results, no discovery or AI extraction.");
+    runs = [{
+      id: "cleanup", label: "cleanup", model: "", status: "ok",
+      error: "", returned: existingResults.length, detail: "cleanup only",
+      results: [], sources: [], stats: {}
+    }];
+  } else {
+    console.log(`Running new search across ${PROVIDERS.map(p => p.label).join(" + ")}...`);
+    runs = await callAllProviders(blocked);
+  }
+
+  const sourcesByProvider = new Map(runs.map(run => [run.id, run.sources || []]));
   const allSourcesMap = new Map();
   for (const sources of sourcesByProvider.values()) {
-    for (const source of sources) {
-      if (source?.url) allSourcesMap.set(source.url, source);
-    }
+    for (const source of sources) if (source?.url) allSourcesMap.set(source.url, source);
   }
 
   saveJSON(SOURCES_FILE, {
     searched_at: new Date().toISOString(),
     runs: runs.map(run => ({
-      provider: run.label,
-      model: run.model,
-      status: run.status,
-      error: run.error,
-      returned: run.returned,
-      valid: run.results.length,
-      detail: run.detail,
-      sources: run.sources.length
+      provider: run.label, model: run.model, status: run.status, error: run.error,
+      returned: run.returned, valid: run.results.length, detail: run.detail,
+      sources: (run.sources || []).length, stats: run.stats || {}
     })),
     sources: Array.from(allSourcesMap.values())
   });
   console.log(`Saved ${allSourcesMap.size} search sources across ${runs.length} provider(s).`);
 
-  // Merge existing and new results by vacancy identity. When multiple
-  // search systems find the same vacancy, they become one record and
-  // ai_provider records all systems that found it.
   const merged = new Map();
   for (const result of existingResults) {
-    const identity = resultIdentity(result);
-    const previous = merged.get(identity);
-    merged.set(identity, previous ? mergeResultRecords(previous, result) : result);
+    const id = resultIdentity(result);
+    const prev = merged.get(id);
+    merged.set(id, prev ? mergeResultRecords(prev, result) : result);
   }
   for (const run of runs) {
     for (const result of run.results) {
-      const identity = resultIdentity(result);
-      const previous = merged.get(identity);
-      merged.set(identity, previous ? mergeResultRecords(previous, result) : result);
+      const id = resultIdentity(result);
+      const prev = merged.get(id);
+      merged.set(id, prev ? mergeResultRecords(prev, result) : result);
     }
   }
   const mergedResults = cleanResults(Array.from(merged.values()));
 
-  // Verification stays informational-only: nothing is ever removed from
-  // results.json based on verification_status or url_grounded. Both are
-  // labels for you (and the site UI) to weigh.
   const verifiedResults = await verifyResults(mergedResults);
   saveJSON(RESULTS_FILE, verifiedResults);
-  console.log(`Saved ${verifiedResults.length} active positions. Verification and grounding checks are informational only; no results were removed.`);
+  updateArchive(verifiedResults);
+  saveSeen();
+  console.log(`Saved ${verifiedResults.length} active positions.`);
+
+  // Step summary (visible in Actions UI).
+  try {
+    const fs = await import("node:fs");
+    const lines = [
+      "## PhD Radar run",
+      "",
+      `- Existing positions: **${existingResults.length}**`,
+      `- Active positions saved: **${verifiedResults.length}**`,
+      ""
+    ];
+    for (const run of runs) {
+      lines.push(`### ${run.label} (${run.status})`);
+      if (run.error) lines.push(`Error: \`${run.error}\``);
+      const s = run.stats || {};
+      if (Object.keys(s).length) {
+        lines.push("```");
+        lines.push(JSON.stringify(s, null, 2));
+        lines.push("```");
+      }
+      lines.push("");
+    }
+    if (process.env.GITHUB_STEP_SUMMARY) {
+      fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join("\n") + "\n");
+    }
+  } catch {}
 
   await notifyExceptionalMatches(verifiedResults);
 
   for (const label of PROVIDERS.map(p => p.label)) {
-    const mine = verifiedResults.filter(result => providerLabelsOf(result.ai_provider).includes(label));
-    if (!mine.length && !runs.some(run => run.label === label)) continue;
-    console.log(`\nTop matches â€” ${label}:`);
-    for (const result of mine.slice(0, 10)) {
-      const groundFlag = result.url_grounded === true ? "" : " [unconfirmed url]";
-      console.log(
-        `${result.overall_score}/100 | ${result.title} | ${result.university} | ${result.country} (tier ${result.geo_tier})${groundFlag}`
-      );
+    const mine = verifiedResults.filter(r => providerLabelsOf(r.ai_provider).includes(label));
+    if (!mine.length) continue;
+    console.log(`\nTop matches — ${label}:`);
+    for (const r of mine.slice(0, 10)) {
+      const groundFlag = r.url_grounded === true ? "" : " [unconfirmed url]";
+      console.log(`${r.overall_score}/100 | ${r.title} | ${r.university} | ${r.country} (tier ${r.geo_tier})${groundFlag}`);
     }
   }
 
-  const failed = runs.filter(run => run.status !== "ok");
-  if (failed.length) {
-    console.warn(`\nNOTE: ${failed.map(run => `${run.label} ${run.status} (${run.error})`).join("; ")}`);
-  }
+  const failed = runs.filter(r => r.status !== "ok");
+  if (failed.length) console.warn(`\nNOTE: ${failed.map(r => `${r.label} ${r.status} (${r.error})`).join("; ")}`);
 
   console.log("\nRadar complete.");
 }
