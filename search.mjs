@@ -1316,7 +1316,10 @@ async function verifyResults(results) {
   for (let i = 0; i < results.length; i += 5) {
     const batch = results.slice(i, i + 5);
     const checked = await Promise.all(batch.map(verifyPosition));
-    for (let j = 0; j < batch.length; j++) verified.push({ ...batch[j], ...checked[j] });
+    for (let j = 0; j < batch.length; j++) {
+      const merged = { ...batch[j], ...checked[j] };
+      if (merged.verification_status !== "Closed") verified.push(merged);
+    }
   }
   return verified;
 }
