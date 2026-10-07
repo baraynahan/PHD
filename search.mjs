@@ -1228,6 +1228,7 @@ function cleanResults(results) {
       deadline_type: dinfo.kind,
       start_date: String(item.start_date || "").trim(),
       geo_tier: geoTier(country),
+      score_basis: String(item.score_basis || "ai").trim() || "ai",
       funding: String(item.funding || "").trim(),
       overall_score: Math.round(score),
       topic_fit: toScore(item.topic_fit) || 0,
