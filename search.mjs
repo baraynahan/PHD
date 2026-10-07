@@ -1287,7 +1287,7 @@ function cleanResults(results) {
 // VERIFICATION
 // ============================================================================
 const CLOSED_RE = /no longer (available|accepting)|this (vacancy|position) (is closed|has closed)|applications (are )?closed|position (has been|was) filled/i;
-const VERIFY_FRESH_DAYS = 3;
+const VERIFY_FRESH_DAYS = 1;
 
 async function verifyPosition(position) {
   const checkedAt = new Date().toISOString();
