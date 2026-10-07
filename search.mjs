@@ -1832,3 +1832,24 @@ async function main() {
   }
 
   const failed = runs.filter(r => r.status !== "ok");
+  if (failed.length === runs.length && runs.length > 0 && !CLEANUP_ONLY) {
+    throw new Error(
+      "No AI provider succeeded: " +
+      failed.map(r => `${r.label}: ${r.error || "unknown failure"}`).join(" | ")
+    );
+  }
+
+  if (failed.length) {
+    console.log(
+      `Completed with ${failed.length} failed provider(s); successful provider results were retained.`
+    );
+  } else {
+    console.log("All AI providers completed successfully.");
+  }
+}
+
+main().catch(error => {
+  console.error("RADAR FAILED");
+  console.error(error?.stack || error);
+  process.exitCode = 1;
+});
