@@ -22,8 +22,8 @@ on:
         default: false
 
   schedule:
-    # Twice a week: Tuesday and Saturday, 06:00 UTC.
-    - cron: "0 6 * * 2,6"
+    # Once a week: Saturday 06:00 UTC.
+    - cron: "0 6 * * 6"
 
 permissions:
   contents: write
@@ -52,7 +52,6 @@ jobs:
           bun-version: latest
 
       - name: Run PhD search
-        # A provider failure should not throw away the results that DID come in.
         continue-on-error: true
         env:
           SEARCH_REVIEW_NAME: ${{ vars.SEARCH_REVIEW_NAME }}
