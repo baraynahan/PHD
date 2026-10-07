@@ -1074,6 +1074,16 @@ function deadlineInfoOf(item) {
   return { kind: "unknown", stored: "", raw };
 }
 
+function hardModelReject(item) {
+  if (item?.eligible !== false) return false;
+  const reason = String(item.reject_reason || "").toLowerCase();
+  // Only discard candidates when the model gives a clear, substantive reason.
+  // Uncertainty about verification, deadline, funding detail, page content, etc.
+  // should not erase a potentially useful lead; it remains visible as
+  // "Not verified" so the user can inspect it manually.
+  return /not (a )?(phd|doctoral|vacancy|position)|generic (phd )?program|phd programme|not funded|unfunded|no funding|funding absent|unrelated|irrelevant|wrong (country|location)|united states|usa|closed|expired|past deadline|not a specific (phd|doctoral) project/.test(reason);
+}
+
 function explainRejection(item) {
   if (!item || typeof item !== "object") return "not an object";
   if (!String(item.title || "").trim()) return "missing title";
@@ -1081,7 +1091,8 @@ function explainRejection(item) {
   if (!String(item.country || "").trim()) return "missing country";
   if (isUnitedStates(item.country)) return "United States (excluded)";
   if (!normalizeURL(item.url)) return "missing/invalid url";
-  if (item.eligible === false) return `model marked ineligible: ${item.reject_reason || "no reason"}`;
+  if (item.eligible === false && hardModelReject(item)) return `model hard-rejected: ${item.reject_reason || "no reason"}`;
+  if (item.eligible === false) return `model uncertain — retained for verification: ${item.reject_reason || "no reason"}`;
   const score = computeScore(item);
   if (score === null) return "no valid score (sub-scores and overall_score both missing/unparseable)";
   if (score < 60) return `score ${score} is below 60`;
@@ -1158,7 +1169,7 @@ function cleanResults(results) {
 
   for (const item of results) {
     if (!item || typeof item !== "object") continue;
-    if (item.eligible === false) continue;
+    if (item.eligible === false && hardModelReject(item)) continue;
 
     const title = String(item.title || "").trim();
     const university = String(item.university || "").trim();
