@@ -1,0 +1,33 @@
+{
+  "searched_at": "2026-10-07T00:54:32.243Z",
+  "budgets": {
+    "MAX_PAGES": 120,
+    "TIER3_MAX_PAGES": 40,
+    "AI_REVIEW_BUDGET": 25,
+    "AI_REVIEW_BUDGET_TIER3": 12,
+    "QUERIES_EU": 24,
+    "QUERIES_TIER3": 8,
+    "EXTRACTION_BATCH_SIZE": 6,
+    "PAGE_TEXT_CHARS": 7000,
+    "SEARCH_RESULTS_PER_QUERY": 10,
+    "FETCH_CONCURRENCY": 10,
+    "IELTS_LOOKUP_ENABLED": false,
+    "IELTS_LOOKUP_MIN_SCORE": 90,
+    "IELTS_LOOKUP_MAX_PER_RUN": 3
+  },
+  "failed_providers": [],
+  "runs": [
+    {
+      "provider": "cleanup",
+      "model": "",
+      "status": "ok",
+      "error": "",
+      "returned": 12,
+      "valid": 0,
+      "detail": "cleanup only",
+      "sources": 0,
+      "stats": {}
+    }
+  ],
+  "sources": []
+}
