@@ -17,7 +17,40 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const CLEANUP_ONLY = String(process.env.CLEANUP_ONLY || "").toLowerCase() === "true";
 
 // ============================================================================
-// PROVIDER CONFIGURATION (unchanged — the good part)
+// TUNABLE BUDGETS
+// Set the matching GitHub Variable to override without touching this file.
+// Defaults are conservative to keep token spend low on a free tier.
+// ============================================================================
+function envInt(name, fallback) {
+  const v = Number(process.env[name]);
+  return Number.isFinite(v) && v >= 0 ? v : fallback;
+}
+function envBool(name, fallback) {
+  const v = String(process.env[name] || "").toLowerCase();
+  if (v === "true") return true;
+  if (v === "false") return false;
+  return fallback;
+}
+
+const CFG = {
+  MAX_PAGES:               envInt("MAX_PAGES", 120),
+  TIER3_MAX_PAGES:         envInt("TIER3_MAX_PAGES", 40),
+  AI_REVIEW_BUDGET:        envInt("AI_REVIEW_BUDGET", 25),
+  AI_REVIEW_BUDGET_TIER3:  envInt("AI_REVIEW_BUDGET_TIER3", 12),
+  QUERIES_EU:              envInt("QUERIES_EU", 24),
+  QUERIES_TIER3:           envInt("QUERIES_TIER3", 8),
+  EXTRACTION_BATCH_SIZE:   envInt("EXTRACTION_BATCH_SIZE", 6),
+  PAGE_TEXT_CHARS:         envInt("PAGE_TEXT_CHARS", 7000),
+  SEARCH_RESULTS_PER_QUERY: envInt("SEARCH_RESULTS_PER_QUERY", 10),
+  FETCH_CONCURRENCY:       envInt("FETCH_CONCURRENCY", 10),
+  // IELTS lookups cost AI calls. Off by default; turn on if you want them.
+  IELTS_LOOKUP_ENABLED:    envBool("IELTS_LOOKUP_ENABLED", false),
+  IELTS_LOOKUP_MIN_SCORE:  envInt("IELTS_LOOKUP_MIN_SCORE", 90),
+  IELTS_LOOKUP_MAX_PER_RUN: envInt("IELTS_LOOKUP_MAX_PER_RUN", 3)
+};
+
+// ============================================================================
+// PROVIDER CONFIGURATION
 // ============================================================================
 function envValue(name) { return String(process.env[name] || "").trim(); }
 
@@ -85,6 +118,12 @@ function safeErrorMessage(error) {
     if (secret) message = message.split(secret).join("***");
   }
   return message.length > 300 ? `${message.slice(0, 300)}…` : message;
+}
+
+// Fatal errors that mean "give up on this provider for this run", not "retry".
+function isQuotaError(error) {
+  const m = String(error?.message || error || "").toLowerCase();
+  return /quota exceeded|resource_exhausted|resource exhausted|insufficient_quota|out of credits|billing|exceeded your current quota/.test(m);
 }
 
 // ============================================================================
@@ -282,11 +321,9 @@ function normalizeDeadline(raw, { dayFirst = true } = {}) {
   if (!text) return "";
   let m;
 
-  // 2026-11-15, 2026/11/15, 2026.11.15
   if ((m = text.match(/(\d{4})[-./](\d{1,2})[-./](\d{1,2})/)))
     return toISODate(+m[1], +m[2], +m[3]);
 
-  // 15-11-2026, 15/11/2026, 15.11.2026
   if ((m = text.match(/(\d{1,2})[-./](\d{1,2})[-./](\d{4})/))) {
     const a = +m[1], b = +m[2];
     if (a > 12) return toISODate(+m[3], b, a);
@@ -294,13 +331,11 @@ function normalizeDeadline(raw, { dayFirst = true } = {}) {
     return dayFirst ? toISODate(+m[3], b, a) : toISODate(+m[3], a, b);
   }
 
-  // 15 November 2026 / 15 Nov / 15th November
   if ((m = text.match(/(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9})\.?(?:\s+(\d{4}))?/))) {
     const mon = MONTH_NUMBER[m[2].toLowerCase()];
     if (mon) return toISODate(+(m[3] || inferYear(mon, +m[1])), mon, +m[1]);
   }
 
-  // November 15, 2026 / Nov 15
   if ((m = text.match(/([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?(?:\s+(\d{4}))?/))) {
     const mon = MONTH_NUMBER[m[1].toLowerCase()];
     if (mon) return toISODate(+(m[3] || inferYear(mon, +m[2])), mon, +m[2]);
@@ -320,11 +355,11 @@ const ROLLING_RE = /open until filled|until the position is filled|rolling (basi
 // ============================================================================
 // FETCHING
 // ============================================================================
-const FETCH_CONCURRENCY = 10;
 const HOST_GAP_MS = 1200;
-const MAX_PAGES = 250;
-const TIER3_MAX_PAGES = 80;
-const PAGE_TEXT_CHARS = 12000;
+const FETCH_CONCURRENCY = CFG.FETCH_CONCURRENCY;
+const MAX_PAGES = CFG.MAX_PAGES;
+const TIER3_MAX_PAGES = CFG.TIER3_MAX_PAGES;
+const PAGE_TEXT_CHARS = CFG.PAGE_TEXT_CHARS;
 const PAGE_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
 async function mapPool(items, limit, worker) {
@@ -456,7 +491,6 @@ async function fetchHitPages(hits, maxPages, seen) {
     unique.push({ ...hit, url: u });
   }
 
-  // Sort: never-seen first, then stale results, then second chances.
   const scored = unique.map(hit => {
     const entry = seen[hit.url];
     if (!entry) return { hit, rank: 0 };
@@ -467,6 +501,7 @@ async function fetchHitPages(hits, maxPages, seen) {
   });
   scored.sort((a, b) => a.rank - b.rank);
 
+  // Fetch enough to survive failures, but no more than maxPages * 3.
   const queue = scored.slice(0, maxPages * 3).map(s => s.hit);
   const fetched = await mapPool(queue, FETCH_CONCURRENCY, hit =>
     perHost(hit.url, async () => {
@@ -500,7 +535,7 @@ async function gatherPages(mainHits, tier3Hits, mainMax, seen) {
 }
 
 // ============================================================================
-// PRE-SCREEN (free, code-side) — rank pages before spending AI tokens
+// PRE-SCREEN (free, code-side)
 // ============================================================================
 const THEME_WEIGHTS = [
   [/degrowth|post-?growth|post-?consumer|sufficiency/gi, 7],
@@ -585,25 +620,42 @@ function tier3QueriesForRun(count) {
 }
 
 // ============================================================================
-// AI CALLS
+// AI CALLS — quota errors are FATAL (no retry)
 // ============================================================================
-const AI_MAX_ATTEMPTS = 3;
+const AI_MAX_ATTEMPTS = 2;
+
+// Providers that died this run (quota or fatal). Never re-called.
+const failedThisRun = new Set();
 
 async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = false } = {}) {
   if (!provider.configured) throw new Error(`${provider.name} is not configured (missing: ${provider.missing.join(", ")}).`);
+  if (failedThisRun.has(provider.prefix)) {
+    throw new Error(`${provider.name} already failed earlier this run — skipping.`);
+  }
+
   const call = provider.format === "gemini"
     ? () => geminiFormatGenerate(provider, prompt, useSearch, allowEmpty)
     : provider.format === "openai"
     ? () => openaiFormatGenerate(provider, prompt, allowEmpty)
     : null;
   if (!call) throw new Error(`${provider.prefix}_FORMAT "${provider.format}" is not supported.`);
+
   let lastError;
   for (let attempt = 1; attempt <= AI_MAX_ATTEMPTS; attempt++) {
-    try { return await call(); }
-    catch (error) {
+    try {
+      return await call();
+    } catch (error) {
       lastError = error;
+
+      // Quota exhaustion = give up immediately, mark provider dead for this run.
+      if (isQuotaError(error)) {
+        failedThisRun.add(provider.prefix);
+        console.error(`[${provider.name}] quota exhausted — marking provider dead for this run.`);
+        throw error;
+      }
+
       if (!error.retryable || attempt === AI_MAX_ATTEMPTS) break;
-      const wait = 5000 * attempt;
+      const wait = 4000 * attempt;
       console.warn(`[${provider.name}] attempt ${attempt}/${AI_MAX_ATTEMPTS} failed (${safeErrorMessage(error)}); retrying in ${wait / 1000}s...`);
       await sleep(wait);
     }
@@ -634,7 +686,10 @@ async function geminiFormatGenerate(provider, prompt, useSearch, allowEmpty) {
     body: JSON.stringify(body)
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw apiError(data?.error?.message || `${provider.name} HTTP ${response.status}`, isRetryableStatus(response.status));
+  if (!response.ok) {
+    const msg = data?.error?.message || `${provider.name} HTTP ${response.status}`;
+    throw apiError(msg, isRetryableStatus(response.status));
+  }
   const text = (data?.candidates || []).flatMap(c => c?.content?.parts || []).map(p => p?.text || "").join("\n").trim();
   if (!text && !allowEmpty) {
     const reason = data?.promptFeedback?.blockReason || data?.candidates?.[0]?.finishReason || "no reason given";
@@ -655,7 +710,10 @@ async function openaiFormatGenerate(provider, prompt, allowEmpty) {
     })
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw apiError(data?.error?.message || `${provider.name} HTTP ${response.status}`, isRetryableStatus(response.status));
+  if (!response.ok) {
+    const msg = data?.error?.message || `${provider.name} HTTP ${response.status}`;
+    throw apiError(msg, isRetryableStatus(response.status));
+  }
   const text = data?.choices?.[0]?.message?.content || "";
   if (!text && !allowEmpty) {
     const reason = data?.choices?.[0]?.finish_reason || "no reason given";
@@ -692,14 +750,7 @@ service systems, product-service systems, transition design, social design, desi
 participatory/co-design, systemic design, critical design, alternative futures, governance,
 public policy, transition studies, sustainability science, STS, sociology, political science
 and environmental humanities where relevant. ${GEOGRAPHY}
-Prioritise official university vacancy pages. Exclude generic programmes and expired positions.`,
-  `Run a second independent search pass for currently open, funded PhD/doctoral vacancies matching
-this profile (Europe first): ${CANDIDATE_PROFILE}
-Actively vary the search terms and look for opportunities the first pass may miss, especially
-positions using less obvious terminology around societal transformation, sustainable lifestyles,
-consumption practices, ownership/access, commons, service systems, governance, policy, social
-innovation and ecological transition. ${GEOGRAPHY}
-Prioritise official university vacancy pages.`
+Prioritise official university vacancy pages. Exclude generic programmes and expired positions.`
 ];
 
 const SEARCH_REVIEW_TIER3_ANGLES = [
@@ -715,19 +766,23 @@ funded supervisor-advertised PhD projects and studentships.`
 ];
 
 const SEARCH_REVIEW_MAX_PAGES = MAX_PAGES;
-const SEARCH_REVIEW_CALL_GAP_MS = 6500;
-const SEARCH_MAX_RESULTS_PER_QUERY = 20;
+const SEARCH_REVIEW_CALL_GAP_MS = 4000;
+const SEARCH_MAX_RESULTS_PER_QUERY = CFG.SEARCH_RESULTS_PER_QUERY;
 const SEARCH_CALL_GAP_MS = 400;
 const REVIEW_MAX_PAGES = MAX_PAGES;
 const REVIEW_CALL_GAP_MS = 3000;
-const EXTRACTION_BATCH_SIZE = 6;
-const AI_REVIEW_BUDGET = 120;
+const EXTRACTION_BATCH_SIZE = CFG.EXTRACTION_BATCH_SIZE;
+const AI_REVIEW_BUDGET = CFG.AI_REVIEW_BUDGET;
 
 async function searchReviewDiscover(angles, tag = "Europe-first") {
   console.log(`[${SEARCH_REVIEW.name}] web search discovery starting (${tag})...`);
   const allHits = [], seenURLs = new Set();
   for (let i = 0; i < angles.length; i++) {
     if (i > 0) await sleep(SEARCH_REVIEW_CALL_GAP_MS);
+    if (failedThisRun.has(SEARCH_REVIEW.prefix)) {
+      console.warn(`[${SEARCH_REVIEW.name}] skipping remaining ${tag} angles — provider already dead.`);
+      break;
+    }
     const prompt = `You are the discovery stage of a PhD vacancy radar.
 ${angles[i]}
 ${SEARCH_STRATEGY}
@@ -739,7 +794,8 @@ The program will take URLs only from your web search tool's source metadata, not
     try {
       ({ data } = await aiGenerate(SEARCH_REVIEW, prompt, { useSearch: true, allowEmpty: true }));
     } catch (error) {
-      console.warn(`[${SEARCH_REVIEW.name}] ${tag} angle ${i + 1}/${angles.length} failed, continuing: ${safeErrorMessage(error)}`);
+      console.warn(`[${SEARCH_REVIEW.name}] ${tag} angle ${i + 1}/${angles.length} failed: ${safeErrorMessage(error)}`);
+      if (failedThisRun.has(SEARCH_REVIEW.prefix)) break;
       continue;
     }
     for (const hit of collectGroundingHits(data)) {
@@ -881,7 +937,7 @@ async function extractReviewBatch(pages) {
 }
 
 // ============================================================================
-// IELTS CACHE (per university, 180-day refresh)
+// IELTS CACHE — OFF by default; only uses a non-failed Gemini-format AI
 // ============================================================================
 const IELTS_REFRESH_DAYS = 180;
 let universitiesCache = {};
@@ -895,20 +951,24 @@ function saveUniversitiesCache() {
 }
 
 function bestSearchAI() {
-  if (SEARCH_REVIEW.configured && SEARCH_REVIEW.format === "gemini") return SEARCH_REVIEW;
-  if (REVIEW.configured && REVIEW.format === "gemini") return REVIEW;
+  const candidates = [SEARCH_REVIEW, REVIEW];
+  for (const p of candidates) {
+    if (p.configured && p.format === "gemini" && !failedThisRun.has(p.prefix)) return p;
+  }
   return null;
 }
 
 async function lookupIelts(university, country) {
+  const fallback = { ielts_requirement: "Not specified on official university website", ielts_source_url: "" };
   const key = String(university || "").toLowerCase().trim();
-  if (!key) return { ielts_requirement: "Not specified on official university website", ielts_source_url: "" };
+  if (!key) return fallback;
+
   const cached = universitiesCache[key];
   if (cached && cached.checked_at && (Date.now() - Date.parse(cached.checked_at)) / 86400000 < IELTS_REFRESH_DAYS) {
     return { ielts_requirement: cached.ielts_requirement, ielts_source_url: cached.ielts_source_url || "" };
   }
   const ai = bestSearchAI();
-  if (!ai) return { ielts_requirement: "Not specified on official university website", ielts_source_url: "" };
+  if (!ai) return fallback;
 
   const prompt = `You are looking up the official English-language / IELTS requirement for PhD applicants at "${university}" (${country || "unknown country"}).
 Use web search to find an OFFICIAL university page (e.g. a graduate school, admissions or English requirements page).
@@ -922,21 +982,30 @@ Do not invent scores or URLs.`;
     const { text } = await aiGenerate(ai, prompt, { useSearch: true });
     const parsed = extractJSON(text);
     const result = {
-      ielts_requirement: String(parsed?.ielts_requirement || "Not specified on official university website").trim(),
+      ielts_requirement: String(parsed?.ielts_requirement || fallback.ielts_requirement).trim(),
       ielts_source_url: normalizeURL(parsed?.ielts_source_url || "")
     };
     universitiesCache[key] = { ...result, checked_at: new Date().toISOString() };
     saveUniversitiesCache();
     return result;
   } catch (error) {
-    console.warn(`IELTS lookup failed for ${university}: ${safeErrorMessage(error)}`);
-    return { ielts_requirement: "Not specified on official university website", ielts_source_url: "" };
+    console.warn(`IELTS lookup skipped for ${university}: ${safeErrorMessage(error)}`);
+    return fallback;
   }
 }
 
 // ============================================================================
 // VALIDATION HELPERS
 // ============================================================================
+function subScoreOf(item) {
+  const keys = ["topic_fit", "politics_fit", "design_fit", "methods_fit", "funding_quality"];
+  const values = keys.map(k => Number(item?.[k]));
+  if (values.every(v => Number.isFinite(v))) {
+    return Math.round(values.reduce((a, b) => a + b, 0));
+  }
+  return null;
+}
+
 function explainRejection(item) {
   if (!item || typeof item !== "object") return "not an object";
   if (!String(item.title || "").trim()) return "missing title";
@@ -955,15 +1024,6 @@ function explainRejection(item) {
   const rolling = item.deadline_type === "rolling" || ROLLING_RE.test(item.original_text || "");
   if (!rolling && !isFutureDeadline(deadline)) return `deadline not future and not rolling (got: ${JSON.stringify(item.deadline ?? "")})`;
   return "passes";
-}
-
-function subScoreOf(item) {
-  const keys = ["topic_fit", "politics_fit", "design_fit", "methods_fit", "funding_quality"];
-  const values = keys.map(k => Number(item?.[k]));
-  if (values.every(v => Number.isFinite(v))) {
-    return Math.round(values.reduce((a, b) => a + b, 0));
-  }
-  return null;
 }
 
 function providerLabelsOf(value) {
@@ -1086,7 +1146,7 @@ function cleanResults(results) {
       ai_model: String(item.ai_model || "").trim(),
       url_grounded: item.url_grounded === true,
       first_seen: String(item.first_seen || new Date().toISOString()),
-      verification_status: ["Verified", "Not verified"].includes(String(item.verification_status || "")) ? String(item.verification_status) : "Not verified",
+      verification_status: ["Verified", "Not verified", "Closed"].includes(String(item.verification_status || "")) ? String(item.verification_status) : "Not verified",
       verification_checked_at: String(item.verification_checked_at || "").trim(),
       verification_note: String(item.verification_note || "").trim(),
       verification_url: normalizeURL(item.verification_url)
@@ -1113,7 +1173,6 @@ const VERIFY_FRESH_DAYS = 3;
 
 async function verifyPosition(position) {
   const checkedAt = new Date().toISOString();
-  // Reuse a recent verification to save fetch budget for new pages.
   if (position.verification_checked_at) {
     const ageDays = (Date.now() - Date.parse(position.verification_checked_at)) / 86400000;
     if (ageDays < VERIFY_FRESH_DAYS && position.verification_status) {
@@ -1204,7 +1263,6 @@ function extractJSON(text) {
   if (first !== -1 && last !== -1) {
     try { return JSON.parse(cleaned.slice(first, last + 1)); } catch {}
   }
-  // Also try a single object (for IELTS lookup).
   const of = cleaned.indexOf("{");
   const ol = cleaned.lastIndexOf("}");
   if (of !== -1 && ol !== -1) {
@@ -1245,7 +1303,6 @@ function loadSeen() { seenCache = loadJSON(SEEN_FILE, {}) || {}; }
 function saveSeen() { saveJSON(SEEN_FILE, seenCache); }
 function updateSeen(pages, skipped, results) {
   const now = new Date().toISOString();
-  const byURL = new Map(pages.map(p => [normalizeURL(p.url), p]));
   for (const p of pages) {
     const u = normalizeURL(p.url);
     const prev = seenCache[u] || { first_seen: now, checks: 0 };
@@ -1294,6 +1351,12 @@ function filterBlocked(hits, blocked) {
 // ============================================================================
 // REVIEW + BATCHING
 // ============================================================================
+function tally(items) {
+  const m = new Map();
+  for (const item of items) m.set(item, (m.get(item) || 0) + 1);
+  return Object.fromEntries(m);
+}
+
 async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract, hitsLabel, blocked, stats }) {
   const blockedFilteredMain = filterBlocked(mainHits, blocked);
   const blockedFilteredTier3 = filterBlocked(tier3Hits, blocked);
@@ -1307,7 +1370,12 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
   stats.fetch_skipped = tally(skipped.map(s => s.reason));
 
   const ranked = rankByPrescreen(pages);
-  const toReview = ranked.slice(0, AI_REVIEW_BUDGET);
+  const tier3Pages = ranked.filter(p => geoTier(p.country) === 3);
+  const mainPages = ranked.filter(p => geoTier(p.country) !== 3);
+  const toReview = [
+    ...mainPages.slice(0, AI_REVIEW_BUDGET),
+    ...tier3Pages.slice(0, CFG.AI_REVIEW_BUDGET_TIER3)
+  ];
   stats.prescreen_dropped = ranked.length - toReview.length;
   stats.sent_to_ai = toReview.length;
 
@@ -1337,12 +1405,6 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
   return { results, sources: pages.map(p => ({ title: p.title || p.url, url: p.url })), pages };
 }
 
-function tally(items) {
-  const m = new Map();
-  for (const item of items) m.set(item, (m.get(item) || 0) + 1);
-  return Object.fromEntries(m);
-}
-
 // ============================================================================
 // PIPELINES
 // ============================================================================
@@ -1360,8 +1422,8 @@ async function callSearchReviewProvider(blocked, stats) {
 }
 
 async function callSearchThenReviewProvider(blocked, stats) {
-  const mainQueries = queriesForRun(60);
-  const tier3Queries = tier3QueriesForRun(20);
+  const mainQueries = queriesForRun(CFG.QUERIES_EU);
+  const tier3Queries = tier3QueriesForRun(CFG.QUERIES_TIER3);
   const mainHits = await searchDiscover(mainQueries, "Europe-first");
   const tier3Hits = await searchDiscover(tier3Queries, "Canada/Australia/NZ");
   if (!mainHits.length && !tier3Hits.length) throw new Error(`${SEARCH.name} search returned no results.`);
@@ -1410,23 +1472,47 @@ async function runProvider(provider, blocked) {
     run.sources = response.sources;
     run.detail = `${run.stats.pages_read || 0} pages read, ${run.stats.sent_to_ai || 0} sent to AI`;
 
-    // Enforce url_grounded BEFORE cleanResults, so hallucinated URLs are dropped
-    // here and don't poison the persisted history.
     const grounded = rawResults.filter(r => r.url_grounded === true);
     if (grounded.length < rawResults.length) {
       console.log(`[${provider.label}] dropped ${rawResults.length - grounded.length} ungrounded (hallucinated-url) results.`);
     }
 
+    // IELTS lookups: OFF by default. When on, only for the strongest results
+    // and capped per run. Skipped entirely if no working search AI exists.
+    let ieltsBudget = CFG.IELTS_LOOKUP_ENABLED ? CFG.IELTS_LOOKUP_MAX_PER_RUN : 0;
     const withIelts = [];
-    for (const r of grounded) {
-      const ielts = await lookupIelts(r.university, r.country);
-      withIelts.push({
-        ...r,
-        ielts_requirement: ielts.ielts_requirement,
-        ielts_source_url: ielts.ielts_source_url,
-        ai_provider: provider.label
-      });
+    if (ieltsBudget > 0) {
+      const sorted = grounded.slice().sort((a, b) =>
+        ((Number(b.topic_fit) || 0) + (Number(b.politics_fit) || 0) + (Number(b.design_fit) || 0) + (Number(b.methods_fit) || 0) + (Number(b.funding_quality) || 0))
+        - ((Number(a.topic_fit) || 0) + (Number(a.politics_fit) || 0) + (Number(a.design_fit) || 0) + (Number(a.methods_fit) || 0) + (Number(a.funding_quality) || 0))
+      );
+      for (const r of sorted) {
+        const score = (Number(r.topic_fit) || 0) + (Number(r.politics_fit) || 0) + (Number(r.design_fit) || 0) + (Number(r.methods_fit) || 0) + (Number(r.funding_quality) || 0);
+        let ielts = { ielts_requirement: "Not specified on official university website", ielts_source_url: "" };
+        const key = String(r.university || "").toLowerCase().trim();
+        const alreadyCached = universitiesCache[key];
+        if (ieltsBudget > 0 && (alreadyCached || score >= CFG.IELTS_LOOKUP_MIN_SCORE) && bestSearchAI()) {
+          if (!alreadyCached) ieltsBudget--;
+          ielts = await lookupIelts(r.university, r.country);
+        }
+        withIelts.push({
+          ...r,
+          ielts_requirement: ielts.ielts_requirement,
+          ielts_source_url: ielts.ielts_source_url,
+          ai_provider: provider.label
+        });
+      }
+    } else {
+      for (const r of grounded) {
+        withIelts.push({
+          ...r,
+          ielts_requirement: "Not specified on official university website",
+          ielts_source_url: "",
+          ai_provider: provider.label
+        });
+      }
     }
+
     run.results = cleanResults(withIelts);
     run.stats.ai_returned = rawResults.length;
     run.stats.rejected = tally(rawResults.map(explainRejection));
@@ -1559,10 +1645,10 @@ async function main() {
   loadUniversitiesCache();
   const blocked = loadBlocked();
 
+  console.log(`Budgets: pages≤${MAX_PAGES} (+${TIER3_MAX_PAGES} tier3), ai_review≤${CFG.AI_REVIEW_BUDGET} (+${CFG.AI_REVIEW_BUDGET_TIER3} tier3), queries≤${CFG.QUERIES_EU} (+${CFG.QUERIES_TIER3} tier3), ielts=${CFG.IELTS_LOOKUP_ENABLED ? `on (max ${CFG.IELTS_LOOKUP_MAX_PER_RUN})` : "off"}`);
+
   const existingResults = loadExisting();
   console.log(`Existing active positions: ${existingResults.length}`);
-
-  const globalStats = {};
 
   let runs;
   if (CLEANUP_ONLY) {
@@ -1585,6 +1671,8 @@ async function main() {
 
   saveJSON(SOURCES_FILE, {
     searched_at: new Date().toISOString(),
+    budgets: CFG,
+    failed_providers: [...failedThisRun],
     runs: runs.map(run => ({
       provider: run.label, model: run.model, status: run.status, error: run.error,
       returned: run.returned, valid: run.results.length, detail: run.detail,
@@ -1615,7 +1703,6 @@ async function main() {
   saveSeen();
   console.log(`Saved ${verifiedResults.length} active positions.`);
 
-  // Step summary (visible in Actions UI).
   try {
     const fs = await import("node:fs");
     const lines = [
@@ -1623,6 +1710,7 @@ async function main() {
       "",
       `- Existing positions: **${existingResults.length}**`,
       `- Active positions saved: **${verifiedResults.length}**`,
+      `- Providers failed this run: \`${[...failedThisRun].join(", ") || "none"}\``,
       ""
     ];
     for (const run of runs) {
