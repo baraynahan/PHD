@@ -1,5 +1,5 @@
 {
-  "searched_at": "2026-10-07T01:21:16.980Z",
+  "searched_at": "2026-10-07T22:41:13.142Z",
   "budgets": {
     "MAX_PAGES": 120,
     "TIER3_MAX_PAGES": 40,
@@ -16,6 +16,7 @@
     "IELTS_LOOKUP_MAX_PER_RUN": 3
   },
   "failed_providers": [
+    "REVIEW",
     "SEARCH_REVIEW"
   ],
   "runs": [
@@ -35,95 +36,219 @@
       "model": "claude-sonnet-4-6-free (search: Tavily)",
       "status": "ok",
       "error": "",
-      "returned": 23,
-      "valid": 4,
-      "detail": "91 pages read, 25 sent to AI",
-      "sources": 91,
+      "returned": 7,
+      "valid": 2,
+      "detail": "92 pages read, 25 sent to AI",
+      "sources": 92,
       "stats": {
-        "hits_total": 264,
-        "pages_read": 91,
+        "hits_total": 263,
+        "pages_read": 92,
         "fetch_skipped": {
-          "page too short": 35,
-          "HTTP 400 / text/html; charset=\"utf-8\"": 38,
-          "HTTP 403 / text/html; charset=UTF-8": 58,
-          "HTTP 200 / application/pdf": 5,
+          "HTTP 400 / text/html; charset=\"utf-8\"": 35,
+          "HTTP 403 / text/html; charset=UTF-8": 57,
+          "page too short": 40,
+          "HTTP 403 / text/html": 23,
           "not obviously doctoral": 7,
-          "HTTP 429 / unknown content type": 1,
-          "HTTP 404 / text/html; charset=utf-8": 3,
-          "HTTP 200 / application/rss+xml; charset=UTF-8": 1,
-          "HTTP 403 / text/html": 22,
-          "The operation was aborted.": 2,
-          "HTTP 404 / text/html;charset=utf-8": 1
+          "HTTP 200 / application/pdf": 5,
+          "HTTP 404 / text/html; charset=UTF-8": 2,
+          "getaddrinfo ENOTFOUND rhmdb.irs.kg.gov.ng": 1,
+          "The operation was aborted.": 1
         },
-        "prescreen_dropped": 66,
+        "prescreen_dropped": 67,
         "sent_to_ai": 25,
-        "batches_failed": 0,
-        "ai_returned": 23,
+        "batches_failed": 2,
+        "ai_returned": 7,
         "rejected": {
-          "passes": 4,
-          "model marked ineligible: Deadline (2026-06-21) has passed (today is 2026-10-07).": 1,
-          "model marked ineligible: Deadline (2026-06-12) has passed (today is 2026-10-07).": 1,
-          "score 42 is below 60": 1,
-          "score 38 is below 60": 1,
-          "deadline is in the past or unparseable (got: \"2026-08-31\")": 1,
-          "score 52 is below 60": 1,
-          "score 48 is below 60": 1,
-          "deadline is in the past or unparseable (got: \"2026-06-21\")": 1,
-          "deadline is in the past or unparseable (got: \"2026-09-04\")": 1,
-          "deadline is in the past or unparseable (got: \"2026-06-25\")": 1,
-          "missing title": 5,
-          "deadline is in the past or unparseable (got: \"2026-08-28\")": 1,
+          "passes": 2,
+          "model marked ineligible: Application deadline has passed (2026-08-23).": 1,
           "United States (excluded)": 1,
-          "model marked ineligible: Deadline has passed. The application deadline was 13 March 2026, which is before today's date of 7 October 2026.": 1,
-          "deadline is in the past or unparseable (got: \"2026-08-26\")": 1
+          "model marked ineligible: Application deadline has passed (2026-04-30).": 1,
+          "model marked ineligible: Application deadline has passed (2026-06-12).": 1,
+          "model marked ineligible: Application deadline has passed (2026-08-12).": 1
         }
       }
     }
   ],
   "sources": [
     {
-      "title": "Fully Funded King’s College London PhD Studentship 2026 on Justice and Energy Transitions: Study Critical Minerals Governance with Annual Stipend and Research Support - Opportunities for Youth",
-      "url": "https://opportunitiesforyouth.org/2026/05/12/fully-funded-kings-college-london-phd-studentship-2026-on-justice-and-energy-transitions-study-critical-minerals-governance-with-annual-stipend-and-research-support/?amp=1"
+      "title": "Fully Funded PhD Scholarship at Dublin City University for 2026 Intake: DCU Announces €25,000 Per Year Funded PhD Opportunity in Law, Governance and Energy Justice | Global South Opportunities",
+      "url": "https://www.linkedin.com/posts/global-south-opportunities_fully-funded-phd-scholarship-at-dublin-city-activity-7474072880570609664-05Sj"
+    },
+    {
+      "title": "#phd #architecture #designbuild #researchbydesign #designresearch #urbandesign #urbanism #publicspace #temporaryurbanism #makingplace | Francesco Rossini | 25 comments",
+      "url": "https://www.linkedin.com/posts/francesco-rossini-28187229_phd-architecture-designbuild-activity-7483106771050336256-OEnp"
+    },
+    {
+      "title": "Design Justice and Ethics SIG: Seminar Series / The Design Society",
+      "url": "https://www.designsociety.org/2031/design_justice_and_ethics_sig_seminar_series"
+    },
+    {
+      "title": "Call for Applications: Ten PhD positions in the new DFG Research Training Group „Urban Future – managing transformations for a better health in blue cities“ — ZEF",
+      "url": "https://www.zef.de/news-press/news/call-for-applications-ten-phd-positions-in-the-new-dfg-research-training-group-urban-future-managing-transformations-for-a-better-health-in-blue-cities"
+    },
+    {
+      "title": "Doctoral Researcher, MSCA Doctoral Network position “Electric solar wind sail mission design” | Aalto University",
+      "url": "https://www.aalto.fi/en/open-positions/doctoral-researcher-msca-doctoral-network-position-electric-solar-wind-sail-mission-design"
+    },
+    {
+      "title": "USAJOBS - Job Announcement",
+      "url": "https://www.usajobs.gov/job/869474800"
     },
     {
       "title": "Fully Funded King’s College London PhD Studentship 2026 on Justice and Energy Transitions: Study Critical Minerals Governance with Annual Stipend and Research Support - Opportunities for Youth",
       "url": "https://opportunitiesforyouth.org/2026/05/12/fully-funded-kings-college-london-phd-studentship-2026-on-justice-and-energy-transitions-study-critical-minerals-governance-with-annual-stipend-and-research-support"
     },
     {
-      "title": "Job Application for Summer 2027 Systems Engineering Intern at PDT Partners",
-      "url": "https://job-boards.greenhouse.io/pdtpartners/jobs/8083292"
+      "title": "Fully Funded King’s College London PhD Studentship 2026 on Justice and Energy Transitions: Study Critical Minerals Governance with Annual Stipend and Research Support - Opportunities for Youth",
+      "url": "https://opportunitiesforyouth.org/2026/05/12/fully-funded-kings-college-london-phd-studentship-2026-on-justice-and-energy-transitions-study-critical-minerals-governance-with-annual-stipend-and-research-support/?amp=1"
     },
     {
-      "title": "Advisory Seasonal Intern, Federal Technology Enablement - PhD Data Science/Data Engineer | Multiple Locations Summer 2027",
-      "url": "https://www.kpmguscareers.com/jobdetail/?jobId=138629-A"
+      "title": "Powerful Design -Powerful PhD AI Urban Design 2026",
+      "url": "https://opportunitiesforyouth.org/2026/03/26/phd-ai-urban-design-2026"
     },
     {
-      "title": "PhD Position Jobs - 143 Stellenangebote",
-      "url": "https://www.jobrobot.de/jobs-phd-position.htm"
+      "title": "PhD position in Fair4communities project for grid-friendly and resilient energy communities at University of Basel - University Positions",
+      "url": "https://universitypositions.eu/jobs/749009577-phd-position-in-fair4communities-project-for-grid-friendly-and-resilient-energy-communities"
     },
     {
-      "title": "PhD Funding at DePaul CDM | Jarvis College of Computing and Digital Media | DePaul University - Chicago, IL",
-      "url": "https://cdm.depaul.edu/admission-and-aid/tuitionandfinancialaid/phd-funding"
+      "title": "PhD Candidate in Access, Actors and Accountability: The Role of Researchers in AI Governance — University of Amsterdam (UvA) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364331/phd-candidate-in-access-actors-and-accountability-the-role-of-researchers-in-ai-governance"
     },
     {
-      "title": "Doctoral Researcher in Political and Economic Geography | AISP",
-      "url": "https://www.ipsa.org/fr/na/job-offer/doctoral-researcher-political-and-economic-geography"
+      "title": "IDC School of Design | Rachel Charlotte Smith",
+      "url": "https://www.linkedin.com/posts/rachel-charlotte-smith-78533617_idc-school-of-design-activity-7493321714228146176-aGph"
     },
     {
-      "title": "Doctoral Researcher in Political and Economic Geography | IPSA",
-      "url": "https://www.ipsa.org/na/job-offer/doctoral-researcher-political-and-economic-geography"
+      "title": "How do you find Your PhD Tribe? | Abass Bolaji Isiaka PhD",
+      "url": "https://www.linkedin.com/posts/abassisiaka_how-do-you-find-your-phd-tribe-many-of-activity-7392902860134305792-urNQ"
+    },
+    {
+      "title": "PhD Scholarship in Digital Technology, Sexuality, and Disability at the University of Sydney, Australia! I&#39;m looking for a PhD student to join me at the University of Sydney to work on my Australian… | Adam Poulsen",
+      "url": "https://www.linkedin.com/posts/adampoulsen1_phd-scholarship-in-digital-technology-sexuality-activity-7464862304996732928-8oVx"
+    },
+    {
+      "title": "Postgraduate Research Scholarships and Bursaries | University of Limerick",
+      "url": "https://www.ul.ie/research/doctoral-college/postgraduate-research-scholarships"
+    },
+    {
+      "title": "Human-Centered Technology, Innovation &amp; Design, Ph.D. | NYU Tandon School of Engineering",
+      "url": "https://engineering.nyu.edu/academics/programs/human-centered-technology-innovation-design-phd"
+    },
+    {
+      "title": "PhD position Co-creating circular business models and services for e-bikes and home appliances | Margaret Bates",
+      "url": "https://www.linkedin.com/posts/margaret-bates-b98b374_phd-position-co-creating-circular-business-activity-7470129182778429440-aDr9"
+    },
+    {
+      "title": "EGU - Jobs - Fully funded PhD position on regional climate model evaluation in Africa",
+      "url": "https://www.egu.eu/jobs/8288/fully-funded-phd-position-on-regional-climate-model-evaluation-in-africa"
+    },
+    {
+      "title": "2027 Applied Science Internship - Recommender Systems/ Information Retrieval (Machine Learning) - United States, PhD Student Science Recruiting at Amazon Science — Seattle, WA | LinkedIn Jobs",
+      "url": "https://www.linkedin.com/jobs/view/2027-applied-science-internship-recommender-systems-information-retrieval-machine-learning-united-states-phd-student-science-recruiting-at-amazon-science-4472651147"
+    },
+    {
+      "title": "PhD Research Intern, Electronic Design Automation - 2027 | NVIDIA Corporation",
+      "url": "https://jobs.nvidia.com/careers/job/893397828726"
+    },
+    {
+      "title": "Research Scientist Graduate (Seed AI Foundation Model Infrastructure) &#8211; 2027 Start (PhD) &#8211; Career Center | University of Virginia",
+      "url": "https://career.virginia.edu/jobs/tiktok-inc-research-scientist-graduate-seed-ai-foundation-model-infrastructure-2027-start-phd"
+    },
+    {
+      "title": "PhD position on AI and B2B service innovation at Linköping University &#8211; SERVSIG",
+      "url": "https://www.servsig.org/wordpress/2026/01/phd-position-on-ai-and-b2b-service-innovation-at-linkoping-university"
+    },
+    {
+      "title": "Funding Your Ph.D. Education | UC Berkeley School of Information",
+      "url": "https://www.ischool.berkeley.edu/programs/phd/funding"
+    },
+    {
+      "title": "Fully funded PhD scholarship in AI, design, and data for healthcare decision making | Helen Hawkings posted on the topic | LinkedIn",
+      "url": "https://www.linkedin.com/posts/helen-hawkings-1038a28a_design-engineering-phd-scholarships-deps-activity-7393325850416447488-fU0R"
+    },
+    {
+      "title": "PhD Program in Systems Medicine | SEMM",
+      "url": "https://semm.it/phd-program"
+    },
+    {
+      "title": "Advisory Seasonal Intern, Federal Technology Enablement - PhD Data Science/Data Engineer | Multiple Locations Winter 2027",
+      "url": "https://www.kpmguscareers.com/jobdetail/?jobId=138628-A"
+    },
+    {
+      "title": "Doctoral Researcher, MSCA Doctoral Network position “Electric Solar Wind Sail Mission Design” job with AALTO UNIVERSITY | 415739",
+      "url": "https://www.timeshighereducation.com/unijobs/listing/415739/doctoral-researcher-msca-doctoral-network-position-electric-solar-wind-sail-mission-design-"
+    },
+    {
+      "title": "96 first-year PhD students named Presidential Excellence Award fellows through graduate program to advance their scholarship, research - News",
+      "url": "https://www.purdue.edu/newsroom/purduetoday/2026/Q2/96-first-year-phd-students-named-presidential-excellence-award-fellows-through-graduate-program-to-advance-their-scholarship-research"
+    },
+    {
+      "title": "Ageing, Health &amp; Inclusive Design MPhil/PhD | Royal College of Art",
+      "url": "https://www.rca.ac.uk/study/programme-finder/ageing-health-inclusive-design"
+    },
+    {
+      "title": "Doctoral | Department of Education",
+      "url": "https://education.washu.edu/doctoral"
+    },
+    {
+      "title": "9 Fully Funded TRAJECTS PhD Scholarships 2026–2030 in Energy, Climate and Sustainability: Apply Now!! - Global South Opportunities",
+      "url": "https://www.globalsouthopportunities.com/2026/04/06/trajects-2"
+    },
+    {
+      "title": "🌍 Sustainability Scholarships &amp; Fully Funded Masters, PhD and Postdoc Research Opportunities (2026)",
+      "url": "https://www.linkedin.com/pulse/sustainability-scholarships-fully-funded-x4fke"
+    },
+    {
+      "title": "Researcher or Doctoral Researcher in Justice and Sustainability Transitions - NordMedia Network",
+      "url": "https://nordmedianetwork.org/latest/vacant-positions/researcher-or-doctoral-researcher-in-justice-and-sustainability-transitions"
+    },
+    {
+      "title": "Study Sustainability Hub on X: &quot;Apply Now! Master’s and PhD Scholarships 2027 on AI and Sustainability Transitions! 📅 Deadline: June 16, 2026 🔗 Apply here: https://t.co/SIDBONzLGg #Scholarship&quot; / X",
+      "url": "https://x.com/studysustainhub/status/2062844415870181693"
+    },
+    {
+      "title": "Fully Funded PhD in Sustainable Development and Climate Change 2026/2027 at IUSS Pavia, Italy - Vacancy Bridge",
+      "url": "https://vacancybridge.com/remote-jobs/sustainable-development"
+    },
+    {
+      "title": "Josh’s Water Jobs – PhD Position on Twin Transition of Infrastructure: Paradoxical Leadership",
+      "url": "https://www.joshswaterjobs.com/jobs/392218"
+    },
+    {
+      "title": "PhD research fellow in STS and sustainability transitions (304333) | NTNU - Norwegian University of Science and Technology | Roberto Cantoni",
+      "url": "https://www.linkedin.com/posts/roberto-cantoni-7a309120_phd-research-fellow-in-sts-and-sustainability-activity-7475085640049692672-bAvH"
+    },
+    {
+      "title": "Call for Applications: Doctoral Conference on Sustainability Transitions",
+      "url": "https://4euplus.eu/4EU-415.html?newsID=30186"
+    },
+    {
+      "title": "Galway PhD Scholarship in Sustainability and Energy Transitions | (ESMA) European Social Marketing Association posted on the topic | LinkedIn",
+      "url": "https://www.linkedin.com/posts/esma-european-social-marketing-association_phdopportunity-fullyfundedphd-sustainability-activity-7454842430660599808-xTn2"
+    },
+    {
+      "title": "Open Doctoral Researcher Position in Industrial Sales, Sustainability, and Digitalization | Center for Industrial Sales Excellence (CISE) | Tampere Universities",
+      "url": "https://research.tuni.fi/cise-en/news/open-doctoral-researcher-position-in-industrial-sales"
+    },
+    {
+      "title": "Call for PhD applications 2026-27 at CLaSP&nbsp; &mdash; CLaSP Blog",
+      "url": "https://www.claspblog.org/news/call-for-phd-applications-2026-27-at-qmuls-centre-on-labour-sustainability-and-global-productionnbsp"
+    },
+    {
+      "title": "LSE Social Policy PhD Studentship",
+      "url": "https://www.lse.ac.uk/study-at-lse/Graduate/fees-and-funding/lse-social-policy-phd-studentship"
     },
     {
       "title": "𝗧𝘄𝗼 𝗣𝗵𝗗 𝗣𝗼𝘀𝗶𝘁𝗶𝗼𝗻𝘀 𝗶𝗻 𝗝𝗨𝗦𝗧 𝗠𝗔𝗧𝗧𝗘𝗥: 𝗦𝗶𝘁𝘂𝗮𝘁𝗲𝗱 𝗠𝗮𝘁𝗲𝗿𝗶𝗮𝗹 𝗘𝗻𝗴𝗮𝗴𝗲𝗺𝗲𝗻𝘁 𝗳𝗼𝗿 𝗖𝗹𝗶𝗺𝗮𝘁𝗲 𝗝𝘂𝘀𝘁𝗶𝗰𝗲 Utrecht University has opened two fully… | CARADT | Centre of Applied Research for Art, Design and Technology",
       "url": "https://www.linkedin.com/posts/caradt_%F0%9D%97%A7%F0%9D%98%84%F0%9D%97%BC-%F0%9D%97%A3%F0%9D%97%B5%F0%9D%97%97-%F0%9D%97%A3%F0%9D%97%BC%F0%9D%98%80%F0%9D%97%B6%F0%9D%98%81%F0%9D%97%B6%F0%9D%97%BC%F0%9D%97%BB%F0%9D%98%80-%F0%9D%97%B6%F0%9D%97%BB-%F0%9D%97%9D%F0%9D%97%A8%F0%9D%97%A6%F0%9D%97%A7-activity-7429840826555592704-yUPI"
     },
     {
-      "title": "Fully Funded PhD Studentship at Glasgow School of Art | The Glasgow School of Art posted on the topic | LinkedIn",
-      "url": "https://www.linkedin.com/posts/the-glasgow-school-of-art_the-glasgow-school-of-art-is-offering-a-fully-activity-7437135710836449280-WPVQ"
+      "title": "Great academic opportunities: 30 calls for papers, 14 postdocs, 13 jobs, 4 PhD scholarships, an award &#8211; Economic Sociology &amp; Political Economy",
+      "url": "https://economicsociology.org/2026/09/13/great-academic-opportunities-27-calls-for-papers-13-jobs-12-postdocs-4-phd-scholarships-an-award"
     },
     {
-      "title": "History of Architecture and the Designed Environment Faculty Position in Design Justice job with University of Minnesota | 38046105",
-      "url": "https://jobs.chronicle.com/job/38046105/history-of-architecture-and-the-designed-environment-faculty-position-in-design-justice"
+      "title": "Fully Funded PhD Studentship at Glasgow School of Art | The Glasgow School of Art posted on the topic | LinkedIn",
+      "url": "https://www.linkedin.com/posts/the-glasgow-school-of-art_the-glasgow-school-of-art-is-offering-a-fully-activity-7437135710836449280-WPVQ"
     },
     {
       "title": "PhD In Urbanism | PhDScanner",
@@ -134,52 +259,32 @@
       "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-envisioning-housing-consumption-corridors-through-participatory"
     },
     {
-      "title": "Fully Funded PhD in Political Science at UCLouvain 2026 in Belgium: Study Inclusive Political Representation Through the WEAVE Research Project - Opportunities for Youth",
-      "url": "https://opportunitiesforyouth.org/2026/08/05/fully-funded-phd-in-political-science-at-uclouvain-2026-in-belgium-study-inclusive-political-representation-through-the-weave-research-project"
-    },
-    {
       "title": "2026 PhD Seminar on Participatory Design: Contemporary Agendas; 3rd Annual Doctoral School by Aarhus University in collaboration with IIT Bombay - PhD courses in Denmark",
       "url": "https://phdcourses.dk/Course/147275"
-    },
-    {
-      "title": "PDC.2026 launches the David Hakken Participatory Design Grant Deadline for application: 20 January 2026 The David Hakken Participatory Design Grant was established in 2016 to celebrate David… | Anna Meroni",
-      "url": "https://www.linkedin.com/posts/anna-meroni-4582b71_pdc2026-launches-the-david-hakken-participatory-activity-7405964396490960896--gdu"
     },
     {
       "title": "#design #sustainability #manufacturing #master #engineering #engineering #phdposition #academicjobs #circulareconomy | Tomohiko Sakao",
       "url": "https://www.linkedin.com/posts/tomohiko-sakao-a484379_design-sustainability-manufacturing-activity-7470713782466428928-Zv4X"
     },
     {
-      "title": "Fully Funded PhD Positions in Circular Economy and Ecodesign at TU Delft | PhDScanner posted on the topic | LinkedIn",
-      "url": "https://www.linkedin.com/posts/phdscanner_two-fullyfunded-phdposition-tudelft-activity-7465353224644915201-9eQZ"
-    },
-    {
-      "title": "Fully Funded PhD Positions in Sport &amp; Sustainability – Marie Skłodowska-Curie Doctoral Network - Opportunities for Youth",
-      "url": "https://opportunitiesforyouth.org/2026/03/10/fully-funded-phd-positions-in-sport-sustainability-marie-sklodowska-curie-doctoral-network"
-    },
-    {
       "title": "Job Openings | World Sufficiency Lab",
       "url": "https://www.thesufficiencylab.org/news/2026-08-07-job-openings"
-    },
-    {
-      "title": "Tenure Track Assistant Professor, Experience Design job with Bentley University | 38032863",
-      "url": "https://jobs.chronicle.com/job/38032863/tenure-track-assistant-professor-experience-design"
-    },
-    {
-      "title": "Fully Funded PhD in Sustainable Development and Climate Change 2026–2027 in Italy: 35 Scholarships Available Through IUSS Pavia - Opportunities for Youth",
-      "url": "https://opportunitiesforyouth.org/2026/07/27/phd-in-sustainable-development-and-climate-change"
     },
     {
       "title": "Lund University PhD in Sustainability Science 2027 in Sweden (Fully Funded with Salary): Apply for a Doctoral Research Position on Just Energy Transitions - Opportunities for Youth",
       "url": "https://opportunitiesforyouth.org/2026/07/13/lund-university-phd-in-sustainability-science-2027-in-sweden-fully-funded-with-salary-apply-for-a-doctoral-research-position-on-just-energy-transitions"
     },
     {
+      "title": "Fully Funded PhD in Sustainable Development and Climate Change 2026–2027 in Italy: 35 Scholarships Available Through IUSS Pavia - Opportunities for Youth",
+      "url": "https://opportunitiesforyouth.org/2026/07/27/phd-in-sustainable-development-and-climate-change"
+    },
+    {
       "title": "PhD Financing the Circular Economy Transition | Heriot-Watt University",
       "url": "https://www.hw.ac.uk/study/research/financing-the-circular-economy-transition"
     },
     {
-      "title": "PhD Scholarships in Sustainability Transformations",
-      "url": "https://www.isecoeco.org/ph-d-scholarships-in-sustainability-transformations-germany"
+      "title": "FULLY FUNDED PhD in Political Economy of Production and Consumption Transformations We are offering a fully funded PhD scholarship in the Sustainability Research Institute, School of Earth and… | Richard Bärnthaler",
+      "url": "https://www.linkedin.com/posts/richard-b%C3%A4rnthaler-62480a328_fully-funded-phd-in-political-economy-of-activity-7409156642363084800-fEaT"
     },
     {
       "title": "PhD international political economy | PhDScanner",
@@ -190,24 +295,12 @@
       "url": "https://opportunitiesforyouth.org/2026/07/17/fully-funded-phd-positions-in-applied-macroeconomics-and-political-economy-at-eth-zurich-switzerland-2026"
     },
     {
-      "title": "Great academic opportunities: 30 calls for papers, 14 postdocs, 13 jobs, 4 PhD scholarships, an award &#8211; Economic Sociology &amp; Political Economy",
-      "url": "https://economicsociology.org/2026/09/13/great-academic-opportunities-27-calls-for-papers-13-jobs-12-postdocs-4-phd-scholarships-an-award"
-    },
-    {
       "title": "PhD position in political economy of climate change adaptation policies | PhDScanner",
       "url": "https://www.linkedin.com/posts/phdscanner_phd-position-in-political-economy-of-climate-activity-7469038179577315328-qIT5"
     },
     {
-      "title": "Postdoc in Political Economy and Digital, Green and Geo-economic Transition at Johannes Gutenberg University | Energy Ethics",
-      "url": "https://energyethics.st-andrews.ac.uk/opportunities/postdoc-in-political-economy-and-digital-green-and-geo-economic-transition-at-johannes-gutenberg-university"
-    },
-    {
-      "title": "FULLY FUNDED PhD in Political Economy of Production and Consumption Transformations We are offering a fully funded PhD scholarship in the Sustainability Research Institute, School of Earth and… | Richard Bärnthaler",
-      "url": "https://www.linkedin.com/posts/richard-b%C3%A4rnthaler-62480a328_fully-funded-phd-in-political-economy-of-activity-7409156642363084800-fEaT"
-    },
-    {
-      "title": "Great academic opportunities: 15 calls for papers, 7 postdocs, 5 PhD stipends, 4 summer schools, 3 jobs, 2 visiting posts, 2 grants, and more &#8211; Economic Sociology &amp; Political Economy",
-      "url": "https://economicsociology.org/2026/07/22/great-academic-opportunities-13-calls-for-papers-6-postdocs-4-phd-stipends-3-summer-schools-2-visiting-posts-2-jobs-2-grants-an-award"
+      "title": "Fully Funded PhD Position on Images and Justice - NordMedia Network",
+      "url": "https://nordmedianetwork.org/latest/vacant-positions/fully-funded-phd-position-on-images-and-justice"
     },
     {
       "title": "CARADT",
@@ -218,40 +311,28 @@
       "url": "https://opportunitiesforyouth.org/2026/04/24/fully-funded-phd-studentship-on-justice-and-energy-transitions-at-kings-college-london-2026-intake"
     },
     {
-      "title": "10 Paid PhD Positions at University of Marburg 2027: Doctoral Research on Gender and International Criminal Law in Germany - Opportunities for Youth",
-      "url": "https://opportunitiesforyouth.org/2026/08/17/phd-on-gender-marburg-2027"
-    },
-    {
-      "title": "Social Justice Education PhD | 2026-2027 OISE Bulletin",
-      "url": "https://oise.academic-guide.utoronto.ca/social-justice-education-phd"
-    },
-    {
       "title": "Fully Funded PhD Position on Images and Justice at the University of Copenhagen (2026) - Opportunities for Youth",
       "url": "https://opportunitiesforyouth.org/2026/05/08/fully-funded-phd-position-on-images-and-justice-at-the-university-of-copenhagen-2026"
+    },
+    {
+      "title": "DIViNE Doctoral Network 2026–2027: 10 PhD Positions in Political Violence, Democracy and Democratic Resilience Across Europe - Opportunities for Youth",
+      "url": "https://opportunitiesforyouth.org/2026/10/02/divine-doctoral-network-2026-2027-10-phd-positions-in-political-violence-democracy-and-democratic-resilience-across-europe"
     },
     {
       "title": "1 Postdoc and 4 PhD positions Global Assessment of Participation in Sustainab... - Ecological Design Collective",
       "url": "https://ecodesigncollective.org/forums/discussion/1-postdoc-and-4-phd-positions-global-assessment-of-participation-in-sustainab"
     },
     {
-      "title": "TAMIU Criminal Justice Doctoral Program Accepting Applications",
-      "url": "https://www.tamiu.edu/newsinfo/2026/02/phdcjapplicationdeadlines20626.shtml"
-    },
-    {
       "title": "Job advertisment: Doctoral Researcher (f/m/diverse) POESIS | Christiana Banja",
       "url": "https://www.linkedin.com/posts/christiana-banja-b09484144_job-advertisment-doctoral-researcher-f-activity-7460928201318531072-ZPPP"
     },
     {
-      "title": "Archived | NIJ&#039;s Research Assistantship Program | National Institute of Justice",
-      "url": "https://nij.ojp.gov/funding/nijs-research-assistantship-program"
+      "title": "Doctoral Researcher for a Finnish Academy Funded Project Experimenting with Geopolymers job with AALTO UNIVERSITY | 406238",
+      "url": "https://www.timeshighereducation.com/unijobs/listing/406238/doctoral-researcher-for-a-finnish-academy-funded-project-experimenting-with-geopolymers"
     },
     {
-      "title": "NIJ FY25 Graduate Research Fellowship Program Webinar | National Institute of Justice",
-      "url": "https://nij.ojp.gov/funding/fy25-grf-webinar-recording-transcript"
-    },
-    {
-      "title": "Open Positions — BEAT Project | farzaneh bahrami",
-      "url": "https://www.linkedin.com/posts/farzaneh-bahrami-3161b58_open-positions-beat-project-activity-7430996574199246848-7aDf"
+      "title": "History of Architecture and the Designed Environment Faculty Position in Design Justice job with University of Minnesota | 38046105",
+      "url": "https://jobs.chronicle.com/job/38046105/history-of-architecture-and-the-designed-environment-faculty-position-in-design-justice"
     },
     {
       "title": "Student Researcher, PhD, Winter-Summer 2027 — Google Careers",
@@ -262,104 +343,32 @@
       "url": "https://www.linkedin.com/posts/opportunities-for-youth-organization_phd-scholarships-ai-activity-7448992053943808000-z_WM"
     },
     {
-      "title": "Current PhD, Applied Research Internship Program - Summer 2027 at Capital One",
-      "url": "https://www.capitalonecareers.com/job/new-york/current-phd-applied-research-internship-program-summer-2027/31238/101041287424"
-    },
-    {
-      "title": "Current PhD, AI Engineering Internship Program - Summer 2027 at Capital One",
-      "url": "https://www.capitalonecareers.com/job/new-york/current-phd-ai-engineering-internship-program-summer-2027/31238/100341360912"
-    },
-    {
-      "title": "Doctoral Student Programme 2027-1 &#8211; careers.cern",
-      "url": "https://careers.cern/jobs/tsc-doct"
-    },
-    {
-      "title": "Call for applications for a 3 years doctoral contract | Sciences Po Centre for European Studies and Comparative Politics",
-      "url": "https://www.sciencespo.fr/centre-etudes-europeennes/en/news/call-for-applications-doctoral-contract-greenloss"
-    },
-    {
       "title": "15 Fully Funded PhD Positions Available through the MSCA Doctoral Network REFFRACTEUR | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/worldwide/africa/news/15-fully-funded-phd-positions-available-through-msca-doctoral-network"
     },
     {
-      "title": "Software Engineer, Infrastructure, PhD, Early Career, 2027 Start — Google Careers",
-      "url": "https://www.google.com/about/careers/applications/jobs/results/84680705375642310-software-engineer-infrastructure-phd-early-career-2027-start"
+      "title": "Current PhD, Applied Research Internship Program - Summer 2027 at Capital One",
+      "url": "https://www.capitalonecareers.com/job/new-york/current-phd-applied-research-internship-program-summer-2027/31238/101041287424"
     },
     {
       "title": "Machine Learning Engineer Intern (TikTok-Data-Search-Local Service) &#8211; 2027 Start (PhD) &#8211; Career Center | University of Virginia",
       "url": "https://career.virginia.edu/jobs/tiktok-inc-machine-learning-engineer-intern-tiktok-data-search-local-service-2027-start-phd"
     },
     {
+      "title": "Software Engineer, Infrastructure, PhD, Early Career, 2027 Start — Google Careers",
+      "url": "https://www.google.com/about/careers/applications/jobs/results/84680705375642310-software-engineer-infrastructure-phd-early-career-2027-start"
+    },
+    {
       "title": "UKRI PhD Stipend 2026/27: £21,805 Minimum — CASRAI",
       "url": "https://casrai.org/dictionary/term/ukri-phd-stipend"
-    },
-    {
-      "title": "Top Fully Funded PhD Programs - Scholarships360",
-      "url": "https://scholarships360.org/college-admissions/phd-programs"
-    },
-    {
-      "title": "PhD Scholarship Guide 2026: How to Find, Win, and Fund a Fully Funded PhD",
-      "url": "https://irrespub.com/phd-scholarship-guide-2026"
-    },
-    {
-      "title": "How to Save Money as a Funded Graduate Student - Personal Finance for PhDs",
-      "url": "https://pfforphds.com/how-to-save-money-as-a-funded-graduate-student"
-    },
-    {
-      "title": "11 fully funded PhD positions in RNA-based medicine | HELMHOLTZ HIRI",
-      "url": "https://www.helmholtz-hiri.de/en/newsroom/news/detail/news/11-fully-funded-phd-positions-in-rna-based-medicine"
-    },
-    {
-      "title": "USA PhD Funding: Fully Funded Programs at Harvard, MIT, Stanford, Yale | MP Scholarship Services (Founder: Muhammad Perwaiz) posted on the topic | LinkedIn",
-      "url": "https://www.linkedin.com/posts/mp-scholarship-services_university-based-funding-for-phd-in-the-usa-activity-7411279510475624448-CCm-"
-    },
-    {
-      "title": "Collaborative Approaches to Impactful Special Education Leadership - College of Education - Wayne State University",
-      "url": "https://education.wayne.edu/research/special-education-leadership"
-    },
-    {
-      "title": "Domus Academy | UNFOLD 2027 Call for Participation | Silvio Cioni",
-      "url": "https://www.linkedin.com/posts/cioni_domus-academy-unfold-2027-call-for-participation-activity-7488611994573602816-yiY9"
-    },
-    {
-      "title": "Fully-funded PhD Studentship 2026-2027 – Using artificial intelligence and eye images to improve health in people living with diabetes at University of Sunderland on FindAPhD.com | Milad Heiranipour",
-      "url": "https://www.linkedin.com/posts/milad-heiranipour-47756912a_fully-funded-phd-studentship-2026-2027-activity-7437270013050277888-5bUt"
-    },
-    {
-      "title": "EGU - Jobs - PhD opportunity in Geodynamics / Seismology / Tectonics",
-      "url": "https://www.egu.eu/jobs/8417/phd-opportunity-in-geodynamics-seismology-tectonics"
-    },
-    {
-      "title": "Call for Contributions | RSD15 SYMPOSIUM",
-      "url": "https://www.rsd15.org/call-for-contributions"
-    },
-    {
-      "title": "CFP: RSD15 Relating Systems Thinking and Design Symposium - Cumulus Association",
-      "url": "https://cumulusassociation.org/calls-for-participation/cfp-rsd15-relating-systems-thinking-and-design-symposium"
     },
     {
       "title": "PhD Candidate in Systemic Actors and the Enforcement of Digital Rules — University of Amsterdam (UvA) — AcademicTransfer",
       "url": "https://www.academictransfer.com/en/jobs/364332/phd-candidate-in-systemic-actors-and-the-enforcement-of-digital-rules"
     },
     {
-      "title": "PhD Position in Printed Circuit Design, Paris, France - Researchersjob",
-      "url": "https://researchersjob.com/phd-position-in-printed-circuit-design"
-    },
-    {
       "title": "Doctoral Researcher Position (m/f/div) in Metagenomics - Jena, Germany | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/doctoral-researcher-position-m/f/div-metagenomics-jena-germany"
-    },
-    {
-      "title": "Doctoral Researcher for a Finnish Academy Funded Project Experimenting with Geopolymers job with AALTO UNIVERSITY | 406238",
-      "url": "https://www.timeshighereducation.com/unijobs/listing/406238/doctoral-researcher-for-a-finnish-academy-funded-project-experimenting-with-geopolymers"
-    },
-    {
-      "title": "Fully Funded UK AI PhD Scholarship 2026 | SUSTAIN AI CDT PhD Studentship with £10,000 Extra Stipend &#8211; Always Never Home",
-      "url": "https://jobs.iammagnus.com/fully-funded-uk-ai-phd-scholarship-2026-sustain-ai-cdt-phd-studentship-with-10000-extra-stipend"
-    },
-    {
-      "title": "PhD positions on Sustainability transitions through microbiome innovations | PhDScanner",
-      "url": "https://www.linkedin.com/posts/phdscanner_phd-positions-on-sustainability-transitions-activity-7480810439090556928-Sb6W"
     },
     {
       "title": "11 Fully Funded PhD Positions in Environment and Sustainability",
@@ -370,12 +379,20 @@
       "url": "https://www.linkedin.com/posts/opportunities-for-youth-organization_sustainability-scholarships-fully-funded-activity-7417046392143142912-AKr0"
     },
     {
+      "title": "PhD positions on Sustainability transitions through microbiome innovations | PhDScanner",
+      "url": "https://www.linkedin.com/posts/phdscanner_phd-positions-on-sustainability-transitions-activity-7480810439090556928-Sb6W"
+    },
+    {
       "title": "📢 Applications are now open for the 2027 STRN PhD Theory School! From theory to impact: Actors, agency and the politics of change in sustainability transitions The 2027 PhD Theory School will take… | Sustainability Transitions Research Network (STRN)",
       "url": "https://www.linkedin.com/posts/sustainability-transition-research-network-strn_applications-are-now-open-for-the-2027-activity-7510317174868279296-GlQX"
     },
     {
       "title": "Events Overview | Sustainability Transitions Research Network",
       "url": "https://www.transitionsnetwork.org/events-overview"
+    },
+    {
+      "title": "3 PhD Positions in Microbiome Innovations and Sustainability",
+      "url": "https://agristok.net/2026/06/30/phd-microbiome-innovations-sustainability-transitions-vu-amsterdam-2026"
     },
     {
       "title": "Postdoctoral Researcher in Sustainability transitions and European soil research. — Royal Netherlands Academy of Arts and Sciences (KNAW) — AcademicTransfer",
@@ -386,44 +403,24 @@
       "url": "https://sustainability-governance.net/jobs"
     },
     {
-      "title": "🚨 Fully Funded PhD Opportunity at the University of Groningen 🇳🇱🌱🚜 Are you passionate about environmental psychology, sustainability, agriculture, or behavioural science? The University of… | Christiana Banja",
-      "url": "https://www.linkedin.com/posts/christiana-banja-b09484144_fully-funded-phd-opportunity-at-the-university-activity-7485981836062629890-r8oS"
+      "title": "Fully Funded PhD Opportunities in Sustainable Agriculture 2026: Study Emissions Reduction and Farm-Level Change in Australia - Opportunities for Youth",
+      "url": "https://opportunitiesforyouth.org/2026/05/03/fully-funded-phd-opportunities-in-sustainable-agriculture-2026-study-emissions-reduction-and-farm-level-change-in-australia"
     },
     {
-      "title": "PhD position Understanding farmers’ motivations to contribute to sustainability transitions - Rijksuniversiteit Groningen | Lise Jans | 10 comments",
-      "url": "https://www.linkedin.com/posts/lise-jans-899b1843_phd-position-understanding-farmers-motivations-activity-7483032177413173248-CsOd"
+      "title": "Fully Funded PhD Opportunities Abroad Still Open | Muhammad Perwaiz posted on the topic | LinkedIn",
+      "url": "https://www.linkedin.com/posts/muhammad-perwaiz-86bb5a183_phd-scholarships-fullyfundedphd-activity-7438109601708785665-xRTX"
     },
     {
-      "title": "3 PhD Positions in Microbiome Innovations and Sustainability",
-      "url": "https://agristok.net/2026/06/30/phd-microbiome-innovations-sustainability-transitions-vu-amsterdam-2026"
+      "title": "Closed: Canada Graduate Research Scholarship—Doctoral program—Applicant instructions",
+      "url": "https://sshrc-crsh.canada.ca/en/funding/opportunities/canada-graduate-research-scholarships/doctoral-program/2025/competition/instructions/applicant.aspx"
     },
     {
-      "title": "#fullyfunded #sustainabilityscholarships #climatechange #phdscholarships #mastersscholarships #postdoc #studyabroad #academicopportunities #opportunitiesforyouth | Opportunities for Youth",
-      "url": "https://www.linkedin.com/posts/opportunities-for-youth-organization_fullyfunded-sustainabilityscholarships-activity-7418140022337597440-ybKg"
-    },
-    {
-      "title": "PhD Programme in Climate Change and Sustainable Development Policies | PhD in Climate Change and Sustainable Development Policies. posted on the topic | LinkedIn",
-      "url": "https://www.linkedin.com/posts/pd-acpds_academic-research-thrives-in-environments-activity-7451901890344267776-_I8u"
-    },
-    {
-      "title": "Assistant Professor, Environmental Governance, Department of Environmental Studies job with New York University Arts and Science | 38041172",
-      "url": "https://jobs.chronicle.com/job/38041172/assistant-professor-environmental-governance-department-of-environmental-studies"
-    },
-    {
-      "title": "DIViNE Doctoral Network 2026–2027: 10 PhD Positions in Political Violence, Democracy and Democratic Resilience Across Europe - Opportunities for Youth",
-      "url": "https://opportunitiesforyouth.org/2026/10/02/divine-doctoral-network-2026-2027-10-phd-positions-in-political-violence-democracy-and-democratic-resilience-across-europe"
-    },
-    {
-      "title": "Top 23 Politics Economics and Social Sciences Politics Economics and Social Sciences and more... Postgraduate Scholarships Scholarships 2026 | INOMICS",
-      "url": "https://inomics.com/top/politics/postgraduate-scholarship"
+      "title": "Study in Canada Scholarships",
+      "url": "https://www.educanada.ca/scholarships-bourses/can/institutions/study-in-canada-sep-etudes-au-canada-pct.aspx?lang=eng"
     },
     {
       "title": "Canada Graduate Research Scholarships Now Open: $120,000 Doctoral Funding | Fully-funded Scholarships 2027 posted on the topic | LinkedIn",
       "url": "https://www.linkedin.com/posts/fully-fundedscholarships_canada-high-paying-grad-research-scholarships-activity-7441414015756496896-NjCm"
-    },
-    {
-      "title": "Graduate Students External Funding and Awards | Students - Wilfrid Laurier University",
-      "url": "https://students.wlu.ca/finances/graduate-funding-and-awards/external-funding.html"
     },
     {
       "title": "2027-2028 Doctor of Public Health Scholarships Open - Africa Health Collaborative",
