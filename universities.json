@@ -1,1 +1,47 @@
-{}
+{
+  "eindhoven university of technology": {
+    "ielts_requirement": "6.5 overall, no band below 6.0",
+    "ielts_source_url": "https://www.tue.nl/en/education/become-a-student/admission-and-enrollment/language-proficiency-requirements",
+    "checked_at": "2026-10-07T00:39:14.557Z"
+  },
+  "utrecht university": {
+    "ielts_requirement": "6.5 (overall band) minimum of 6.0 for writing",
+    "ielts_source_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFVLZGK0m6qLmHkNLlmFaLUUVgXN67MsVqXf0udu0GUGzCj1BrvRzjRjPnp1xxMaLCmxEf4akJC4VrCCma2JafoBW-yVt9c4QqCFX2EzXpEQaAvedRsF06nrFV9MkA_DKOueoCcHPXUExqkE7vZHffrem-TkYrCShXrAzwCeAyQRloqWdVHOnj9IGfwxw==",
+    "checked_at": "2026-10-07T00:39:19.180Z"
+  },
+  "delft university of technology": {
+    "ielts_requirement": "7.0 overall, no band below 6.5",
+    "ielts_source_url": "https://www.tudelft.nl/en/education/practical-matters/phd-admission",
+    "checked_at": "2026-10-07T00:39:36.239Z"
+  },
+  "the oslo school of architecture and design (aho)": {
+    "ielts_requirement": "6.5 overall, with at least 6 in each component (listening, reading, speaking and writing)",
+    "ielts_source_url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHSK3k4WM0Y0s_DrBT2IQh3Fp9SFTGLvxUhoz1mCnJr9N-AvZYlpYaKU2ucR_fLarbNZcEAVr2QqyWrLip2Cl1JSPvQuwVp1mZQs0OglChzhM9LEp-IkZWSASMLFDssTgY9rmXDTTbxRc0ogqnfvYh-lhetCUz0LhXHSyqyajgME3KNUsxayj65vF-d739e6rlJ9Q==",
+    "checked_at": "2026-10-07T00:39:39.934Z"
+  },
+  "leiden university": {
+    "ielts_requirement": "7.0 overall, and a minimum score of 7.0 is required for each of the four components (academic modules only)",
+    "ielts_source_url": "https://www.universiteitleiden.nl/en/education/admission/admission-requirements",
+    "checked_at": "2026-10-07T00:39:44.476Z"
+  },
+  "multiple european universities coordinated by ircer, france": {
+    "ielts_requirement": "Not specified on official university website",
+    "ielts_source_url": "",
+    "checked_at": "2026-10-07T00:39:48.779Z"
+  },
+  "eth zurich, kof swiss economic institute": {
+    "ielts_requirement": "Not specified on official university website",
+    "ielts_source_url": "https://ethz.ch/en/news-and-events/news/2026/09/phd-positions-in-applied-macroeconomics-and-political-economy.html",
+    "checked_at": "2026-10-07T00:40:26.018Z"
+  },
+  "university of amsterdam": {
+    "ielts_requirement": "7.0 overall, with a minimum of 6.5 for each test component.",
+    "ielts_source_url": "https://www.uva.nl/en/education/practical-matters/admission-and-application/english-language-proficiency/english-language-proficiency.html",
+    "checked_at": "2026-10-07T00:40:30.951Z"
+  },
+  "delft university of technology (tu delft)": {
+    "ielts_requirement": "7.0 overall, no band below 6.5",
+    "ielts_source_url": "https://www.tudelft.nl/en/education/practical-matters/phd-admission/english-language-requirement",
+    "checked_at": "2026-10-07T00:42:06.036Z"
+  }
+}
