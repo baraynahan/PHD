@@ -1478,6 +1478,12 @@ function tally(items) {
   return Object.fromEntries(m);
 }
 
+function providerModelForLabel(label) {
+  if (label === SEARCH_REVIEW.name) return SEARCH_REVIEW.model || "";
+  if (label === REVIEW.name) return REVIEW.model || "";
+  return "";
+}
+
 async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract, hitsLabel, blocked, stats }) {
   const blockedFilteredMain = filterBlocked(mainHits, blocked);
   const blockedFilteredTier3 = filterBlocked(tier3Hits, blocked);
@@ -1514,7 +1520,8 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
       const extractedBy = Array.isArray(extracted) ? label : extracted.provider?.name || label;
       results.push(...attachPageData(raw, batch).map(item => ({
         ...item,
-        _extracted_by: extractedBy
+        _extracted_by: extractedBy,
+        _ai_model: Array.isArray(extracted) ? providerModelForLabel(label) : (extracted.provider?.model || "")
       })));
     } catch (error) {
       failedBatches++;
