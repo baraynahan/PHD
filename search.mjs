@@ -1061,16 +1061,49 @@ function computeScore(item) {
   return Number.isFinite(overall) ? Math.round(overall) : null;
 }
 
+function inferDeadlineFromText(text) {
+  const source = String(text || "");
+  const patterns = [
+    /(?:application|applications|apply|deadline|closing date|last application date|applications? close|apply by)[^.!?]{0,140}?(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9})\.?[^.!?]{0,25}?(20\d{2})?/i,
+    /(?:application|applications|apply|deadline|closing date|last application date|applications? close|apply by)[^.!?]{0,140}?([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?[^.!?]{0,25}?(20\d{2})?/i
+  ];
+  for (const re of patterns) {
+    const m = source.match(re);
+    if (!m) continue;
+    const monthName = re === patterns[0] ? m[2] : m[1];
+    const day = Number(re === patterns[0] ? m[1] : m[2]);
+    const explicitYear = Number(m[3] || 0);
+    const month = MONTH_NUMBER[String(monthName || "").toLowerCase()];
+    if (!month || !day) continue;
+    let year = explicitYear || THIS_YEAR;
+    if (!explicitYear) {
+      const around = source.slice(Math.max(0, (m.index || 0) - 250), Math.min(source.length, (m.index || 0) + 250));
+      const nearbyYears = [...around.matchAll(/\b(20\d{2})\b/g)].map(x => Number(x[1]));
+      year = nearbyYears.find(y => y >= THIS_YEAR - 1 && y <= THIS_YEAR + 1) || THIS_YEAR;
+    }
+    const iso = toISODate(year, month, day);
+    if (iso) return { deadline: iso, deadline_type: "dated", raw: m[0].trim() };
+  }
+  if (ROLLING_RE.test(source)) return { deadline: "", deadline_type: "rolling", raw: "" };
+  return { deadline: "", deadline_type: "unknown", raw: "" };
+}
+
 function deadlineInfoOf(item) {
   const raw = String(item?.deadline || "").trim();
   const normalized = normalizeDeadline(raw);
-  const dated = isFutureDeadline(normalized);
-  const rolling = String(item?.deadline_type || "").toLowerCase() === "rolling"
-              || ROLLING_RE.test(String(item?.original_text || ""));
-  if (dated) return { kind: "dated", stored: normalized, raw };
-  if (rolling) return { kind: "rolling", stored: "", raw };
-  // A raw deadline we couldn't parse to a future date → treat as past/invalid.
-  if (raw && !dated) return { kind: "invalid", stored: "", raw };
+  const pageText = String(item?.original_text || "");
+  const inferred = inferDeadlineFromText(pageText);
+  const explicitType = String(item?.deadline_type || "").toLowerCase();
+
+  if (isFutureDeadline(normalized)) return { kind: "dated", stored: normalized, raw };
+  if (raw && normalized && !isFutureDeadline(normalized)) return { kind: "invalid", stored: normalized, raw };
+  if (inferred.deadline) {
+    if (isFutureDeadline(inferred.deadline)) return { kind: "dated", stored: inferred.deadline, raw: inferred.raw };
+    return { kind: "invalid", stored: inferred.deadline, raw: inferred.raw };
+  }
+  if (explicitType === "rolling" || inferred.deadline_type === "rolling") {
+    return { kind: "rolling", stored: "", raw };
+  }
   return { kind: "unknown", stored: "", raw };
 }
 
