@@ -16,7 +16,7 @@
 <button id="searchButton" class="search-button" onclick="manualSearch()">🔎 Search for new PhDs</button>
 </div>
 <div class="help" id="providerBreakdown"></div>
-<div class="verification-notice"><strong>🔎 Verification:</strong> The radar checks whether each vacancy URL is reachable and appears to contain a PhD/doctoral vacancy. Verification is <strong>informational only</strong>; results are never removed because of a failed or inconclusive check.</div>
+<div class="verification-notice"><strong>🔎 Verification:</strong> The radar checks whether the vacancy is reachable, appears to be a PhD vacancy, and whether the page indicates that the application is still open. Closed/expired vacancies are removed from the active feed; promising but inconclusive candidates remain visible as <strong>Not verified</strong>.</div>
 
 <div class="filters" id="filters" style="display:none">
   <input type="text" id="filterText" placeholder="Search title, university, country…">
@@ -103,6 +103,17 @@ function populateFilters(){
   });
 }
 
+function sourceQuality(url){
+  try{
+    const host = new URL(url || "").hostname.toLowerCase();
+    if(host.includes("euraxess.ec.europa.eu")) return "EURAXESS";
+    if(host.includes("academictransfer.com") || host.includes("jobs.ac.uk") || host.includes("findaphd.com") || host.includes("academicpositions.com")) return "Trusted aggregator";
+    if(host.includes("linkedin.com") || host.includes("facebook.com") || host.includes("x.com")) return "Secondary / social";
+    if(host.endsWith(".edu") || host.endsWith(".ac.uk") || host.endsWith(".ac.nl") || host.endsWith(".ac.de") || host.endsWith(".ac.it") || host.endsWith(".ac.ch")) return "Institutional";
+    return "Secondary";
+  }catch{return "Unknown";}
+}
+
 function daysLeft(deadline){
   if (!deadline) return null;
   const d = new Date(deadline + "T23:59:59");
@@ -177,6 +188,9 @@ function renderCard(item){
   const daysChip = dl === null ? "" : '<span class="tag days' + (dl <= 14 ? ' urgent' : '') + '">⏳ ' + dl + ' days left</span>';
   const isNew = item.first_seen && Date.parse(item.first_seen) > (Date.now() - 3 * 86400000);
   const newChip = isNew ? '<span class="tag new">✨ New this run</span>' : "";
+  const modelChip = item.ai_model ? '<span class="tag">🧠 Model: ' + escapeHTML(item.ai_model) + '</span>' : "";
+  const sourceChip = '<span class="tag">🔗 Source: ' + escapeHTML(item.source_quality || sourceQuality(item.url)) + '</span>';
+  const basisChip = item.score_basis === "heuristic_prescreen" ? '<span class="tag warning">⚠️ Preliminary score</span>' : "";
   const subScores = [
     ["Topic", item.topic_fit], ["Politics", item.politics_fit], ["Design", item.design_fit],
     ["Methods", item.methods_fit], ["Funding", item.funding_quality]
@@ -186,6 +200,7 @@ function renderCard(item){
     '<div class="meta">' +
       '<span class="tag country">🌍 ' + escapeHTML(item.country || "Country not specified") + '</span>' +
       '<span class="tag ai-provider">🤖 Found by: ' + escapeHTML(item.ai_provider || "Unknown") + '</span>' +
+      modelChip + sourceChip + basisChip +
       '<span class="tag">📅 Deadline: ' + escapeHTML(deadline) + '</span>' +
       newChip + daysChip +
       (item.classification ? '<span class="tag">' + escapeHTML(item.classification) + '</span>' : "") +
