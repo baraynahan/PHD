@@ -1501,6 +1501,7 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
   stats.sent_to_ai = toReview.length;
 
   const results = [];
+  const failedPages = [];
   let failedBatches = 0;
   let batches = 0;
   for (let i = 0; i < toReview.length; i += EXTRACTION_BATCH_SIZE) {
@@ -1517,6 +1518,7 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
       })));
     } catch (error) {
       failedBatches++;
+      failedPages.push(...batch);
       console.warn(`[${label}] could not read pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
     }
   }
