@@ -662,7 +662,10 @@ async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = fa
         console.error(`[${provider.name}] quota exhausted — marking provider dead for this run.`);
         throw error;
       }
-      if (!error.retryable || attempt === AI_MAX_ATTEMPTS) break;
+      if (!error.retryable || attempt === AI_MAX_ATTEMPTS) {
+        if (error.retryable) failedThisRun.add(provider.prefix);
+        break;
+      }
       const wait = 4000 * attempt;
       console.warn(`[${provider.name}] attempt ${attempt}/${AI_MAX_ATTEMPTS} failed (${safeErrorMessage(error)}); retrying in ${wait / 1000}s...`);
       await sleep(wait);
@@ -944,6 +947,28 @@ async function extractReviewBatch(pages) {
   return parsed;
 }
 
+async function extractWithFallback(primary, fallback, pages) {
+  const attempts = [primary];
+  if (fallback && fallback.configured && fallback.prefix !== primary.prefix) attempts.push(fallback);
+  let lastError;
+  for (const provider of attempts) {
+    if (failedThisRun.has(provider.prefix)) {
+      console.warn(`[${provider.name}] unavailable for this run; skipping extraction fallback attempt.`);
+      continue;
+    }
+    try {
+      const { text } = await aiGenerate(provider, buildExtractionPrompt(pages));
+      const parsed = extractJSON(text);
+      if (!Array.isArray(parsed)) throw new Error(`${provider.name} extraction response was not an array.`);
+      return { items: parsed, provider };
+    } catch (error) {
+      lastError = error;
+      console.warn(`[${provider.name}] extraction failed: ${safeErrorMessage(error)}`);
+    }
+  }
+  throw lastError || new Error("No configured extraction provider was available.");
+}
+
 // ============================================================================
 // IELTS CACHE
 // ============================================================================
@@ -1151,7 +1176,7 @@ function cleanResults(results) {
 
     const language = ["English", "Not English", "Unknown"].includes(String(item.application_language || ""))
       ? String(item.application_language) : "Unknown";
-    const provider = providerLabelsOf(item.ai_provider).join(" + ") || "Unknown";
+    const provider = providerLabelsOf(item._extracted_by || item.ai_provider).join(" + ") || "Unknown";
 
     const candidate = {
       title, university, country, city, url,
@@ -1421,8 +1446,13 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
     batches++;
     const batch = toReview.slice(i, i + EXTRACTION_BATCH_SIZE);
     try {
-      const raw = await extract(batch);
-      results.push(...attachPageData(raw, batch));
+      const extracted = await extract(batch);
+      const raw = Array.isArray(extracted) ? extracted : extracted.items;
+      const extractedBy = Array.isArray(extracted) ? label : extracted.provider?.name || label;
+      results.push(...attachPageData(raw, batch).map(item => ({
+        ...item,
+        _extracted_by: extractedBy
+      })));
     } catch (error) {
       failedBatches++;
       console.warn(`[${label}] could not read pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
@@ -1451,7 +1481,9 @@ async function callSearchReviewProvider(blocked, stats) {
   }
   return reviewPages({
     label: SEARCH_REVIEW.name, mainHits, tier3Hits, mainMax: SEARCH_REVIEW_MAX_PAGES,
-    gapMs: SEARCH_REVIEW_CALL_GAP_MS, extract: extractBatch, hitsLabel: "search hits", blocked, stats
+    gapMs: SEARCH_REVIEW_CALL_GAP_MS,
+    extract: pages => extractWithFallback(SEARCH_REVIEW, REVIEW, pages),
+    hitsLabel: "search hits", blocked, stats
   });
 }
 
@@ -1463,7 +1495,9 @@ async function callSearchThenReviewProvider(blocked, stats) {
   if (!mainHits.length && !tier3Hits.length) throw new Error(`${SEARCH.name} search returned no results.`);
   return reviewPages({
     label: REVIEW.name, mainHits, tier3Hits, mainMax: REVIEW_MAX_PAGES,
-    gapMs: REVIEW_CALL_GAP_MS, extract: extractReviewBatch, hitsLabel: `${SEARCH.name} hits`, blocked, stats
+    gapMs: REVIEW_CALL_GAP_MS,
+    extract: pages => extractWithFallback(REVIEW, SEARCH_REVIEW, pages),
+    hitsLabel: `${SEARCH.name} hits`, blocked, stats
   });
 }
 
@@ -1528,7 +1562,7 @@ async function runProvider(provider, blocked) {
           ...r,
           ielts_requirement: ielts.ielts_requirement,
           ielts_source_url: ielts.ielts_source_url,
-          ai_provider: provider.label
+          ai_provider: r._extracted_by || provider.label
         });
       }
     } else {
@@ -1537,7 +1571,7 @@ async function runProvider(provider, blocked) {
           ...r,
           ielts_requirement: "Not specified on official university website",
           ielts_source_url: "",
-          ai_provider: provider.label
+          ai_provider: r._extracted_by || provider.label
         });
       }
     }
@@ -1798,13 +1832,3 @@ async function main() {
   }
 
   const failed = runs.filter(r => r.status !== "ok");
-  if (failed.length) console.warn(`\nNOTE: ${failed.map(r => `${r.label} ${r.status} (${r.error})`).join("; ")}`);
-
-  console.log("\nRadar complete.");
-}
-
-main().catch(error => {
-  console.error("\nRADAR FAILED");
-  console.error(error);
-  process.exit(1);
-});
