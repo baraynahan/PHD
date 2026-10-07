@@ -1331,6 +1331,15 @@ async function verifyPosition(position) {
     const vacancySignal = /vacancy|position|fellowship|scholarship|studentship|stipend|researcher|job opening|apply/.test(text);
     const titleWords = String(position.title || "").toLowerCase().split(/\W+/).filter(w => w.length >= 5).slice(0, 8);
     const titleSignal = titleWords.length === 0 || titleWords.filter(w => text.includes(w)).length >= Math.min(2, titleWords.length);
+    const pageDeadline = inferDeadlineFromText(body);
+    if (pageDeadline.deadline && !isFutureDeadline(pageDeadline.deadline)) {
+      return {
+        verification_status: "Closed",
+        verification_checked_at: checkedAt,
+        verification_note: `Application deadline ${pageDeadline.deadline} has passed.`,
+        verification_url: finalURL
+      };
+    }
     if (CLOSED_RE.test(text)) {
       return {
         verification_status: "Closed",
