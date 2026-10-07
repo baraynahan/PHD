@@ -1134,6 +1134,20 @@ function explainRejection(item) {
   return "passes";
 }
 
+function sourceQualityForURL(url) {
+  let host = "";
+  try { host = new URL(normalizeURL(url)).host.toLowerCase(); } catch {}
+  if (!host) return { source_quality: "Unknown", source_quality_rank: 0 };
+  if (host.includes("euraxess.ec.europa.eu")) return { source_quality: "EURAXESS", source_quality_rank: 4 };
+  if (host.includes("academictransfer.com") || host.includes("jobs.ac.uk") || host.includes("findaphd.com") || host.includes("academicpositions.com"))
+    return { source_quality: "Trusted aggregator", source_quality_rank: 3 };
+  if (host.endsWith(".edu") || host.endsWith(".ac.uk") || host.endsWith(".ac.nl") || host.endsWith(".ac.de") || host.endsWith(".ac.it") || host.endsWith(".ac.ch"))
+    return { source_quality: "Institutional", source_quality_rank: 5 };
+  if (host.includes("linkedin.com") || host.includes("facebook.com") || host.includes("x.com"))
+    return { source_quality: "Secondary / social", source_quality_rank: 1 };
+  return { source_quality: "Secondary", source_quality_rank: 2 };
+}
+
 function providerLabelsOf(value) {
   const raw = String(value || "").trim();
   if (!raw) return [];
