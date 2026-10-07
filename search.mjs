@@ -18,8 +18,6 @@ const CLEANUP_ONLY = String(process.env.CLEANUP_ONLY || "").toLowerCase() === "t
 
 // ============================================================================
 // TUNABLE BUDGETS
-// Set the matching GitHub Variable to override without touching this file.
-// Defaults are conservative to keep token spend low on a free tier.
 // ============================================================================
 function envInt(name, fallback) {
   const v = Number(process.env[name]);
@@ -43,7 +41,6 @@ const CFG = {
   PAGE_TEXT_CHARS:         envInt("PAGE_TEXT_CHARS", 7000),
   SEARCH_RESULTS_PER_QUERY: envInt("SEARCH_RESULTS_PER_QUERY", 10),
   FETCH_CONCURRENCY:       envInt("FETCH_CONCURRENCY", 10),
-  // IELTS lookups cost AI calls. Off by default; turn on if you want them.
   IELTS_LOOKUP_ENABLED:    envBool("IELTS_LOOKUP_ENABLED", false),
   IELTS_LOOKUP_MIN_SCORE:  envInt("IELTS_LOOKUP_MIN_SCORE", 90),
   IELTS_LOOKUP_MAX_PER_RUN: envInt("IELTS_LOOKUP_MAX_PER_RUN", 3)
@@ -120,7 +117,6 @@ function safeErrorMessage(error) {
   return message.length > 300 ? `${message.slice(0, 300)}…` : message;
 }
 
-// Fatal errors that mean "give up on this provider for this run", not "retry".
 function isQuotaError(error) {
   const m = String(error?.message || error || "").toLowerCase();
   return /quota exceeded|resource_exhausted|resource exhausted|insufficient_quota|out of credits|billing|exceeded your current quota/.test(m);
@@ -201,9 +197,12 @@ not a generic programme.
 
 const RULES = `
 Every result must be currently open, fully funded, have a specific PhD
-project, a real application/vacancy page, and a verifiable future deadline
-— UNLESS the deadline is "rolling" (open until filled / continuous basis),
-in which case say so explicitly and it will still be accepted.
+project, and a real application/vacancy page. Positions with no fixed
+deadline ("open until filled", "rolling basis", "applications reviewed
+continuously") are eligible — set deadline_type="rolling". Positions whose
+deadline is simply not stated in the page text are also eligible — set
+deadline_type="unknown" and leave "deadline" empty. Do NOT reject a good
+match just because a deadline is missing.
 
 For Canada, Australia and New Zealand, PhDs are often advertised as a funded
 supervisor project or a project-linked scholarship (e.g. "HDR scholarship",
@@ -211,13 +210,9 @@ supervisor project or a project-linked scholarship (e.g. "HDR scholarship",
 Accept these when the project/topic is specific and funding (stipend) is stated.
 Still reject generic "apply to our PhD programme" pages without a specific project.
 
-Always convert deadlines to ISO YYYY-MM-DD. Be careful: Canadian pages may use
-month/day/year, European and Australian pages use day/month/year.
-
-Score 0-100 using the five sub-scores below; be strict: a position whose core
-topic is unrelated to the profile (e.g. auditing, finance, AI/organisational
-studies, health, engineering) must score below 60 even if it mentions
-sustainability once. Reserve 85+ for genuinely central fits.
+Always convert deadlines to ISO YYYY-MM-DD when one is given. Be careful:
+Canadian pages may use month/day/year, European and Australian pages use
+day/month/year.
 
 IMPORTANT LANGUAGE RULES:
 1. Determine the actual language of the PhD position/application from the
@@ -245,7 +240,7 @@ Return ONLY a valid JSON array. Every object MUST contain:
   "university": "...",
   "country": "...",
   "city": "...",
-  "deadline": "YYYY-MM-DD (or empty if the deadline is rolling/unknown)",
+  "deadline": "YYYY-MM-DD (or empty if the deadline is rolling or not stated)",
   "deadline_type": "dated | rolling | unknown",
   "start_date": "...",
   "url": "... (copy verbatim from the PAGE header)",
@@ -254,20 +249,39 @@ Return ONLY a valid JSON array. Every object MUST contain:
   "classification": "...",
   "research_area": "...",
   "application_language": "English | Not English | Unknown",
-  "topic_fit": 0,       // 0-20: core research topic overlap with the profile
-  "politics_fit": 0,    // 0-20: degrowth / political economy / social transformation fit
-  "design_fit": 0,      // 0-20: design / service / systemic / transition / social design fit
-  "methods_fit": 0,     // 0-20: qualitative / participatory / theoretical / mixed methods fit
-  "funding_quality": 0, // 0-20: clarity + level of funding (fully funded + stipend = 15+)
+  "overall_score": 0,
+  "topic_fit": 0,
+  "politics_fit": 0,
+  "design_fit": 0,
+  "methods_fit": 0,
+  "funding_quality": 0,
   "why_it_matches": "...",
   "strategic_fit": "...",
   "why_it_is_not_perfect": "...",
   "eligible": true,
-  "reject_reason": ""   // short reason if eligible=false, otherwise empty
+  "reject_reason": ""
 }
 
-The five sub-scores are summed in code to produce overall_score (0-100).
-Do not output overall_score yourself.
+SCORING — read carefully:
+- "overall_score" is 0-100. It should equal the sum of the five sub-scores below.
+- Each sub-score is 0-20. Use these anchors consistently:
+    topic_fit:       20 = the vacancy IS one of the candidate's core themes;
+                     15 = strongly overlaps; 10 = related but peripheral;
+                     5 = tangential mention only; 0 = unrelated topic.
+    politics_fit:    20 = degrowth/post-growth/political-economy is the core;
+                     15 = strong presence; 10 = adjacent framing; 0 = absent.
+    design_fit:      20 = design-led project (design/service/systemic/transition/
+                     social design); 15 = design methods named explicitly;
+                     5 = design mentioned only in passing; 0 = no design dimension.
+    methods_fit:     20 = qualitative / participatory / theoretical methods
+                     perfectly match; 15 = strongly compatible; 0 = purely
+                     quantitative / computational / experimental.
+    funding_quality: 15-20 = fully funded, stipend + duration stated; 8-10 =
+                     funding mentioned but unclear; 0-5 = no funding mentioned.
+- A genuinely central fit should total 80+. A clearly unrelated position
+  (auditing, finance, AI/organisational studies, health, engineering) must
+  total below 60 even if "sustainability" appears once on the page.
+
 Use an empty string for any field you could not determine from the page text.
 Do not invent information, dates, IELTS scores, language status or URLs.
 `;
@@ -501,7 +515,6 @@ async function fetchHitPages(hits, maxPages, seen) {
   });
   scored.sort((a, b) => a.rank - b.rank);
 
-  // Fetch enough to survive failures, but no more than maxPages * 3.
   const queue = scored.slice(0, maxPages * 3).map(s => s.hit);
   const fetched = await mapPool(queue, FETCH_CONCURRENCY, hit =>
     perHost(hit.url, async () => {
@@ -535,7 +548,7 @@ async function gatherPages(mainHits, tier3Hits, mainMax, seen) {
 }
 
 // ============================================================================
-// PRE-SCREEN (free, code-side)
+// PRE-SCREEN
 // ============================================================================
 const THEME_WEIGHTS = [
   [/degrowth|post-?growth|post-?consumer|sufficiency/gi, 7],
@@ -570,7 +583,7 @@ function rankByPrescreen(pages) {
 }
 
 // ============================================================================
-// QUERY GENERATOR (rotating weekly)
+// QUERY GENERATOR
 // ============================================================================
 const THEMES = [
   "degrowth", "post-growth", "sustainable consumption", "sufficiency",
@@ -620,11 +633,9 @@ function tier3QueriesForRun(count) {
 }
 
 // ============================================================================
-// AI CALLS — quota errors are FATAL (no retry)
+// AI CALLS
 // ============================================================================
 const AI_MAX_ATTEMPTS = 2;
-
-// Providers that died this run (quota or fatal). Never re-called.
 const failedThisRun = new Set();
 
 async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = false } = {}) {
@@ -646,14 +657,11 @@ async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = fa
       return await call();
     } catch (error) {
       lastError = error;
-
-      // Quota exhaustion = give up immediately, mark provider dead for this run.
       if (isQuotaError(error)) {
         failedThisRun.add(provider.prefix);
         console.error(`[${provider.name}] quota exhausted — marking provider dead for this run.`);
         throw error;
       }
-
       if (!error.retryable || attempt === AI_MAX_ATTEMPTS) break;
       const wait = 4000 * attempt;
       console.warn(`[${provider.name}] attempt ${attempt}/${AI_MAX_ATTEMPTS} failed (${safeErrorMessage(error)}); retrying in ${wait / 1000}s...`);
@@ -905,11 +913,11 @@ ${URL_INTEGRITY_RULE}
 ${OUTPUT_RULES}
 
 Use the supplied page contents as primary evidence. If STRUCTURED DATA is present, prefer its
-"validThrough" over any date mentioned in prose. A page is eligible only if it describes one
-specific PhD/doctoral vacancy, or (Canada/Australia/NZ) a specific funded PhD project /
-project-linked scholarship, funding is clearly stated, and either the deadline is explicitly
-stated and in the future (after ${TODAY}) OR the position is explicitly rolling / open until
-filled (in which case set deadline_type="rolling").
+"validThrough" over any date mentioned in prose. A page is eligible when it describes one
+specific PhD/doctoral vacancy (or a Canada/Australia/NZ funded PhD project / project-linked
+scholarship), funding is clearly stated, and either (a) the deadline is explicitly stated and
+in the future (after ${TODAY}), or (b) the position is explicitly rolling / open until filled,
+or (c) the deadline is simply not stated on the page (set deadline_type="unknown").
 
 ${DATE_CONTEXT}
 
@@ -937,7 +945,7 @@ async function extractReviewBatch(pages) {
 }
 
 // ============================================================================
-// IELTS CACHE — OFF by default; only uses a non-failed Gemini-format AI
+// IELTS CACHE
 // ============================================================================
 const IELTS_REFRESH_DAYS = 180;
 let universitiesCache = {};
@@ -997,13 +1005,48 @@ Do not invent scores or URLs.`;
 // ============================================================================
 // VALIDATION HELPERS
 // ============================================================================
+// Extract a leading number from anything: 18, "18", "18/20", "18 out of 20",
+// {score: 18, reason: "..."} → all resolve to 18. Returns NaN otherwise.
+function toScore(v) {
+  if (v == null) return NaN;
+  if (typeof v === "number") return Number.isFinite(v) ? v : NaN;
+  if (typeof v === "object") {
+    if (Number.isFinite(Number(v.score))) return Number(v.score);
+    if (Number.isFinite(Number(v.value))) return Number(v.value);
+  }
+  const m = String(v).match(/-?\d+(?:\.\d+)?/);
+  return m ? Number(m[0]) : NaN;
+}
+
 function subScoreOf(item) {
   const keys = ["topic_fit", "politics_fit", "design_fit", "methods_fit", "funding_quality"];
-  const values = keys.map(k => Number(item?.[k]));
-  if (values.every(v => Number.isFinite(v))) {
-    return Math.round(values.reduce((a, b) => a + b, 0));
-  }
-  return null;
+  const present = keys.map(k => toScore(item?.[k])).filter(Number.isFinite);
+  if (present.length === 0) return null;
+  const sum = present.reduce((a, b) => a + b, 0);
+  if (sum <= 0) return null;
+  return Math.round(sum);
+}
+
+// Prefer a complete sub-score sum; otherwise fall back to whatever the model
+// put in overall_score. Either path is fine — the prompt asks for both.
+function computeScore(item) {
+  const sub = subScoreOf(item);
+  if (sub !== null) return sub;
+  const overall = toScore(item.overall_score);
+  return Number.isFinite(overall) ? Math.round(overall) : null;
+}
+
+function deadlineInfoOf(item) {
+  const raw = String(item?.deadline || "").trim();
+  const normalized = normalizeDeadline(raw);
+  const dated = isFutureDeadline(normalized);
+  const rolling = String(item?.deadline_type || "").toLowerCase() === "rolling"
+              || ROLLING_RE.test(String(item?.original_text || ""));
+  if (dated) return { kind: "dated", stored: normalized, raw };
+  if (rolling) return { kind: "rolling", stored: "", raw };
+  // A raw deadline we couldn't parse to a future date → treat as past/invalid.
+  if (raw && !dated) return { kind: "invalid", stored: "", raw };
+  return { kind: "unknown", stored: "", raw };
 }
 
 function explainRejection(item) {
@@ -1014,15 +1057,11 @@ function explainRejection(item) {
   if (isUnitedStates(item.country)) return "United States (excluded)";
   if (!normalizeURL(item.url)) return "missing/invalid url";
   if (item.eligible === false) return `model marked ineligible: ${item.reject_reason || "no reason"}`;
-  const subScore = subScoreOf(item);
-  if (subScore === null) {
-    const legacy = Number(item.overall_score);
-    if (!Number.isFinite(legacy)) return "no score";
-    if (legacy < 60) return `overall_score ${legacy} is below 60`;
-  } else if (subScore < 60) return `score ${subScore} is below 60`;
-  const deadline = normalizeDeadline(item.deadline);
-  const rolling = item.deadline_type === "rolling" || ROLLING_RE.test(item.original_text || "");
-  if (!rolling && !isFutureDeadline(deadline)) return `deadline not future and not rolling (got: ${JSON.stringify(item.deadline ?? "")})`;
+  const score = computeScore(item);
+  if (score === null) return "no valid score (sub-scores and overall_score both missing/unparseable)";
+  if (score < 60) return `score ${score} is below 60`;
+  const d = deadlineInfoOf(item);
+  if (d.kind === "invalid") return `deadline is in the past or unparseable (got: ${JSON.stringify(d.raw)})`;
   return "passes";
 }
 
@@ -1104,16 +1143,11 @@ function cleanResults(results) {
     if (!title || !university || !country || !url) continue;
     if (isUnitedStates(country)) continue;
 
-    const subScore = subScoreOf(item);
-    const score = subScore !== null ? subScore : Number(item.overall_score);
-    if (!Number.isFinite(score) || score < 60) continue;
+    const score = computeScore(item);
+    if (score === null || score < 60) continue;
 
-    const deadline = normalizeDeadline(item.deadline);
-    const rolling = item.deadline_type === "rolling" || ROLLING_RE.test(item.original_text || "");
-    const dated = isFutureDeadline(deadline);
-    if (!dated && !rolling) continue;
-    const deadline_type = dated ? "dated" : (rolling ? "rolling" : "unknown");
-    const storedDeadline = dated ? deadline : "";
+    const dinfo = deadlineInfoOf(item);
+    if (dinfo.kind === "invalid") continue;
 
     const language = ["English", "Not English", "Unknown"].includes(String(item.application_language || ""))
       ? String(item.application_language) : "Unknown";
@@ -1121,17 +1155,17 @@ function cleanResults(results) {
 
     const candidate = {
       title, university, country, city, url,
-      deadline: storedDeadline,
-      deadline_type,
+      deadline: dinfo.stored,
+      deadline_type: dinfo.kind,
       start_date: String(item.start_date || "").trim(),
       geo_tier: geoTier(country),
       funding: String(item.funding || "").trim(),
       overall_score: Math.round(score),
-      topic_fit: Number(item.topic_fit) || 0,
-      politics_fit: Number(item.politics_fit) || 0,
-      design_fit: Number(item.design_fit) || 0,
-      methods_fit: Number(item.methods_fit) || 0,
-      funding_quality: Number(item.funding_quality) || 0,
+      topic_fit: toScore(item.topic_fit) || 0,
+      politics_fit: toScore(item.politics_fit) || 0,
+      design_fit: toScore(item.design_fit) || 0,
+      methods_fit: toScore(item.methods_fit) || 0,
+      funding_quality: toScore(item.funding_quality) || 0,
       why_it_matches: String(item.why_it_matches || "").trim(),
       original_text: String(item.original_text || "").slice(0, 6000),
       strategic_fit: String(item.strategic_fit || "").trim(),
@@ -1282,7 +1316,7 @@ function saveJSON(file, value) {
 function loadExisting() { return cleanResults(loadJSON(RESULTS_FILE, [])); }
 
 // ============================================================================
-// PAGE-JOIN (kill hallucinated URLs)
+// PAGE-JOIN
 // ============================================================================
 function attachPageData(items, batch) {
   return items.map(item => {
@@ -1477,17 +1511,12 @@ async function runProvider(provider, blocked) {
       console.log(`[${provider.label}] dropped ${rawResults.length - grounded.length} ungrounded (hallucinated-url) results.`);
     }
 
-    // IELTS lookups: OFF by default. When on, only for the strongest results
-    // and capped per run. Skipped entirely if no working search AI exists.
     let ieltsBudget = CFG.IELTS_LOOKUP_ENABLED ? CFG.IELTS_LOOKUP_MAX_PER_RUN : 0;
     const withIelts = [];
     if (ieltsBudget > 0) {
-      const sorted = grounded.slice().sort((a, b) =>
-        ((Number(b.topic_fit) || 0) + (Number(b.politics_fit) || 0) + (Number(b.design_fit) || 0) + (Number(b.methods_fit) || 0) + (Number(b.funding_quality) || 0))
-        - ((Number(a.topic_fit) || 0) + (Number(a.politics_fit) || 0) + (Number(a.design_fit) || 0) + (Number(a.methods_fit) || 0) + (Number(a.funding_quality) || 0))
-      );
+      const sorted = grounded.slice().sort((a, b) => (computeScore(b) || 0) - (computeScore(a) || 0));
       for (const r of sorted) {
-        const score = (Number(r.topic_fit) || 0) + (Number(r.politics_fit) || 0) + (Number(r.design_fit) || 0) + (Number(r.methods_fit) || 0) + (Number(r.funding_quality) || 0);
+        const score = computeScore(r) || 0;
         let ielts = { ielts_requirement: "Not specified on official university website", ielts_source_url: "" };
         const key = String(r.university || "").toLowerCase().trim();
         const alreadyCached = universitiesCache[key];
@@ -1515,8 +1544,34 @@ async function runProvider(provider, blocked) {
 
     run.results = cleanResults(withIelts);
     run.stats.ai_returned = rawResults.length;
-    run.stats.rejected = tally(rawResults.map(explainRejection));
+    run.stats.rejected = tally(grounded.map(explainRejection));
     console.log(`[${provider.label}] returned ${run.returned} results, ${run.results.length} passed validation.`);
+
+    // Diagnostic: if every grounded result was rejected, print WHY and a
+    // sample of what the model actually returned, so the next run is debuggable.
+    if (grounded.length > 0 && run.results.length === 0) {
+      console.log(`[${provider.label}] all ${grounded.length} grounded results were rejected. Reasons:`);
+      for (const [reason, n] of Object.entries(run.stats.rejected)) {
+        console.log(`  ${n}× ${reason}`);
+      }
+      const sample = grounded[0];
+      console.log(`[${provider.label}] sample raw AI result (first of ${grounded.length}):`);
+      console.log(JSON.stringify({
+        title: sample.title,
+        university: sample.university,
+        country: sample.country,
+        deadline: sample.deadline,
+        deadline_type: sample.deadline_type,
+        overall_score: sample.overall_score,
+        topic_fit: sample.topic_fit,
+        politics_fit: sample.politics_fit,
+        design_fit: sample.design_fit,
+        methods_fit: sample.methods_fit,
+        funding_quality: sample.funding_quality,
+        eligible: sample.eligible,
+        reject_reason: sample.reject_reason
+      }, null, 2));
+    }
   } catch (error) {
     run.status = "failed";
     run.error = safeErrorMessage(error);
@@ -1580,7 +1635,7 @@ function formatTelegramMessage(position, foundBy) {
     `🤖 Found by: ${foundBy.filter(Boolean).join(" + ") || "Unknown"}`,
     languageLine,
     `📚 IELTS: ${position.ielts_requirement || "Not specified"}`,
-    `📅 Deadline: ${position.deadline || (position.deadline_type === "rolling" ? "Rolling / open until filled" : "Not specified")}`,
+    `📅 Deadline: ${position.deadline || (position.deadline_type === "rolling" ? "Rolling / open until filled" : (position.deadline_type === "unknown" ? "Not stated on page" : "Not specified"))}`,
     "",
     "💰 Funding:",
     position.funding || "Not specified",
@@ -1601,7 +1656,8 @@ async function notifyExceptionalMatches(results) {
   let changed = false;
 
   const byURL = new Map();
-  for (const position of results.filter(x => Number(x.overall_score) >= 90)) {
+  // Only notify for grounded results — hallucinated URLs should never hit Telegram.
+  for (const position of results.filter(x => Number(x.overall_score) >= 90 && x.url_grounded === true)) {
     const url = normalizeURL(position.url);
     const entry = byURL.get(url) || { best: position, providers: [] };
     if (Number(position.overall_score) > Number(entry.best.overall_score)) entry.best = position;
