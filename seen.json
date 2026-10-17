@@ -97,8 +97,8 @@
   },
   "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-envisioning-housing-consumption-corridors-through-participatory": {
     "first_seen": "2026-10-07T01:05:10.317Z",
-    "checks": 9,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 11,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "result"
   },
   "https://opportunitiesforyouth.org/2026/08/05/fully-funded-phd-in-political-science-at-uclouvain-2026-in-belgium-study-inclusive-political-representation-through-the-weave-research-project": {
@@ -175,8 +175,8 @@
   },
   "https://euraxess.ec.europa.eu/worldwide/africa/news/15-fully-funded-phd-positions-available-through-msca-doctoral-network": {
     "first_seen": "2026-10-07T01:05:10.317Z",
-    "checks": 5,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 6,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://opportunitiesforyouth.org/2026/03/10/fully-funded-phd-positions-in-sport-sustainability-marie-sklodowska-curie-doctoral-network": {
@@ -1009,8 +1009,8 @@
   },
   "https://www.findaphd.com/phds/uk-students?0100=&Keywords=sustainable+development": {
     "first_seen": "2026-10-07T01:05:10.317Z",
-    "checks": 7,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 8,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://appliedeconjobs.substack.com/p/postdoctoral-researcher-in-behavioural": {
@@ -1207,8 +1207,8 @@
   },
   "https://www.findaphd.com/phds/program/fully-funded-phd-positions-in-circular-economy-and-sustainable-waste-management?p7002=": {
     "first_seen": "2026-10-07T01:05:10.317Z",
-    "checks": 6,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 7,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/computational-chemistry?30M7c2j1=&Keywords=fully+funded": {
@@ -1351,8 +1351,8 @@
   },
   "https://universityaffairs.ca/career-advice/preparing-for-flexible-careers-paths-in-academia-and-beyond": {
     "first_seen": "2026-10-07T01:05:10.317Z",
-    "checks": 5,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 6,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html"
   },
   "https://universityaffairs.ca/career-advice/universities-must-appeal-to-non-traditional-students": {
@@ -1381,14 +1381,14 @@
   },
   "https://universityaffairs.ca/news/the-year-ahead-in-higher-ed": {
     "first_seen": "2026-10-07T01:05:10.317Z",
-    "checks": 5,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 6,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html"
   },
   "https://vacancyedu.com/2026/07/02/phd-degree-16-fully-funded-at-monash-university-australia": {
     "first_seen": "2026-10-07T01:05:10.317Z",
-    "checks": 5,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 6,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/education?10M7m0=&Keywords=fully+funded": {
@@ -1483,8 +1483,8 @@
   },
   "https://www.findaphd.com/guides/phd-thesis": {
     "first_seen": "2026-10-07T01:05:10.317Z",
-    "checks": 5,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 6,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/programme/social-macroeconomics-phd-scheme-and-scholarship?p7082=": {
@@ -1519,8 +1519,8 @@
   },
   "https://universityaffairs.ca/opinion/from-research-to-impact-how-graduates-transform-society": {
     "first_seen": "2026-10-07T01:05:10.317Z",
-    "checks": 5,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 6,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html"
   },
   "https://universityaffairs.ca/features/how-social-movements-shape-canadian-universities": {
@@ -2059,9 +2059,9 @@
   },
   "https://rsdsymposium.org/call-for-systemic-design-contributions": {
     "first_seen": "2026-10-07T22:41:13.134Z",
-    "checks": 3,
-    "last_checked": "2026-10-15T17:41:19.509Z",
-    "outcome": "skipped:HTTP 403 / text/html"
+    "checks": 4,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:ECONNRESET: The socket connection was closed unexpectedly. For more information,"
   },
   "https://www.jobs.ac.uk/job/DSJ544/phd-studentship-masters-plus-phd-sustainability-government": {
     "first_seen": "2026-10-07T22:41:13.134Z",
@@ -2179,8 +2179,8 @@
   },
   "https://www.findaphd.com/phds/ecology?30M78y%7E0=&Keywords=fully+funded": {
     "first_seen": "2026-10-07T22:41:13.134Z",
-    "checks": 3,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 4,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.facebook.com/groups/352364157391339/posts/946105994683816": {
@@ -2215,8 +2215,8 @@
   },
   "https://www.findaphd.com/guides/integrated-phd-programmes": {
     "first_seen": "2026-10-07T22:41:13.134Z",
-    "checks": 3,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 4,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/project/fully-funded-phd-position-available-ethics-by-design-of-virtual-twins-dc15-as-part-of-endotrain-msca-doctoral-network?p194227=": {
@@ -2239,8 +2239,8 @@
   },
   "https://universityaffairs.ca/opinion/aligning-curricula-with-the-workforce-the-case-in-favour": {
     "first_seen": "2026-10-07T22:41:13.134Z",
-    "checks": 3,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 4,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html"
   },
   "https://www.academicjobs.com/en-au/higher-education-news/top-20-fully-funded-phd-programs-australia-2026-academicjobs-18244": {
@@ -2311,8 +2311,8 @@
   },
   "https://universityaffairs.ca/career-advice/the-skills-agenda/supporting-human-skill-development-in-and-beyond-the-classroom": {
     "first_seen": "2026-10-07T22:41:13.134Z",
-    "checks": 3,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 4,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html"
   },
   "https://www.academictransfer.com/nl/jobs/363878/phd-position-on-twin-transition-of-infrastructure-paradoxical-leadership": {
@@ -2323,38 +2323,38 @@
   },
   "https://www.academictransfer.com/en/jobs/362809/phd-position-in-ic-design-group": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://www.academictransfer.com/en/jobs/364130/phd-vacancy-knowledge-creation-and-sharing-in-augmented-organisations": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 2,
-    "last_checked": "2026-10-15T17:41:19.509Z",
-    "outcome": "result"
+    "checks": 3,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
   },
   "https://www.academictransfer.com/en/jobs/362859/phd-position-specialized-in-statistical-modeling-of-long-term-survival-and-cure": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://www.academictransfer.com/nl/jobs/363660/postdoctoral-researcher-llms-for-ai-assisted-educational-support": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://www.academictransfer.com/en/blog/reasons-why-phds-are-delayed-and-how-we-can-help": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://www.academictransfer.com/en/jobs/364770/phd-position-flexibility-in-nuclear-power": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://www.academictransfer.com/nl/jobs/363474/tenured-faculty-position-in-analysis-assistant-associate-or-full-professor": {
@@ -2365,14 +2365,14 @@
   },
   "https://www.academictransfer.com/en/jobs/363878/phd-position-on-twin-transition-of-infrastructure-paradoxical-leadership": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 2,
-    "last_checked": "2026-10-15T17:41:19.509Z",
-    "outcome": "result"
+    "checks": 3,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
   },
   "https://euraxess.ec.europa.eu/worldwide/africa/news/15-fully-funded-phd-positions-open-through-msca-doctoral-network-harpnet": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://euraxess.ec.europa.eu/worldwide/india/news/erc-consolidator-grant-2027-offers-eu2-million-researchers-build-and": {
@@ -2383,8 +2383,8 @@
   },
   "https://euraxess.ec.europa.eu/worldwide/india/news/15-phd-positions-available-msca-zest-doctoral-network-zinc-energy-storage": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://euraxess.ec.europa.eu/worldwide/australia-nz/news/marie-sklodowska-curie-actions-postdoctoral-fellowships-2026-six-steps": {
@@ -2395,20 +2395,20 @@
   },
   "https://euraxess.ec.europa.eu/de/node/465998": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://euraxess.ec.europa.eu/worldwide/india/news/europe-11-phd-positions-available-next-rna-project": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://euraxess.ec.europa.eu/de/node/466132": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://euraxess.ec.europa.eu/worldwide/india/news/europe-11-phd-positions-available-next-rna-doctoral-network": {
@@ -2419,8 +2419,8 @@
   },
   "https://euraxess.ec.europa.eu/worldwide/india/news/netherlands-3-phd-positions-available-erc-funded-spinocchio-project": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://www.academictransfer.com/en/jobs/361349/postdoc-position-at-the-research-centre-for-longevity-risk": {
@@ -2479,8 +2479,8 @@
   },
   "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-research-fellow-condition-monitoring-and-performance-analytics": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://euraxess.ec.europa.eu/jobs/460606": {
@@ -2503,8 +2503,8 @@
   },
   "https://www.academictransfer.com/en/jobs/363811/phd-position-developing-magnetic-nanomaterials-in-the-project-welding-made-easy": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://www.academictransfer.com/en/jobs/362629/phd-in-materials-and-mechanics-for-advanced-ceramic-based-protection-systems-cera-shield": {
@@ -2545,20 +2545,20 @@
   },
   "https://euraxess.ec.europa.eu/worldwide/south-korea/news/engd-designing-human-system-interaction-eindhoven-netherlands": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://euraxess.ec.europa.eu/worldwide/india/news/spain-15-phd-positions-available-up2mem-doctoral-network": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
-    "outcome": "reviewed-no-result"
+    "checks": 3,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
   },
   "https://euraxess.ec.europa.eu/worldwide/africa/news/15-fully-funded-phd-positions-open-through-msca-doctoral-network-decodes": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://euraxess.ec.europa.eu/worldwide/lac/brazilian-and-lac-erc-grantees-and-team-members": {
@@ -2569,15 +2569,15 @@
   },
   "https://euraxess.ec.europa.eu/worldwide/india/news/europe-15-phd-positions-unchange-msca-doctoral-network": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://euraxess.ec.europa.eu/worldwide/india/news/europe-15-phd-positions-available-harpnet-doctoral-network": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
-    "outcome": "reviewed-no-result"
+    "checks": 3,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
   },
   "https://en.wikipedia.org/wiki/Doctor_of_Philosophy": {
     "first_seen": "2026-10-15T17:41:19.509Z",
@@ -2599,50 +2599,50 @@
   },
   "https://www.academictransfer.com/en/jobs/363202/phd-candidate-development-of-humin-based-recyclable-networks": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://www.academictransfer.com/en": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://euraxess.ec.europa.eu/worldwide/india/news/france-15-phd-positions-reffracteur-doctoral-network-0": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
-    "outcome": "reviewed-no-result"
+    "checks": 3,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
   },
   "https://euraxess.ec.europa.eu/jobs/404376": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 2,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 4,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "result"
   },
   "https://euraxess.ec.europa.eu/worldwide/india/news/spain-5-postdoctoral-positions-available-auspire-programme": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://euraxess.ec.europa.eu/worldwide/india/news/spain-16-postdoctoral-positions-sustainable-energy-society-se4s-programme": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
-    "outcome": "reviewed-no-result"
+    "checks": 3,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
   },
   "https://www.linkedin.com/posts/guykeulemans_im-pleased-to-announce-a-new-fully-funded-activity-7500817216788025344-5pEE": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 2,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 4,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "result"
   },
   "https://www.ets.org/about/global-philanthropy/scholarships.html": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://www.linkedin.com/posts/dr-rai-muhammad-amir-73025a30_study-in-canada-on-fully-funded-canadian-activity-7508115329030664192-xPVp": {
@@ -2665,8 +2665,8 @@
   },
   "https://usechombo.com/opportunities/for-students-and-researchers": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "reviewed-no-result"
   },
   "https://usechombo.com/opportunities/fellowships-and-research-grants": {
@@ -2689,8 +2689,8 @@
   },
   "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/294565": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 200 / application/pdf"
   },
   "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/292240": {
@@ -2737,8 +2737,8 @@
   },
   "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/298686": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 200 / application/pdf"
   },
   "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/290284": {
@@ -2749,8 +2749,8 @@
   },
   "https://academicpositions.com/ch/jobs/position/phd/field/geosciences": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://academicpositions.com/dk/jobs/position/phd?page=10&rs=m0OFa96UfPWA": {
@@ -2767,8 +2767,8 @@
   },
   "https://academicpositions.com/fr/jobs/field/social-science?rs=Q91LlCI5MrE4&page=3": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://academicpositions.com/ch/jobs/field/social-science?page=4&rs=fKB5Rh07Hth1": {
@@ -2809,8 +2809,8 @@
   },
   "https://www.academictransfer.com/en/blog/how-to-stand-out-when-applying-for-a-research-position": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:not obviously doctoral"
   },
   "https://career-advice.jobs.ac.uk/studentship-advice/phd/feed": {
@@ -2821,20 +2821,20 @@
   },
   "https://www.jobs.ac.uk/job/DSP670/graduate-research-assistant-postdoctoral-research-associate-or-research-fellow": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/job/DSP504/postdoctoral-research-associate-fellow": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/job/DSQ518/postdoctoral-researcher-in-control-engineering": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/job/DSN306/postdoctoral-research-associate-fellow": {
@@ -2845,8 +2845,8 @@
   },
   "https://www.jobs.ac.uk/job/DTD988/phd-programme-in-machine-learning-systems": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/search/?academicDisciplineFacet%5B0%5D=biological-sciences&subDisciplineFacet%5B0%5D=biology&academicDisciplineFacet%5B1%5D=engineering-and-technology&subDisciplineFacet%5B1%5D=biotechnology&subDisciplineFacet%5B2%5D=other-engineering&jobTypeFacet%5B0%5D=phds&salaryBandFacet%5B0%5D=20000-24999&salaryBandFacet%5B1%5D=15000-19999&salaryBandFacet%5B2%5D=25000-29999&expired-job-redirect=true": {
@@ -2857,8 +2857,8 @@
   },
   "https://www.jobs.ac.uk/job/DSU941/post-doctoral-researcher-in-protein-and-peptide-design-and-production-843010": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/search/?academicDisciplineFacet%5B0%5D=psychology&salaryBandFacet%5B0%5D=30000-39999&salaryBandFacet%5B1%5D=25000-29999&salaryBandFacet%5B2%5D=40000-49999&expired-job-redirect=true": {
@@ -2875,26 +2875,26 @@
   },
   "https://www.findaphd.com/guides/differences-between-masters-and-phd-study": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/guides/grade-point-average-a-guide-for-phd-students": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/guides/phd-study-in-sweden": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/guides/phd-study-in-china": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/guides/phd-study-in-south-africa": {
@@ -2905,14 +2905,14 @@
   },
   "https://www.findaphd.com/guides/finish-your-phd": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/guides/the-phd-journey": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/guides/phd-study-in-new-zealand": {
@@ -2935,8 +2935,8 @@
   },
   "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/307104": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 200 / application/pdf"
   },
   "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/294620": {
@@ -2947,32 +2947,32 @@
   },
   "https://www.jobbnorge.no/en/available-jobs/job/306524/phd-research-fellow-in-computer-science-on-computing-for-high-energy-physics": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 404 / text/html; charset=utf-8"
   },
   "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/302786": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 200 / application/pdf"
   },
   "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/290260": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 200 / application/pdf"
   },
   "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/290186": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 200 / application/pdf"
   },
   "https://www.jobbnorge.no/en/available-jobs/job/308138/phd-position-at-the-department-of-clinical-and-biological-psychology": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 404 / text/html; charset=utf-8"
   },
   "https://www.jobbnorge.no/ledige-stillinger/stilling/308280/phd-candidate-in-sea-ice-monitoring": {
@@ -2983,8 +2983,8 @@
   },
   "https://www.jobbnorge.no/ledige-stillinger/stilling/307359/phd-research-fellow-in-human-thermal-and-cardiovascular-physiology": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://academicpositions.com/ad/bi-norwegian-business-school/2026/phd-candidate/253012": {
@@ -3073,8 +3073,8 @@
   },
   "https://www.jobs.ac.uk/job/DTG424/phd-studentship-enzymatic-recycling-of-polyester-plastics-from-design-to-real-world-application": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.geeksforgeeks.org/maths/factors-of-a-number": {
@@ -3133,8 +3133,8 @@
   },
   "https://www.findaphd.com/phds?Keywords=water+resources": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 2,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 4,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/project/linking-molecular-architecture-to-the-functionality-of-hydrocolloids-using-advanced-characterization-techniques?p198639=": {
@@ -3151,8 +3151,8 @@
   },
   "https://www.findaphd.com/phds?Keywords=water+or+wastewater+treatment": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 2,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 4,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/309141": {
@@ -3211,8 +3211,8 @@
   },
   "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/294886": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 200 / application/pdf"
   },
   "https://academicpositions.com/jobs/position/phd/field/risk-management": {
@@ -3283,38 +3283,38 @@
   },
   "https://www.jobs.ac.uk/job/DSP637/research-fellow-sustainable-engineering-plastics-110841-0826": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/job/DSY910/fellowships": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/search/?academicDisciplineFacet%5B0%5D=physical-and-environmental-sciences&subDisciplineFacet%5B0%5D=materials-science&subDisciplineFacet%5B1%5D=physics-and-astronomy&academicDisciplineFacet%5B1%5D=engineering-and-technology&subDisciplineFacet%5B2%5D=civil-engineering&subDisciplineFacet%5B3%5D=mechanical-engineering&subDisciplineFacet%5B4%5D=aerospace-engineering&subDisciplineFacet%5B5%5D=electrical-and-electronic-engineering&subDisciplineFacet%5B6%5D=production-engineering-and-manufacturing&subDisciplineFacet%5B7%5D=chemical-engineering&subDisciplineFacet%5B8%5D=metallurgy-and-minerals-technology&subDisciplineFacet%5B9%5D=maritime-technology&subDisciplineFacet%5B10%5D=biotechnology&subDisciplineFacet%5B11%5D=other-engineering&jobTypeFacet%5B0%5D=phds&salaryBandFacet%5B0%5D=up-to-9999&expired-job-redirect=true": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/job/DSQ243/research-fellow-in-water-treatment-sustainability-iex-brine-reuse": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/job/DRY230/3-year-phd-studentship-design-and-autonomous-control-of-soft-robotic-systems-for-aero-engine-repair": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/job/DSJ570/phd-studentship-mitochondrial-dna-repair": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/search/?academicDisciplineFacet%5B0%5D=psychology&academicDisciplineFacet%5B1%5D=physical-and-environmental-sciences&subDisciplineFacet%5B0%5D=materials-science&subDisciplineFacet%5B1%5D=physics-and-astronomy&academicDisciplineFacet%5B2%5D=engineering-and-technology&subDisciplineFacet%5B2%5D=civil-engineering&subDisciplineFacet%5B3%5D=mechanical-engineering&subDisciplineFacet%5B4%5D=aerospace-engineering&subDisciplineFacet%5B5%5D=electrical-and-electronic-engineering&subDisciplineFacet%5B6%5D=production-engineering-and-manufacturing&subDisciplineFacet%5B7%5D=chemical-engineering&subDisciplineFacet%5B8%5D=metallurgy-and-minerals-technology&subDisciplineFacet%5B9%5D=maritime-technology&subDisciplineFacet%5B10%5D=biotechnology&subDisciplineFacet%5B11%5D=other-engineering&academicDisciplineFacet%5B3%5D=economics&jobTypeFacet%5B0%5D=phds&salaryBandFacet%5B0%5D=up-to-9999&expired-job-redirect=true": {
@@ -3325,20 +3325,20 @@
   },
   "https://www.jobs.ac.uk/job/DRY456/phd-studentship-recycling-high-impact-polypropylenes-for-the-automotive-sector": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/job/DSZ347/phd-studentship-direct-recycling-of-next-generation-battery-materials-for-sustainable-and-circular-manufacturing": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/job/DSS878/phd-studentship-nsf-swarf-a-novel-forging-processes-for-closed-loop-recycling-of-metallic-swarf": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.findaphd.com/phds/project/lung-fibrosis-uncovered-from-cells-to-treatments?p194337=": {
@@ -3349,26 +3349,26 @@
   },
   "https://www.findaphd.com/phds/project/robust-embedded-ai-for-low-cost-infrared-spectral-recognition-tools-for-ecology-agriculture-and-recycling?p192544=": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/project/deciphering-the-molecular-mechanisms-underlying-the-pathogenicity-of-mtdna-mutations?p197838=": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/project/bath-engineering-and-design-studentships-upcycling-waste-plastics-into-redox-active-electrodes-for-electrochemical-co-capture?p199852=": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/guides/daily-life-of-phd-student": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds?Keywords=biomass": {
@@ -3385,14 +3385,14 @@
   },
   "https://www.findaphd.com/guides/phd-study-in-usa/funding": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/materials-science/uk-students?11M7M00=&Keywords=digital": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.jobbnorge.no/en/available-jobs/job/309961/phd-candidates-in-advanced-arc-and-friction-stir-welding-processes-for-recycled-aluminium": {
@@ -3427,38 +3427,38 @@
   },
   "https://academicpositions.com/ad/university-of-luxembourg/2026/doctoral-researcher-in-molecular-and-cellular-cancer-immunology/247410": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://academicpositions.com/story/using-ai-to-accelerate-recycling": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://academicpositions.com/ad/empa/2026/phd-student-in-the-synthesis-of-polymeric-materials/252438": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://academicpositions.com/ad/european-synchrotron-radiation-facility-esrf/2026/cfr502-phd-student/251730": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://academicpositions.com/ad/stockholm-university-dsv/2026/phd-student-in-computer-and-systems-sciences-with-focus-on-adaptive-immersive-experiences/252856": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://academicpositions.com/ad/eindhoven-university-of-technology/2026/phd-in-materials-and-mechanics-for-advanced-ceramic-based-protection-systems-cera-shield/251221": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://academicpositions.com/gb/jobs/position/phd/country/germany": {
@@ -3481,26 +3481,26 @@
   },
   "https://www.jobs.ac.uk/job/share?job_ref=DRK225": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/search/?academicDisciplineFacet%5B0%5D=engineering-and-technology&subDisciplineFacet%5B0%5D=mechanical-engineering&subDisciplineFacet%5B1%5D=production-engineering-and-manufacturing&salaryBandFacet%5B0%5D=30000-39999&salaryBandFacet%5B1%5D=40000-49999&salaryBandFacet%5B2%5D=25000-29999&salaryBandFacet%5B3%5D=50000-59999&expired-job-redirect=true": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/job/DRH240/fully-funded-phd-studentship-microstructure-and-defect-control-in-recycled-aluminium-alloys": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/job/DSN914/phd-studentship-electromagnetic-sensing-for-high-temperature-microstructural-evolution": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/search/?academicDisciplineFacet%5B0%5D=physical-and-environmental-sciences&subDisciplineFacet%5B0%5D=environmental-sciences&academicDisciplineFacet%5B1%5D=computer-sciences&subDisciplineFacet%5B1%5D=computer-science&subDisciplineFacet%5B2%5D=software-engineering&academicDisciplineFacet%5B2%5D=engineering-and-technology&subDisciplineFacet%5B3%5D=electrical-and-electronic-engineering&subDisciplineFacet%5B4%5D=production-engineering-and-manufacturing&subDisciplineFacet%5B5%5D=biotechnology&academicDisciplineFacet%5B3%5D=economics&salaryBandFacet%5B0%5D=30000-39999&salaryBandFacet%5B1%5D=40000-49999&salaryBandFacet%5B2%5D=25000-29999&salaryBandFacet%5B3%5D=50000-59999&expired-job-redirect=true": {
@@ -3511,14 +3511,14 @@
   },
   "https://www.jobs.ac.uk/job/DSV816/research-associate-fellow": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.jobs.ac.uk/job/DSV040/lecturer-in-renewable-energy-and-life-cycle-sustainability": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://en.wiktionary.org/wiki/circular": {
@@ -3541,14 +3541,14 @@
   },
   "https://www.findaphd.com/phds/programme/phd-in-management-fully-funded?p6964=": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/project/smart-materials-sustainable-buildings-standardising-material-passports-for-uk-construction?p189520=": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/program/fully-funded-4-year-studentships-at-the-epsrc-centre-for-doctoral-training-cdt-in-sustainable-chemical-technologies-a-systems-approach?p6446=": {
@@ -3577,8 +3577,8 @@
   },
   "https://www.instagram.com/p/DedivEiG3_b": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:page too short"
   },
   "https://www.findaphd.com/phds/program/fully-funded-phd-positions-in-wireless-networks-ai-and-earth-systems?p7059=": {
@@ -3601,8 +3601,8 @@
   },
   "https://www.findaphd.com/phds/austria?g00o20=&Keywords=fully+funded": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.facebook.com/groups/usascholarships/posts/3231708830330892": {
@@ -3613,8 +3613,8 @@
   },
   "https://www.facebook.com/usmanawanog/posts/check-out-our-professional-services-to-apply-in-italy-and-other-countries-here-b/122341718192233022": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 400 / text/html; charset=\"utf-8\""
   },
   "https://jobs.bce.ca/bell/job/Verdun-2027-Graduate-Program%2C-Technology-Services-Product-and-Initiative-Management-QC/1431586600": {
@@ -3625,8 +3625,8 @@
   },
   "https://www.findaphd.com/phds?Keywords=phd+systems+thinking": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/project/quantifying-seagrass-natural-capital-global-meta-analysis-of-biodiversity-gain-and-ecosystem-service-functions-for-marine-accounting?p189065=": {
@@ -3637,32 +3637,32 @@
   },
   "https://www.findaphd.com/phds/united-kingdom/artificial-intelligence?j0M7g2tN40=&Keywords=civil+engineering": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/united-kingdom/mechanical-engineering?j0M7o2-N40=&Keywords=data+science": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 3,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds?Keywords=financial+markets": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/guides/phd-funding-new-zealand": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://universityaffairs.ca/career-advice/how-serendipity-built-a-cross-disciplinary-career": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html"
   },
   "https://universityaffairs.ca/opinion/what-do-universities-owe-the-public": {
@@ -3673,38 +3673,38 @@
   },
   "https://universityaffairs.ca/opinion/the-race-to-reimagine-higher-education": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html"
   },
   "https://universityaffairs.ca/opinion/when-misconduct-moves-on": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html"
   },
   "https://universityaffairs.ca/opinion/rethinking-the-role-of-higher-education-in-an-ai-integrated-world": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html"
   },
   "https://universityaffairs.ca/opinion/ai-in-universities-the-case-in-favour": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html"
   },
   "https://universityaffairs.ca/news/budget-cuts-international-student-permits-by-65-per-cent-in-2026": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html"
   },
   "https://universityaffairs.ca/news/learning-software-hack-bolsters-the-case-for-digital-sovereignty": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html"
   },
   "https://universityaffairs.ca/opinion/universities-participating-in-canadian-militarization-the-case-against": {
@@ -3715,14 +3715,14 @@
   },
   "https://www.findaphd.com/phds/phd-research-projects/australian-national-university?42wK140=": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/immunology?30M78241=&Keywords=fully+funded": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/united-kingdom/eu-students?g1w940=&Keywords=phd+with+stipend": {
@@ -3733,8 +3733,8 @@
   },
   "https://www.findaphd.com/phds/project/multi-level-topology-optimization-of-architected-metamaterial-structures?p188493=": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/united-kingdom?g0w900=": {
@@ -3745,26 +3745,26 @@
   },
   "https://www.findaphd.com/phds/austria?g00o20=": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/university-of-southampton?40gn10=": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.facebook.com/curso.inmuno2023/posts/never-accept-a-phd-offer-without-fundingfrom-banda-khalifa-md-mph-mba-here-is-a-/1148058664123476": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 400 / text/html; charset=\"utf-8\""
   },
   "https://www.findaphd.com/phds/australia/university-of-technology-sydney?k0Mu50E0=": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.facebook.com/groups/1628021811287089/posts/2162587341163864": {
@@ -3775,14 +3775,14 @@
   },
   "https://www.maldef.org/resources/scholarship-resource-guide-2027-2028": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:not obviously doctoral"
   },
   "https://www.facebook.com/groups/352364157391339/posts/710132948281123": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 400 / text/html; charset=\"utf-8\""
   },
   "https://www.instagram.com/reel/DaE4UqJnW3q": {
@@ -3805,20 +3805,20 @@
   },
   "https://www.findaphd.com/phds/university-of-bath?400610=": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/project/development-of-nano-liposome-based-drug-delivery-systems-for-ocular-diseases?p190572=": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/project/digital-twins-for-sustainable-indoor-built-environments-enhancing-occupant-wellbeing-and-environmental-performance?p192603=": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/project/eastbio-case-antimicrobial-use-in-uk-gamebirds-understanding-industry-practices-and-reducing-resistance-risks?p199625=": {
@@ -3829,8 +3829,8 @@
   },
   "https://www.findaphd.com/phds?Keywords=control+engineering": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
   },
   "https://www.findaphd.com/phds/epsrc-centre-for-doctoral-training-programmes/united-kingdom/centre-in-doctoral-training-cdt-in-innovation-for-sustainable-composites-engineering?s3M71UDD9En0=": {
@@ -3841,8 +3841,8 @@
   },
   "https://universityaffairs.ca/opinion/the-campus-green": {
     "first_seen": "2026-10-15T17:41:19.509Z",
-    "checks": 1,
-    "last_checked": "2026-10-15T17:41:19.509Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html"
   },
   "https://universityaffairs.ca/author/mazenguirguisname-com": {
@@ -3867,6 +3867,1044 @@
     "first_seen": "2026-10-15T17:41:19.509Z",
     "checks": 1,
     "last_checked": "2026-10-15T17:41:19.509Z",
+    "outcome": "skipped:HTTP 403 / text/html"
+  },
+  "https://www.google.com/search?q=time+in+Belgium": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+Spain": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+Iceland": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+Republic+of+Ireland": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+United+Kingdom": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+Switzerland": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+Finland": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+Luxembourg": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+Netherlands": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+Norway": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+Sweden": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+Denmark": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+Italy": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+Austria": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+France": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.google.com/search?q=time+in+Portugal": {
+    "first_seen": "2026-10-17T10:01:30.790Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:01:30.790Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.academictransfer.com/en/jobs/363880/phd-position-on-twin-transition-of-infrastructure-ecosystem-orchestration": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
+  },
+  "https://www.academictransfer.com/en/jobs/364624/phd-position-on-explainable-deepfake-detection-using-foundation-models": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://career-advice.jobs.ac.uk/studentship-advice/phd": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://euraxess.ec.europa.eu/jobs/460901": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://euraxess.ec.europa.eu/worldwide/south-korea/news/postdoc-enhancing-indoor-environment-bedrooms-support-sleep-quality": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://euraxess.ec.europa.eu/jobs/455792": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://www.academictransfer.com/en/jobs/364615/postdoc-in-analytical-chemistry": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://www.academictransfer.com/en/jobs/364611/phd-candidate-in-the-research-project-entangled-with-seaweed-case-studies-in-scotland": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
+  },
+  "https://www.academictransfer.com/en/jobs/364550/phd-candidate-in-the-research-project-entangled-with-seaweed-case-studies-in-south-africa": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
+  },
+  "https://www.academictransfer.com/en/jobs/357863/phd-involvement-in-clinical-studies-in-europe": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://www.academictransfer.com/en/jobs/364620/phd-researcher-in-atmospheric-sciences-emerging-extreme-fire-weather-risks": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://www.academictransfer.com/en/jobs/360012/phd-on-ai-driven-lifestyle-coaching-for-people-with-severe-mental-illnesses": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
+  },
+  "https://www.academictransfer.com/en/jobs/362960/phd-candidate-implementation-of-school-based-social-safety-intervention-programs": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://www.academictransfer.com/en/jobs/362720/phd-position-at-the-centre-for-language-studies": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://www.academictransfer.com/nl/jobs/364611/phd-candidate-in-the-research-project-entangled-with-seaweed-case-studies-in-scotland": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
+  },
+  "https://euraxess.ec.europa.eu/worldwide/japan/phd-studentships-east-asian-studies-germany": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://euraxess.ec.europa.eu/jobs/456118": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://euraxess.ec.europa.eu/worldwide/asean/news/czech-republic-ceitec-phd-school-call-2023-life-sciences-and-molecular": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-position-literary-studies/translation-studies-leuven-belgium": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://euraxess.ec.europa.eu/worldwide/africa/news/germany-phd-international-development-studies": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://euraxess.ec.europa.eu/worldwide/lac/phd-position-health-studies-ireland-structured-population-and-health-services": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://euraxess.ec.europa.eu/worldwide/china/chinese-scholarship-councils-funding-phd-studies-europe": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://www.academictransfer.com/en/jobs/?q=Delft&order=rank": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://www.academictransfer.com/en/jobs/356796/phd-positions-on-design-for-repair-and-remanufacturing-using-additive-manufacturing": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
+  },
+  "https://www.academictransfer.com/en/jobs/363746/phd-researcher-decision-processes-and-strategies-for-adaptive-reuse-of-buildings": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
+  },
+  "https://www.academictransfer.com/nl/jobs/360648/phd-evaluating-water-reuse-in-agriculture-under-future-effluent-requirements": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
+  },
+  "https://www.academictransfer.com/en/jobs/360986/phd-position-on-circular-construction-management-engineering-futures": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
+  },
+  "https://www.academictransfer.com/en/jobs/357973/phd-student-to-study-mechanisms-of-dna-damage-induced-transcription-stress": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
+  },
+  "https://www.academictransfer.com/en/jobs/361889/phd-position-in-neuro-musculoskeletal-cell-materials-atlas": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
+  },
+  "https://euraxess.ec.europa.eu/worldwide/south-korea/news/fully-funded-phd-positions-astronomy-biology-computer-science-0": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://www.academictransfer.com/en/jobs/363961/postdoc-position-whole-life-cycle-design-for-climate-responsive-buildings": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
+  },
+  "https://www.academictransfer.com/en/jobs/364244/phd-position-unravelling-hydrogen-induced-degradation-and-fracture-in-circular-steels": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://www.academictransfer.com/en/jobs/364083/phd-candidate-reading-ecosystems-from-space": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
+  },
+  "https://www.academictransfer.com/en/jobs/364829/postdoc-in-assessing-the-structural-performance-of-polymers-in-an-alkaline-electrolyzer": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://euraxess.ec.europa.eu/worldwide/south-korea/events/european-green-deal-and-horizon-europe-euraxess-asean-china-japan": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://euraxess.ec.europa.eu/worldwide/china/events/euraxess-worldwide-webinar-european-green-deal-and-horizon-europe": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://euraxess.ec.europa.eu/jobs/437369": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "result"
+  },
+  "https://www.facebook.com/FindAPhD/videos/funding-a-phd-doesnt-have-to-feel-like-a-mystery-here-james-breaks-down-the-basi/4251978111708773": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://www.cbc.ca/news/canada/toronto/university-of-toronto-scholarship-program-phd-talent-9.7369310": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://scholarshiproar.com/mcmaster-university-scholarship": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://scholarshiproar.com/western-university-scholarships-canada": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://scholarshipwalk.com/university-toronto-presidents-impact-scholarship": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://irrespub.com/fully-funded-phd-scholarships-australia-indian-students-2026": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://www.yorku.ca/dighr/fifteen-exceptional-scholars-awarded-2026-2027-dahdaleh-global-health-graduate-scholarships": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://theopportunity.pk/opportunity/mccall-macbain-scholarship-2027": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://www.yorku.ca/research/connected-minds/phd-scholarships-2": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "reviewed-no-result"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/215634": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/298967": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/280405": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/297126": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/job/292240/phd-candidate-in-sustainable-and-cement-free-marine-materials": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 404 / text/html; charset=utf-8"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/job/pdf/102298?p=0": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/job/290207/phd-research-scholar-positions-department-of-strategy-and-management": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 404 / text/html; charset=utf-8"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/286000": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://academicpositions.com/de/jobs/position/phd?page=10&rs=Qr9JLxC6jzWM&sort=closing": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/at/jobs/position/phd?page=11&rs=b8CB7qxrJcmP": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/it/jobs/employer/university-of-luxembourg/position/phd?page=2&locale=de": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/fi/jobs/field/developing-country-research/country/luxembourg/esch-sur-alzette": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/at/employer/university-of-luxembourg": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ch/jobs/field/cultural-studies?page=2&locale=es": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/it/jobs/position/phd/field/geosciences": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/se/jobs/field/geosciences?page=3&rs=5tAvSv7FMbqS": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.jobs.ac.uk/job/DTA553/phd-position-in-physical-ai-adaptive-foundation-models-for-robotics": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobs.ac.uk/job/DST491/educational-scholarship-scientist": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobs.ac.uk/job/DTE203/phd-studentship-the-effects-of-released-gamebirds-on-the-lowland-ecosystems-of-s-england-phd-industry-funded": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobs.ac.uk/job/DTG420/phd-studentship-mathematics-phd-system-dynamics-modelling-of-services-for-children-with-complex-health-needs": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.findaphd.com/guides/mphil-upgrade": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.findaphd.com/phds/program/doctoral-students-for-the-diw-graduate-center-phd-program-in-economics?i3442p7195=": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.findaphd.com/guides/international-application-checklist": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/294697": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/300425": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/job/309328/phd-research-fellow-in-bioinformatics-and-computational-biology": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://academicpositions.com/ad/empa/2026/postdoctoral-researcher-in-peri-urban-energy-planning-and-sufficiency/243294": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/universite-catholique-de-louvain/2026/phd-fellowship-in-economics-health-economics/248205?locale=nl": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/universite-catholique-de-louvain/2026/phd-fellowship-in-economics-health-economics/248205?locale=de": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/universite-catholique-de-louvain/2026/phd-fellowship-in-economics-health-economics/248205?locale=sv": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/universite-catholique-de-louvain/2026/phd-fellowship-in-economics-health-economics/248205?locale=en": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/universite-catholique-de-louvain/2026/phd-fellowship-in-economics-health-economics/248205?locale=no": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/universite-catholique-de-louvain/2026/phd-fellowship-in-economics-health-economics/248205?locale=fr": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/universite-catholique-de-louvain/2026/phd-fellowship-in-economics-health-economics/248205?locale=da": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/universite-catholique-de-louvain/2026/phd-fellowship-in-economics-health-economics/248205?locale=fi": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/tallinn-university-of-technology/2026/when-the-mundane-becomes-transformational-everyday-self-provisioning-practices-as-form-of-prefiguration-for-a-degrowth-future/254170": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.academictransfer.com/en/employer/IMT-School-for-Advanced-Studies-Lucca/202021-phd-programs-imt-school-advanced-studies-lucca": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobs.ac.uk/job/DSX382/phd-studentship-ai-scientists-for-understanding-dementia-modifiable-risk-factors": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobs.ac.uk/search/?academicDisciplineFacet%5B0%5D=biological-sciences&subDisciplineFacet%5B0%5D=botany&academicDisciplineFacet%5B1%5D=physical-and-environmental-sciences&subDisciplineFacet%5B1%5D=environmental-sciences&academicDisciplineFacet%5B2%5D=economics&academicDisciplineFacet%5B3%5D=creative-arts-and-design&subDisciplineFacet%5B2%5D=other-creative-arts&jobTypeFacet%5B0%5D=phds&salaryBandFacet%5B0%5D=up-to-9999&expired-job-redirect=true": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobs.ac.uk/search/?academicDisciplineFacet%5B0%5D=law&jobTypeFacet%5B0%5D=phds&salaryBandFacet%5B0%5D=up-to-9999&expired-job-redirect=true": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobs.ac.uk/search/?academicDisciplineFacet%5B0%5D=computer-sciences&subDisciplineFacet%5B0%5D=computer-science&subDisciplineFacet%5B1%5D=information-systems&academicDisciplineFacet%5B1%5D=engineering-and-technology&subDisciplineFacet%5B2%5D=maritime-technology&jobTypeFacet%5B0%5D=phds&salaryBandFacet%5B0%5D=up-to-9999&expired-job-redirect=true": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobs.ac.uk/search/?academicDisciplineFacet%5B0%5D=social-sciences-and-social-care&subDisciplineFacet%5B0%5D=sociology&subDisciplineFacet%5B1%5D=anthropology&subDisciplineFacet%5B2%5D=other-social-sciences&academicDisciplineFacet%5B1%5D=languages-literature-and-culture&subDisciplineFacet%5B3%5D=languages&subDisciplineFacet%5B4%5D=cultural-studies&academicDisciplineFacet%5B2%5D=historical-and-philosophical-studies&subDisciplineFacet%5B5%5D=history&jobTypeFacet%5B0%5D=phds&salaryBandFacet%5B0%5D=up-to-9999&expired-job-redirect=true": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobs.ac.uk/search/?academicDisciplineFacet%5B0%5D=physical-and-environmental-sciences&subDisciplineFacet%5B0%5D=chemistry&jobTypeFacet%5B0%5D=phds&salaryBandFacet%5B0%5D=up-to-9999&expired-job-redirect=true": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobs.ac.uk/search/?academicDisciplineFacet%5B0%5D=agriculture-food-and-veterinary&subDisciplineFacet%5B0%5D=agriculture&subDisciplineFacet%5B1%5D=food-science&academicDisciplineFacet%5B1%5D=business-and-management-studies&subDisciplineFacet%5B2%5D=management&subDisciplineFacet%5B3%5D=business-studies&jobTypeFacet%5B0%5D=phds&salaryBandFacet%5B0%5D=20000-24999&salaryBandFacet%5B1%5D=15000-19999&salaryBandFacet%5B2%5D=25000-29999&expired-job-redirect=true": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobs.ac.uk/job/DSE956/phd-scholarships-in-law-and-organizational-studies-for-the-promotion-of-diversity-and-inclusion": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobs.ac.uk/search/?academicDisciplineFacet%5B0%5D=languages-literature-and-culture&subDisciplineFacet%5B0%5D=linguistics&subDisciplineFacet%5B1%5D=classics&subDisciplineFacet%5B2%5D=languages&subDisciplineFacet%5B3%5D=literature&subDisciplineFacet%5B4%5D=cultural-studies&academicDisciplineFacet%5B1%5D=historical-and-philosophical-studies&subDisciplineFacet%5B5%5D=history&subDisciplineFacet%5B6%5D=history-of-art&subDisciplineFacet%5B7%5D=archaeology&subDisciplineFacet%5B8%5D=philosophy&subDisciplineFacet%5B9%5D=theology-and-religious-studies&jobTypeFacet%5B0%5D=phds&salaryBandFacet%5B0%5D=up-to-9999&expired-job-redirect=true": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.findaphd.com/phds/project/relationship-between-blood-component-storage-conditions-and-their-impact-in-transfused-patients?p198646=": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.findaphd.com/phds/university-of-exeter?40wb10=": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 2,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.findaphd.com/phds/mathematics/university-of-southampton?50M7OWa0=": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/job/pdf/155056?p=0": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/job/pdf/125151?p=0": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/210799": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/205714": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/187434": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/245981": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/293688": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/259933": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/job/292328/phd-candidate-in-risk-monitoring-and-visualization-for-human-supervisors-of-autonomous-systems": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 404 / text/html; charset=utf-8"
+  },
+  "https://academicpositions.com/ad/universite-de-lorraine/2026/call-for-applications-for-a-doctoral-position-2025-2028-environment-biological-mechanisms-and-cardio-renal-health-focus-on-heart-failure-enbio-care/248496?locale=es": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/universite-de-lorraine/2026/call-for-applications-for-a-doctoral-position-2025-2028-environment-biological-mechanisms-and-cardio-renal-health-focus-on-heart-failure-enbio-care/248496?locale=it": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/universite-de-lorraine/2026/call-for-applications-for-a-doctoral-position-2025-2028-environment-biological-mechanisms-and-cardio-renal-health-focus-on-heart-failure-enbio-care/248496?locale=no": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/universite-de-lorraine/2026/call-for-applications-for-a-doctoral-position-2025-2028-environment-biological-mechanisms-and-cardio-renal-health-focus-on-heart-failure-enbio-care/248496?locale=fi": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/dk/jobs/field/chemistry?page=4&rs=x7zZnviEelJi": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/gb/jobs/field/medicine?page=3&rs=64NEtjRE1Yp5&locale=en": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/tallinn-university-of-technology/2026/phd-position-in-maritime-studies/243443": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/jobs/position/phd/field/cultural-studies": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/oslo-metropolitan-university/2025/phd-fellowship-positions-in-journalism-and-media-studies/242731": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/ku-leuven/2026/phd-researcher-in-developmental-and-school-psychology-with-teaching-responsibilities/248955": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.reddit.com/r/PhD/comments/1reyzd7/phd_versus_doctorate": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html"
+  },
+  "https://www.jobs.ac.uk/search/?academicDisciplineFacet%5B0%5D=engineering-and-technology&subDisciplineFacet%5B0%5D=mechanical-engineering&jobTypeFacet%5B0%5D=phds&salaryBandFacet%5B0%5D=15000-19999&salaryBandFacet%5B1%5D=10000-14999&salaryBandFacet%5B2%5D=20000-24999&expired-job-redirect=true": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.findaphd.com/phds/biochemistry?30M78yX0=&Keywords=environmental": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.findaphd.com/phds/project/fibre-polymer-composites-for-structural-applications?p197287=": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.findaphd.com/phds?Keywords=climate+change+water+resources": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.jobbnorge.no/ledige-stillinger/stilling/292175/phd-position-on-the-history-of-medical-plastics": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 404 / text/html; charset=utf-8"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/job/292175/phd-position-on-the-history-of-medical-plastics": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 404 / text/html; charset=utf-8"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/job/309918/phd-research-fellow-in-bioinformatics-discovering-rare-proteins-across-the-smorf-landscape": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/job/308124/phd-candidate-in-multimarket-bidding-decision-support-in-nordic-power-markets": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 404 / text/html; charset=utf-8"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/job/308334/phd-research-fellow-in-learning-based-control-of-autonomous-robot-manipulation": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/job/307372/phd-research-fellow-in-power-quality-assessment-and-planning-of-distribution-and-transmission-grids": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/job/307441/phd-research-fellowship-in-games-and-interactive-digital-narratives-center-for-digital-narrative": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 404 / text/html; charset=utf-8"
+  },
+  "https://www.jobbnorge.no/en/available-jobs/job/291009/phd-research-fellow-in-criminology": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 404 / text/html; charset=utf-8"
+  },
+  "https://academicpositions.com/ad/ku-leuven/2026/professor-in-circular-construction-and-reuse/252192": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/bi-norwegian-business-school/2026/phd-in-economics/253432": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://academicpositions.com/ad/university-of-twente/2026/phd-position-in-multi-material-additive-manufacturing-for-advanced-chip-cooling/249744": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.academictransfer.com/en/employer/stichting-cliniclowns/?order=deadline&page=61": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.academictransfer.com/en/employer/ministerie-van-binnenlandse-zaken-en-koninkrijksrelaties/?order=deadline&page=42": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.jobs.ac.uk/job/DTG379/revalue-build-ai-enabled-digital-twins-for-circular-retrofit-of-public-buildings": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.findaphd.com/phds/project/phd-studentship-in-microbiology?p189261=": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.findaphd.com/phds/united-kingdom?g0w900=&Keywords=supply+chain+management": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.findaphd.com/phds/project/solar-energy-for-de-carbonisation-of-textile-dyeing-enabling-sustainable-fashion-manufacturing-ref-sf-sr-2026-1?p197885=": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.findaphd.com/phds/london/chemical-engineering/department-of-chemical-engineering?%7E1M7o2S1e0ssM4Ev020=": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.findaphd.com/phds?Keywords=remote+sensing": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.facebook.com/61589707642118/videos/multiple-masters-phd-and-postdoc-positions-availablemastersdegree-degreeholder-p/3318872798500485": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.phdportal.com/study-options/269353337/information-systems-canada.html": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.instagram.com/p/DarUzZ8CBtQ": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.facebook.com/rejina.parween/posts/-phd-opportunity-2027-university-of-victoria-canada-the-university-of-victoria-a/27200806326287317": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 400 / text/html; charset=\"utf-8\""
+  },
+  "https://www.findaphd.com/phds/project/fully-funded-project-dc13-ai-driven-surveillance-for-respiratory-infections?p198659=": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.findaphd.com/guides/phd-funding-netherlands": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://universityaffairs.ca/opinion/getting-research-out-of-the-lab-supporting-the-third-mission-of-canadian-universities": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html"
+  },
+  "https://universityaffairs.ca/career-advice/teaching-in-the-age-of-ai-shortcuts": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html"
+  },
+  "https://www.scholarshiptab.com/african-students/phd/13": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.kecla.org/uploads/board/attach1/20260714134907.pdf": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 200 / application/pdf"
+  },
+  "https://www.instagram.com/p/DcxVmaVIOgW": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:page too short"
+  },
+  "https://www.findaphd.com/phds/project/gw4-biomed3-mrc-dlp-phd-project-anxiety-related-attention-bias-in-everyday-situations-mechanisms-and-vr-based-modification?p198697=": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.findaphd.com/phds/project/bath-engineering-and-design-studentships-mechanochemical-synthesis-and-modification-of-metal-organic-frameworks-for-hydrogen-storage?p199765=": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.findaphd.com/phds/phd-research-projects/italy/politecnico-di-milano?k3MR2wCb00=": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://www.findaphd.com/phds/biological-sciences/university-of-southampton?50M78Wa0=": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html; charset=UTF-8"
+  },
+  "https://universityaffairs.ca/career-advice/share-your-expertise-and-write-what-you-know": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html"
+  },
+  "https://universityaffairs.ca/opinion/its-time-for-philosophy-to-regain-its-rightful-place": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html"
+  },
+  "https://universityaffairs.ca/opinion/the-slow-professor-ages-well": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
+    "outcome": "skipped:HTTP 403 / text/html"
+  },
+  "https://universityaffairs.ca/opinion/mandatory-retirement-the-case-against": {
+    "first_seen": "2026-10-17T10:05:14.365Z",
+    "checks": 1,
+    "last_checked": "2026-10-17T10:05:14.365Z",
     "outcome": "skipped:HTTP 403 / text/html"
   }
 }
