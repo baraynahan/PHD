@@ -1,5 +1,5 @@
 {
-  "searched_at": "2026-11-07T12:15:47.193Z",
+  "searched_at": "2026-11-07T16:17:42.607Z",
   "budgets": {
     "MAX_PAGES": 120,
     "TIER3_MAX_PAGES": 40,
@@ -15,7 +15,9 @@
     "IELTS_LOOKUP_MIN_SCORE": 90,
     "IELTS_LOOKUP_MAX_PER_RUN": 3
   },
-  "failed_providers": [],
+  "failed_providers": [
+    "REVIEW"
+  ],
   "runs": [
     {
       "provider": "Gemini",
@@ -33,65 +35,153 @@
       "model": "deepseek-v4.1-flash:free (search: Tavily)",
       "status": "ok",
       "error": "",
-      "returned": 4,
+      "returned": 10,
       "valid": 3,
-      "detail": "78 pages read, 25 sent to AI",
-      "sources": 78,
+      "detail": "81 pages read, 25 sent to AI",
+      "sources": 81,
       "stats": {
-        "hits_total": 301,
-        "pages_read": 78,
+        "hits_total": 297,
+        "pages_read": 81,
         "fetch_skipped": {
-          "HTTP 200 / application/pdf": 27,
+          "HTTP 403 / text/html; charset=UTF-8": 111,
+          "not obviously doctoral": 4,
+          "page too short": 50,
+          "HTTP 200 / application/pdf": 28,
           "HTTP 404 / text/html; charset=utf-8": 2,
-          "HTTP 403 / text/html; charset=UTF-8": 113,
-          "not obviously doctoral": 6,
-          "page too short": 52,
           "HTTP 400 / text/html; charset=\"utf-8\"": 3,
-          "HTTP 403 / text/html": 20
+          "HTTP 403 / text/html": 18
         },
-        "prescreen_dropped": 53,
+        "prescreen_dropped": 56,
         "sent_to_ai": 25,
         "batches_failed": 0,
-        "ai_returned": 4,
+        "ai_returned": 10,
         "rejected": {
           "passes": 3,
-          "score 45 is below 60": 1
+          "model uncertain — retained for verification: Application deadline 2026-10-31 has passed (today is 2026-11-07). The deadline must be AFTER today's date.": 2,
+          "model uncertain — retained for verification: Application deadline 2026-11-07 has passed (today is 2026-11-07). The deadline must be AFTER today's date.": 2,
+          "model hard-rejected: This is a Postdoc position, not a PhD position.": 1,
+          "model hard-rejected: This is an Assistant Professor position, not a PhD position.": 1,
+          "missing title": 1
         }
       }
     }
   ],
   "sources": [
     {
+      "title": "PhD on worker-augmenting technology implementation — Eindhoven University of Technology (TU&#x2F;e) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/365397/phd-on-worker-augmenting-technology-implementation"
+    },
+    {
+      "title": "PhD on worker-augmenting technology implementation — Eindhoven University of Technology (TU&#x2F;e) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/nl/jobs/365397/phd-on-worker-augmenting-technology-implementation"
+    },
+    {
+      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/jobs/470804"
+    },
+    {
+      "title": "Postdoc Ammonia-fuelled SOFC-ICE Power, Propulsion and Energy System - Ship integration — Delft University of Technology (TU Delft) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/365048/postdoc-ammonia-fuelled-sofc-ice-power-propulsion-and-energy-system-ship-integration"
+    },
+    {
+      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/de/node/468912"
+    },
+    {
+      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/jobs/477154"
+    },
+    {
+      "title": "Getting Started with Your PhD | PhD advice from jobs.ac.uk",
+      "url": "https://career-advice.jobs.ac.uk/featured-on-homepage/getting-started-with-your-phd-a-practical-guide-from-someone-who-survived-it"
+    },
+    {
+      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/jobs/467140"
+    },
+    {
+      "title": "Postdoc System Engineeering for Floating Wind Farms — Delft University of Technology (TU Delft) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364839/postdoc-system-engineeering-for-floating-wind-farms"
+    },
+    {
+      "title": "PhD Position: Biodiversity for Nature-Inclusive Dairy Farming — Radboud University — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364928/phd-position-biodiversity-for-nature-inclusive-dairy-farming"
+    },
+    {
+      "title": "PhD in Process-Aware Information Systems for Circular Care Pathways — Eindhoven University of Technology (TU&#x2F;e) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/365078/phd-in-process-aware-information-systems-for-circular-care-pathways"
+    },
+    {
       "title": "PhD position Participatory Data Governance for a Just Energy Transition — Delft University of Technology (TU Delft) — AcademicTransfer",
       "url": "https://www.academictransfer.com/en/jobs/365288/phd-position-participatory-data-governance-for-a-just-energy-transition"
     },
     {
-      "title": "PhD in Envisioning housing consumption corridors through participatory design fictions — Eindhoven University of Technology (TU&#x2F;e) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/357484/phd-in-envisioning-housing-consumption-corridors-through-participatory-design-fictions"
+      "title": "PhD Research Fellowship &quot;Critical Design of Public Service Systems -Youth Marginalization&quot; - Oslo, Norway | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-research-fellowship-critical-design-public-service-systems-youth"
     },
     {
-      "title": "PhD position on Critical approaches to Designing for Belonging — University of Twente (UT) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/362880/phd-position-on-critical-approaches-to-designing-for-belonging"
+      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/jobs/453287"
+    },
+    {
+      "title": "PhD in Art-Science-Action Integration &amp; Challenge-Based Sustainability Education — Utrecht University — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364874/phd-in-art-science-action-integration-challenge-based-sustainability-education"
+    },
+    {
+      "title": "PhD student on Key Performance Indicators for biodiversity-inclusive agriculture — Leiden University — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364942/phd-student-on-key-performance-indicators-for-biodiversity-inclusive-agriculture"
+    },
+    {
+      "title": "PhD Candidate in the research project &#x27;Entangled with Seaweed&#x27;, case studies in South Africa — Leiden University — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364550/phd-candidate-in-the-research-project-entangled-with-seaweed-case-studies-in-south-africa"
+    },
+    {
+      "title": "Postdoctoral Researcher: Social Design of Intergenerational Contact Zones — University of Twente (UT) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364890/postdoctoral-researcher-social-design-of-intergenerational-contact-zones"
+    },
+    {
+      "title": "PhD Candidate in Access, Actors and Accountability: The Role of Researchers in AI Governance — University of Amsterdam (UvA) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364331/phd-candidate-in-access-actors-and-accountability-the-role-of-researchers-in-ai-governance"
     },
     {
       "title": "Postdoc In Human–AI Interaction and Risk-minimizing Digital Design in Gambling — Eindhoven University of Technology (TU&#x2F;e) — AcademicTransfer",
       "url": "https://www.academictransfer.com/nl/jobs/365230/postdoc-in-humanai-interaction-and-risk-minimizing-digital-design-in-gambling"
     },
     {
+      "title": "PhD Candidate in the research project &#x27;Entangled with Seaweed&#x27;, case studies in Scotland — Leiden University — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364611/phd-candidate-in-the-research-project-entangled-with-seaweed-case-studies-in-scotland"
+    },
+    {
+      "title": "Getting Started with Your PhD | PhD advice from jobs.ac.uk",
+      "url": "https://career-advice.jobs.ac.uk/during-your-phd/getting-started-with-your-phd-a-practical-guide-from-someone-who-survived-it"
+    },
+    {
+      "title": "PhD in Envisioning housing consumption corridors through participatory design fictions - Eindhoven, The Netherlands | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-envisioning-housing-consumption-corridors-through-participatory"
+    },
+    {
       "title": "Jobs and Career Opportunities in Europe | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/de/node/462998"
+    },
+    {
+      "title": "PhD Fellowship in Communication and Leadership: Communicating Environmental Futures in the Age of AI - Oslo, Norway | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-fellowship-communication-and-leadership-communicating-environmental"
     },
     {
       "title": "Jobs and Career Opportunities in Europe | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/jobs/464075"
     },
     {
+      "title": "PhD Position: From Ecological Violence to Ecologies of Care in Latin America and the Caribbean - Nijmegen, The Netherlands | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-position-ecological-violence-ecologies-care-latin-america-and"
+    },
+    {
       "title": "Doctoral Researcher (PhD Student), Bioreactor Development - Joensuu, Finland | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/doctoral-researcher-phd-student-bioreactor-development-joensuu-finland"
     },
     {
-      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/jobs/462701"
+      "title": "PhD Position in Decoding Environmental History from Microorganisms for Living Sensors and Memory — Delft University of Technology (TU Delft) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364394/phd-position-in-decoding-environmental-history-from-microorganisms-for-living-sensors-and-memory"
     },
     {
       "title": "PhD Position Efficient Online Optimization for Time-Varying Systems — Delft University of Technology (TU Delft) — AcademicTransfer",
@@ -102,8 +192,8 @@
       "url": "https://www.academictransfer.com/en/jobs/364142/postdoc-data-driven-autonomous-shipping-and-port-operations"
     },
     {
-      "title": "PhD Position: Safe Planning and Decision-Making under Uncertainty for Long-Horizon Robot Autonomy — Delft University of Technology (TU Delft) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/365008/phd-position-safe-planning-and-decision-making-under-uncertainty-for-long-horizon-robot-autonomy"
+      "title": "PhD Position Flexibility in Nuclear Power — Delft University of Technology (TU Delft) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364770/phd-position-flexibility-in-nuclear-power"
     },
     {
       "title": "Postdoc NonMonotone Game Theory — Delft University of Technology (TU Delft) — AcademicTransfer",
@@ -118,12 +208,24 @@
       "url": "https://www.academictransfer.com/en/jobs/364497/postdoc-responsible-scaling-of-digital-innovation-in-mental-healthcare"
     },
     {
+      "title": "PhD Pathways: Bridging research and industry - jobs.ac.uk",
+      "url": "https://career-advice.jobs.ac.uk/resources/webinars/phd-pathways-bridging-research-and-industry"
+    },
+    {
       "title": "Jobs and Career Opportunities in Europe | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/jobs/477739"
     },
     {
+      "title": "EngD in Designing Human-System Interaction - Eindhoven, The Netherlands | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/engd-designing-human-system-interaction-eindhoven-netherlands"
+    },
+    {
       "title": "Jobs and Career Opportunities in Europe | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/jobs/468103"
+    },
+    {
+      "title": "15 Fully Funded PhD Positions Available through the MSCA Doctoral Network REFFRACTEUR | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/worldwide/africa/news/15-fully-funded-phd-positions-available-through-msca-doctoral-network"
     },
     {
       "title": "Jobs and Career Opportunities in Europe | EURAXESS",
@@ -138,24 +240,20 @@
       "url": "https://euraxess.ec.europa.eu/jobs/478444"
     },
     {
-      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/de/node/461588"
+      "title": "PhD Candidate in Systemic Actors and the Enforcement of Digital Rules — University of Amsterdam (UvA) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364332/phd-candidate-in-systemic-actors-and-the-enforcement-of-digital-rules"
     },
     {
-      "title": "PhD position on Complex system modelling of systemic climate impacts — Vrije Universiteit Amsterdam (VU) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/360528/phd-position-on-complex-system-modelling-of-systemic-climate-impacts"
-    },
-    {
-      "title": "PhD Position Systemic Risk in Climate-Sensitive Housing Markets — Delft University of Technology (TU Delft) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/361275/phd-position-systemic-risk-in-climate-sensitive-housing-markets"
+      "title": "PhD Candidate in Systemic Actors and the Enforcement of Digital Rules — University of Amsterdam (UvA) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/nl/jobs/364332/phd-candidate-in-systemic-actors-and-the-enforcement-of-digital-rules"
     },
     {
       "title": "2 PhD positions on Measuring the Future of Power Electronics — University of Twente (UT) — AcademicTransfer",
       "url": "https://www.academictransfer.com/en/jobs/363997/2-phd-positions-on-measuring-the-future-of-power-electronics"
     },
     {
-      "title": "PhD Candidate in Systemic Actors and the Enforcement of Digital Rules — University of Amsterdam (UvA) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/nl/jobs/364332/phd-candidate-in-systemic-actors-and-the-enforcement-of-digital-rules"
+      "title": "PhD position on Critical approaches to Designing for Belonging — University of Twente (UT) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/362880/phd-position-on-critical-approaches-to-designing-for-belonging"
     },
     {
       "title": "Assistant Professor In Ultra-Low Latency Hybrid Neuromorphic Photonics — Eindhoven University of Technology (TU&#x2F;e) — AcademicTransfer",
@@ -178,8 +276,8 @@
       "url": "https://euraxess.ec.europa.eu/de/node/472087"
     },
     {
-      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/jobs/468117"
+      "title": "Doctoral Researcher (Environmental Chemicals and Endometriosis) - Tampere, Finland | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/doctoral-researcher-environmental-chemicals-and-endometriosis-tampere"
     },
     {
       "title": "Jobs and Career Opportunities in Europe | EURAXESS",
@@ -194,16 +292,28 @@
       "url": "https://euraxess.ec.europa.eu/jobs/461805"
     },
     {
-      "title": "PhD in Art-Science-Action Integration &amp; Challenge-Based Sustainability Education — Utrecht University — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/364874/phd-in-art-science-action-integration-challenge-based-sustainability-education"
-    },
-    {
-      "title": "PhD Position: Nitrogen Valorization in High-Temp Electrochemical Cells (F&#x2F;M&#x2F;X) — DIFFER — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/364795/phd-position-nitrogen-valorization-in-high-temp-electrochemical-cells-fmx"
-    },
-    {
       "title": "Postdoctoral Researcher in Supply Chain Resilience — University of Groningen — AcademicTransfer",
       "url": "https://www.academictransfer.com/en/jobs/365104/postdoctoral-researcher-in-supply-chain-resilience"
+    },
+    {
+      "title": "PhD Position on Operational Analysis and Assessment of New Aircraft Concepts — Delft University of Technology (TU Delft) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364315/phd-position-on-operational-analysis-and-assessment-of-new-aircraft-concepts"
+    },
+    {
+      "title": "PhD Position in Foil Drone — Delft University of Technology (TU Delft) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364852/phd-position-in-foil-drone"
+    },
+    {
+      "title": "PhD- student: Harnessing phase transitions for optical information processing — AMOLF — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/363562/phd-student-harnessing-phase-transitions-for-optical-information-processing"
+    },
+    {
+      "title": "France: 19 Fully Funded PhD Positions Available Under the MSCA COFUND BEST Project | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/worldwide/india/news/france-19-fully-funded-phd-positions-available-under-msca-cofund-best-project"
+    },
+    {
+      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/jobs/465188"
     },
     {
       "title": "Jobs and Career Opportunities in Europe | EURAXESS",
@@ -218,140 +328,52 @@
       "url": "https://euraxess.ec.europa.eu/jobs/462078"
     },
     {
-      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/jobs/467027"
+      "title": "France: 15 PhD Positions in REFFRACTEUR Doctoral Network | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/worldwide/india/news/france-15-phd-positions-reffracteur-doctoral-network-0"
     },
     {
       "title": "Jobs and Career Opportunities in Europe | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/jobs/463888"
     },
     {
-      "title": "Postdoctoral Researcher: Social Design of Intergenerational Contact Zones — University of Twente (UT) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/364890/postdoctoral-researcher-social-design-of-intergenerational-contact-zones"
-    },
-    {
-      "title": "PhD Candidate in Access, Actors and Accountability: The Role of Researchers in AI Governance — University of Amsterdam (UvA) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/364331/phd-candidate-in-access-actors-and-accountability-the-role-of-researchers-in-ai-governance"
-    },
-    {
-      "title": "PhD Candidate in the research project &#x27;Entangled with Seaweed&#x27;, case studies in Scotland — Leiden University — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/364611/phd-candidate-in-the-research-project-entangled-with-seaweed-case-studies-in-scotland"
-    },
-    {
-      "title": "PhD in Envisioning housing consumption corridors through participatory design fictions - Eindhoven, The Netherlands | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-envisioning-housing-consumption-corridors-through-participatory"
-    },
-    {
-      "title": "PhD Research Fellowship &quot;Critical Design of Public Service Systems -Youth Marginalization&quot; - Oslo, Norway | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-research-fellowship-critical-design-public-service-systems-youth"
-    },
-    {
-      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/jobs/453287"
-    },
-    {
-      "title": "PhD Position: From Ecological Violence to Ecologies of Care in Latin America and the Caribbean - Nijmegen, The Netherlands | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-position-ecological-violence-ecologies-care-latin-america-and"
-    },
-    {
-      "title": "PhD Position on Operational Analysis and Assessment of New Aircraft Concepts — Delft University of Technology (TU Delft) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/364315/phd-position-on-operational-analysis-and-assessment-of-new-aircraft-concepts"
-    },
-    {
-      "title": "Doctoral Researcher (Environmental Chemicals and Endometriosis) - Tampere, Finland | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/doctoral-researcher-environmental-chemicals-and-endometriosis-tampere"
-    },
-    {
-      "title": "Getting Started with Your PhD | PhD advice from jobs.ac.uk",
-      "url": "https://career-advice.jobs.ac.uk/during-your-phd/getting-started-with-your-phd-a-practical-guide-from-someone-who-survived-it"
-    },
-    {
-      "title": "PhD Fellowship in Communication and Leadership: Communicating Environmental Futures in the Age of AI - Oslo, Norway | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-fellowship-communication-and-leadership-communicating-environmental"
-    },
-    {
-      "title": "PhD Position in Decoding Environmental History from Microorganisms for Living Sensors and Memory — Delft University of Technology (TU Delft) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/364394/phd-position-in-decoding-environmental-history-from-microorganisms-for-living-sensors-and-memory"
-    },
-    {
-      "title": "PhD Pathways: Bridging research and industry - jobs.ac.uk",
-      "url": "https://career-advice.jobs.ac.uk/resources/webinars/phd-pathways-bridging-research-and-industry"
-    },
-    {
-      "title": "EngD in Designing Human-System Interaction - Eindhoven, The Netherlands | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/engd-designing-human-system-interaction-eindhoven-netherlands"
-    },
-    {
-      "title": "Assistant Professor Sociology — University of Groningen — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/364742/assistant-professor-sociology"
-    },
-    {
-      "title": "PhD Position in Foil Drone — Delft University of Technology (TU Delft) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/364852/phd-position-in-foil-drone"
-    },
-    {
-      "title": "France: 19 Fully Funded PhD Positions Available Under the MSCA COFUND BEST Project | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/worldwide/india/news/france-19-fully-funded-phd-positions-available-under-msca-cofund-best-project"
-    },
-    {
-      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/jobs/465188"
-    },
-    {
       "title": "15 PhD Positions Available in the MSCA ZEST Doctoral Network on Zinc Energy Storage Technology | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/worldwide/india/news/15-phd-positions-available-msca-zest-doctoral-network-zinc-energy-storage"
     },
     {
-      "title": "PhD- student: Harnessing phase transitions for optical information processing — AMOLF — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/363562/phd-student-harnessing-phase-transitions-for-optical-information-processing"
-    },
-    {
-      "title": "PhD Position Flexibility in Nuclear Power — Delft University of Technology (TU Delft) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/364770/phd-position-flexibility-in-nuclear-power"
-    },
-    {
-      "title": "15 Fully Funded PhD Positions Available through the MSCA Doctoral Network REFFRACTEUR | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/worldwide/africa/news/15-fully-funded-phd-positions-available-through-msca-doctoral-network"
-    },
-    {
-      "title": "France: 15 PhD Positions in REFFRACTEUR Doctoral Network | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/worldwide/india/news/france-15-phd-positions-reffracteur-doctoral-network-0"
-    },
-    {
-      "title": "PhD Candidate in Systemic Actors and the Enforcement of Digital Rules — University of Amsterdam (UvA) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/364332/phd-candidate-in-systemic-actors-and-the-enforcement-of-digital-rules"
+      "title": "Europe: 16 PhD Positions in the Met2Adapt Doctoral Network on Sustainable Meta-Structures for Renewable Energy | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/worldwide/india/news/europe-16-phd-positions-met2adapt-doctoral-network-sustainable-meta-structures"
     },
     {
       "title": "FindAPhD.com",
       "url": "https://www.tavily.com/knowledge/company/EpaVEwlC3kEI"
     },
     {
+      "title": "PhD Fellowships - The International Society for Ecological Economics",
+      "url": "https://www.isecoeco.org/jobs-fellowships/phd-fellowships"
+    },
+    {
+      "title": "Aida: Towards a degrowth liminality in-between imperial and regenerative modes of living | Degrowth Journal",
+      "url": "https://www.degrowthjournal.org/publications/2026-10-13-aida-towards-a-degrowth-liminality-in-between-imperial-and-regenerative-modes-of-living"
+    },
+    {
+      "title": "5000 Fully Funded Scholarships in Canada 2027 for Bachelor, Master &amp; PhD",
+      "url": "https://montessoriline.com/5000-scholarships-in-canada"
+    },
+    {
+      "title": "High Commission of Canada Scholarships 2027 (BS, MS, PhD)",
+      "url": "https://subtitrariturcesti.me/high-commission-of-canada-scholarships"
+    },
+    {
+      "title": "PhD Scholarships in Sustainability Transformations",
+      "url": "https://www.isecoeco.org/ph-d-scholarships-in-sustainability-transformations-germany"
+    },
+    {
       "title": "Gund Institute Funded PhD Fellowships 2027",
       "url": "https://www.isecoeco.org/gund-institute-funded-phd-fellowships-2027"
     },
     {
-      "title": "Great academic opportunities: 19 calls for papers, 11 summer schools, 9 postdocs, 4 PhD scholarships, 2 visiting posts, 2 jobs, a grant &#8211; Economic Sociology &amp; Political Economy",
-      "url": "https://economicsociology.org/2026/03/05/great-academic-opportunities-17-calls-for-papers-9-postdocs-9-summer-schools-2-phd-scholarships-2-visiting-posts-a-job-an-award"
-    },
-    {
-      "title": "US PhD Admissions Fall 2026 Snapshot: International Applications Down 21% | Shaif Chowdhury posted on the topic | LinkedIn",
-      "url": "https://www.linkedin.com/posts/shaif-chowdhury-95m_fall-2026-phd-admissions-snapshot-international-activity-7517989515811176448-EmlO"
-    },
-    {
       "title": "Australia: One of the Best Countries for Fully Funded PhDs and Well-Paid Postdocs | Muhammad Perwaiz",
       "url": "https://www.linkedin.com/posts/muhammad-perwaiz-86bb5a183_australia-one-of-the-best-countries-for-activity-7397227540521578496-DyuX"
-    },
-    {
-      "title": "Looking for a fully funded PhD? Here are 10 trusted places to start your search: 1. FindAPhD - https://www.findaphd.com One of the largest databases for PhD opportunities across the UK, Europe, Australia, and beyond. 2. DAAD Scholarship Database (Germany) - https://www.daad.de/en A great resource for funded PhD opportunities and research scholarships in Germany. 3. EURAXESS - https://euraxess.ec.europa.eu Browse funded research positions and PhD vacancies across Europe. 4. Commonwealth Scholarships - https://cscuk.fcdo.gov.uk For students from eligible Commonwealth countries pursuing postgraduate study in the UK. 5. Fulbright Program - https://fulbrightprogram.org Offers funding for graduate study and research, particularly in the United States. 6. Erasmus Mundus - https://erasmus-plus.ec.europa.eu Provides fully funded joint Master’s programmes and some doctoral opportunities across European universities. 7. University Websites - https://academicpositions.com Many universities advertise fully funded PhD positions directly on their careers or graduate research pages. 8. Academic Positions - https://academicpositions.com Lists funded PhD, postdoctoral, and research vacancies from universities around the world. 9. jobs.ac.uk A popular platform for PhD studentships and academic vacancies in the UK. 10. LinkedIn Many professors, research groups, and universities post funded PhD openings before they’re widely advertised. Save this post for your PhD search and share it with someone planning to study abroad. Need help finding the right visa option to move abroad? Send us a DM. . . . . #FullyFundedPhD #PhDScholarships #StudyAbroad #ResearchOpportunities #Ebteam | EBTeam",
-      "url": "https://www.facebook.com/ebteamhq/videos/looking-for-a-fully-funded-phd-here-are-10-trusted-places-to-start-your-search1-/1407227797960336"
-    },
-    {
-      "title": "🎓 24 Fully Funded Research, PhD &amp; Doctoral Opportunities 2026–2027 🌍",
-      "url": "https://www.linkedin.com/pulse/24-fully-funded-research-phd-doctoral-5nqmf"
-    },
-    {
-      "title": "20 Australian Universities for PhD Research Opportunities | Research Decoded posted on the topic | LinkedIn",
-      "url": "https://www.linkedin.com/posts/research-decoded_researchdecoded-phd-phdpositions-activity-7508050715312021504-gm_b"
     },
     {
       "title": "PhD Scholarships in Canada for International Students 2027",
@@ -362,16 +384,12 @@
       "url": "https://www.utoronto.ca/news/u-t-transforms-phd-education-launch-presidents-impact-scholarship-program"
     },
     {
-      "title": "Study in Canada Scholarships",
-      "url": "https://www.educanada.ca/scholarships-bourses/can/institutions/study-in-canada-sep-etudes-au-canada-pct.aspx?lang=eng"
+      "title": "Top 15 Fully Funded PhD Scholarships in Canada for 2027 - FullyFundedScholarship.org",
+      "url": "https://fullyfundedscholarship.org/phd-scholarships-in-canada-for-2027"
     },
     {
-      "title": "PhD Scholarships in Australia for International Students 2027",
-      "url": "https://pforphd.com/phd-scholarships-in-australia"
-    },
-    {
-      "title": "University of Toronto launches $100M scholarship program to attract PhD talent to Canada | CBC News",
-      "url": "https://www.cbc.ca/news/canada/toronto/university-of-toronto-scholarship-program-phd-talent-9.7369310"
+      "title": "Doctor of Philosophy in Resources, Environment and Sustainability (PhD) | Graduate School at The University of British Columbia (UBC)",
+      "url": "https://www.grad.ubc.ca/prospective-students/graduate-degree-programs/phd-resources-environment-sustainability"
     }
   ]
 }
