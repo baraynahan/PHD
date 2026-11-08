@@ -952,10 +952,15 @@ async function extractReviewBatch(pages) {
   return parsed;
 }
 
+function extractionResponseExcerpt(value, maxChars = 420) {
+  return String(value || "").replace(/[\\u0000-\\u001f\\u007f]/g, " ").replace(/\\s+/g, " ").trim().slice(0, maxChars);
+}
+
 async function extractWithFallback(primary, fallback, pages) {
   const attempts = [primary];
   if (fallback && fallback.configured && fallback.prefix !== primary.prefix) attempts.push(fallback);
   let lastError;
+  let lastEmpty = null;
   for (const provider of attempts) {
     if (failedThisRun.has(provider.prefix)) {
       console.warn(`[${provider.name}] unavailable for this run; skipping extraction fallback attempt.`);
@@ -965,11 +970,24 @@ async function extractWithFallback(primary, fallback, pages) {
       const { text } = await aiGenerate(provider, buildExtractionPrompt(pages));
       const parsed = extractJSON(text);
       if (!Array.isArray(parsed)) throw new Error(`${provider.name} extraction response was not an array.`);
+      if (parsed.length === 0) {
+        lastEmpty = { items: parsed, provider };
+        console.warn(`[${provider.name}] returned an empty JSON array for this batch.`);
+        console.warn(`[${provider.name}] empty-response excerpt: ${extractionResponseExcerpt(text) || "(empty response text)"}`);
+        if (provider !== attempts[attempts.length - 1]) {
+          console.warn(`[${provider.name}] trying the alternate extraction provider for the same pages.`);
+        }
+        continue;
+      }
       return { items: parsed, provider };
     } catch (error) {
       lastError = error;
       console.warn(`[${provider.name}] extraction failed: ${safeErrorMessage(error)}`);
     }
+  }
+  if (lastEmpty) {
+    console.warn("All available extraction providers returned no opportunities for this batch.");
+    return lastEmpty;
   }
   throw lastError || new Error("No configured extraction provider was available.");
 }
@@ -1531,27 +1549,48 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
   const results = [];
   const failedPages = [];
   let failedBatches = 0;
+  let emptyBatches = 0;
+  let fallbackBatches = 0;
   let batches = 0;
   for (let i = 0; i < toReview.length; i += EXTRACTION_BATCH_SIZE) {
     if (i > 0) await sleep(gapMs);
     batches++;
     const batch = toReview.slice(i, i + EXTRACTION_BATCH_SIZE);
+    const batchLabel = `batch ${batches}/${Math.ceil(toReview.length / EXTRACTION_BATCH_SIZE)}`;
+    console.log(`[${label}] ${batchLabel}: sending ${batch.length} pages to extraction:`);
+    for (const page of batch) {
+      console.log(`  PAGE ${page.id} | ${String(page.title || "(untitled)").slice(0, 140)} | ${page.url}`);
+    }
     try {
       const extracted = await extract(batch);
       const raw = Array.isArray(extracted) ? extracted : extracted.items;
       const extractedBy = Array.isArray(extracted) ? label : extracted.provider?.name || label;
+      const extractedModel = Array.isArray(extracted) ? providerModelForLabel(label) : (extracted.provider?.model || "");
+      if (raw.length === 0) {
+        emptyBatches++;
+        console.warn(`[${label}] ${batchLabel}: 0 opportunities returned after trying available extraction providers.`);
+      } else {
+        console.log(`[${label}] ${batchLabel}: ${raw.length} opportunities returned by ${extractedBy} (${extractedModel || "model not reported"}).`);
+      }
+      if (extractedBy !== label) {
+        fallbackBatches++;
+        console.log(`[${label}] ${batchLabel}: fallback extraction succeeded via ${extractedBy}.`);
+      }
       results.push(...attachPageData(raw, batch).map(item => ({
         ...item,
         _extracted_by: extractedBy,
-        _ai_model: Array.isArray(extracted) ? providerModelForLabel(label) : (extracted.provider?.model || "")
+        _ai_model: extractedModel
       })));
     } catch (error) {
       failedBatches++;
       failedPages.push(...batch);
-      console.warn(`[${label}] could not read pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
+      console.warn(`[${label}] ${batchLabel} failed for pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
     }
   }
+  stats.extraction_batches = batches;
   stats.batches_failed = failedBatches;
+  stats.empty_batches = emptyBatches;
+  stats.fallback_batches = fallbackBatches;
   stats.ai_returned = results.length;
 
   if (batches > 0 && failedBatches === batches) {
@@ -1843,10 +1882,14 @@ async function main() {
     for (const source of sources) if (source?.url) allSourcesMap.set(source.url, source);
   }
 
+  const failedProviderLabels = Array.from(new Set([
+    ...failedThisRun,
+    ...runs.filter(run => run.status === "failed").map(run => run.label)
+  ]));
   saveJSON(SOURCES_FILE, {
     searched_at: new Date().toISOString(),
     budgets: CFG,
-    failed_providers: [...failedThisRun],
+    failed_providers: failedProviderLabels,
     runs: runs.map(run => ({
       provider: run.label, model: run.model, status: run.status, error: run.error,
       returned: run.returned, valid: run.results.length, detail: run.detail,
@@ -1884,7 +1927,7 @@ async function main() {
       "",
       `- Existing positions: **${existingResults.length}**`,
       `- Active positions saved: **${verifiedResults.length}**`,
-      `- Providers failed this run: \`${[...failedThisRun].join(", ") || "none"}\``,
+      `- Providers failed this run: \`${failedProviderLabels.join(", ") || "none"}\``,
       ""
     ];
     for (const run of runs) {
