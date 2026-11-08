@@ -636,6 +636,8 @@ function tier3QueriesForRun(count) {
 // AI CALLS
 // ============================================================================
 const AI_MAX_ATTEMPTS = 2;
+const GEMINI_MAX_ATTEMPTS = 4;
+const GEMINI_RETRY_DELAYS_MS = [15000, 30000, 60000];
 const failedThisRun = new Set();
 
 async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = false } = {}) {
@@ -651,8 +653,9 @@ async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = fa
     : null;
   if (!call) throw new Error(`${provider.prefix}_FORMAT "${provider.format}" is not supported.`);
 
+  const maxAttempts = provider.format === "gemini" ? GEMINI_MAX_ATTEMPTS : AI_MAX_ATTEMPTS;
   let lastError;
-  for (let attempt = 1; attempt <= AI_MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await call();
     } catch (error) {
@@ -662,12 +665,14 @@ async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = fa
         console.error(`[${provider.name}] quota exhausted — marking provider dead for this run.`);
         throw error;
       }
-      if (!error.retryable || attempt === AI_MAX_ATTEMPTS) {
+      if (!error.retryable || attempt === maxAttempts) {
         if (error.retryable) failedThisRun.add(provider.prefix);
         break;
       }
-      const wait = 4000 * attempt;
-      console.warn(`[${provider.name}] attempt ${attempt}/${AI_MAX_ATTEMPTS} failed (${safeErrorMessage(error)}); retrying in ${wait / 1000}s...`);
+      const wait = provider.format === "gemini"
+        ? GEMINI_RETRY_DELAYS_MS[attempt - 1]
+        : 4000 * attempt;
+      console.warn(`[${provider.name}] attempt ${attempt}/${maxAttempts} failed (${safeErrorMessage(error)}); retrying in ${wait / 1000}s...`);
       await sleep(wait);
     }
   }
@@ -1669,30 +1674,21 @@ async function runProvider(provider, blocked) {
     run.stats.rejected = tally(grounded.map(explainRejection));
     console.log(`[${provider.label}] returned ${run.returned} results, ${run.results.length} passed validation.`);
 
-    // Diagnostic: if every grounded result was rejected, print WHY and a
-    // sample of what the model actually returned, so the next run is debuggable.
-    if (grounded.length > 0 && run.results.length === 0) {
-      console.log(`[${provider.label}] all ${grounded.length} grounded results were rejected. Reasons:`);
-      for (const [reason, n] of Object.entries(run.stats.rejected)) {
-        console.log(`  ${n}× ${reason}`);
+    // Per-opportunity diagnostics: show the outcome and exact validation reason
+    // for every item extracted by the model. Ungrounded URLs are reported too.
+    if (rawResults.length > 0) {
+      console.log(`[${provider.label}] validation details for all ${rawResults.length} extracted opportunities:`);
+      for (const item of rawResults) {
+        const title = String(item?.title || "(missing title)").trim().slice(0, 180);
+        const university = String(item?.university || "(missing university)").trim().slice(0, 120);
+        const groundedUrl = item?.url_grounded === true;
+        const reason = groundedUrl
+          ? explainRejection(item)
+          : "URL not grounded in the search sources";
+        const passed = groundedUrl && reason === "passes";
+        console.log(`  ${passed ? "PASSED" : "REJECTED"} | ${title} | ${university}`);
+        if (!passed) console.log(`    Reason: ${reason}`);
       }
-      const sample = grounded[0];
-      console.log(`[${provider.label}] sample raw AI result (first of ${grounded.length}):`);
-      console.log(JSON.stringify({
-        title: sample.title,
-        university: sample.university,
-        country: sample.country,
-        deadline: sample.deadline,
-        deadline_type: sample.deadline_type,
-        overall_score: sample.overall_score,
-        topic_fit: sample.topic_fit,
-        politics_fit: sample.politics_fit,
-        design_fit: sample.design_fit,
-        methods_fit: sample.methods_fit,
-        funding_quality: sample.funding_quality,
-        eligible: sample.eligible,
-        reject_reason: sample.reject_reason
-      }, null, 2));
     }
   } catch (error) {
     run.status = "failed";
