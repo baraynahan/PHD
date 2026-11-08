@@ -1,5 +1,5 @@
 {
-  "searched_at": "2026-11-08T18:29:21.470Z",
+  "searched_at": "2026-11-08T18:33:59.838Z",
   "budgets": {
     "MAX_PAGES": 120,
     "TIER3_MAX_PAGES": 40,
@@ -16,6 +16,7 @@
     "IELTS_LOOKUP_MAX_PER_RUN": 3
   },
   "failed_providers": [
+    "SEARCH_REVIEW",
     "Gemini"
   ],
   "runs": [
@@ -35,8 +36,8 @@
       "model": "free/deepseek-v4-pro-0813 (search: Tavily)",
       "status": "ok",
       "error": "",
-      "returned": 13,
-      "valid": 6,
+      "returned": 10,
+      "valid": 3,
       "detail": "83 pages read, 25 sent to AI",
       "sources": 83,
       "stats": {
@@ -55,18 +56,18 @@
         "sent_to_ai": 25,
         "extraction_batches": 5,
         "batches_failed": 0,
-        "empty_batches": 0,
-        "fallback_batches": 3,
-        "ai_returned": 13,
+        "empty_batches": 2,
+        "fallback_batches": 1,
+        "ai_returned": 10,
         "rejected": {
-          "passes": 6,
-          "model hard-rejected: Deadline 2026-08-18 is before today's date 2026-11-08; position closed. Topic (ecological violence, decolonial ecologies, Latin America/Caribbean) is not a core fit for the candidate's degrowth/post-growth/sustainable consumption/product longevity trajectory.": 1,
-          "model hard-rejected: Deadline 2026-11-02 is before today's date 2026-11-08; position closed. Topic is legal/policy AI governance, not aligned with the candidate's degrowth/post-growth/sustainable consumption/product longevity focus.": 1,
-          "model hard-rejected: Deadline 2026-08-23 is before today's date 2026-11-08; position closed. Topic (belonging, neurodiversity, school environments, feminist HCI) is not aligned with the candidate's degrowth/post-growth/sustainable consumption/product longevity trajectory.": 1,
-          "model hard-rejected: Not a PhD position (postdoc R3); candidate is seeking a PhD. Deadline 2026-11-01 is before today's date 2026-11-08; position closed. Topic (digital health, atrial fibrillation, patient education) is unrelated to the candidate's degrowth/post-growth/sustainable consumption/product longevity focus.": 1,
-          "model hard-rejected: Deadline 2026-10-31 is before today's date 2026-11-08; position closed. Topic is experimental biophysics/materials science (root growth mechanics, microfluidics), which is explicitly excluded from the candidate's profile.": 1,
-          "model hard-rejected: No funding amount, salary scale, contract duration or stipend details are stated on the page; funding_quality cannot be verified. Topic (citizen science, ecological justice, climate resilience) is adjacent but not a core fit for the candidate's degrowth/post-growth/sustainable consumption/product longevity trajectory, and no design dimension is present.": 1,
-          "model hard-rejected: This is a Postdoc position, not a PhD vacancy.": 1
+          "passes": 3,
+          "model hard-rejected: Application deadline (18 August 2026) is before today's date (2026-11-08); the vacancy is closed.": 1,
+          "model hard-rejected: Application deadline (2 November 2026) is before today's date (2026-11-08); the vacancy is closed.": 1,
+          "model hard-rejected: Application deadline (23 August 2026) is before today's date (2026-11-08); the vacancy is closed.": 1,
+          "model hard-rejected: This is a postdoc (R3) position, not a PhD vacancy; additionally the deadline (1 November 2026) is before today's date (2026-11-08).": 1,
+          "model hard-rejected: Unrelated topic (experimental biophysics of plant roots); also the deadline (31 October 2026) is before today's date (2026-11-08).": 1,
+          "score 58 is below 60": 1,
+          "score 54 is below 60": 1
         }
       }
     }
