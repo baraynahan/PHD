@@ -1,5 +1,5 @@
 {
-  "searched_at": "2026-11-08T18:20:13.961Z",
+  "searched_at": "2026-11-08T18:29:21.470Z",
   "budgets": {
     "MAX_PAGES": 120,
     "TIER3_MAX_PAGES": 40,
@@ -15,7 +15,9 @@
     "IELTS_LOOKUP_MIN_SCORE": 90,
     "IELTS_LOOKUP_MAX_PER_RUN": 3
   },
-  "failed_providers": [],
+  "failed_providers": [
+    "Gemini"
+  ],
   "runs": [
     {
       "provider": "Gemini",
@@ -33,8 +35,8 @@
       "model": "free/deepseek-v4-pro-0813 (search: Tavily)",
       "status": "ok",
       "error": "",
-      "returned": 0,
-      "valid": 0,
+      "returned": 13,
+      "valid": 6,
       "detail": "83 pages read, 25 sent to AI",
       "sources": 83,
       "stats": {
@@ -51,37 +53,25 @@
         },
         "prescreen_dropped": 58,
         "sent_to_ai": 25,
+        "extraction_batches": 5,
         "batches_failed": 0,
-        "ai_returned": 0,
-        "rejected": {}
+        "empty_batches": 0,
+        "fallback_batches": 3,
+        "ai_returned": 13,
+        "rejected": {
+          "passes": 6,
+          "model hard-rejected: Deadline 2026-08-18 is before today's date 2026-11-08; position closed. Topic (ecological violence, decolonial ecologies, Latin America/Caribbean) is not a core fit for the candidate's degrowth/post-growth/sustainable consumption/product longevity trajectory.": 1,
+          "model hard-rejected: Deadline 2026-11-02 is before today's date 2026-11-08; position closed. Topic is legal/policy AI governance, not aligned with the candidate's degrowth/post-growth/sustainable consumption/product longevity focus.": 1,
+          "model hard-rejected: Deadline 2026-08-23 is before today's date 2026-11-08; position closed. Topic (belonging, neurodiversity, school environments, feminist HCI) is not aligned with the candidate's degrowth/post-growth/sustainable consumption/product longevity trajectory.": 1,
+          "model hard-rejected: Not a PhD position (postdoc R3); candidate is seeking a PhD. Deadline 2026-11-01 is before today's date 2026-11-08; position closed. Topic (digital health, atrial fibrillation, patient education) is unrelated to the candidate's degrowth/post-growth/sustainable consumption/product longevity focus.": 1,
+          "model hard-rejected: Deadline 2026-10-31 is before today's date 2026-11-08; position closed. Topic is experimental biophysics/materials science (root growth mechanics, microfluidics), which is explicitly excluded from the candidate's profile.": 1,
+          "model hard-rejected: No funding amount, salary scale, contract duration or stipend details are stated on the page; funding_quality cannot be verified. Topic (citizen science, ecological justice, climate resilience) is adjacent but not a core fit for the candidate's degrowth/post-growth/sustainable consumption/product longevity trajectory, and no design dimension is present.": 1,
+          "model hard-rejected: This is a Postdoc position, not a PhD vacancy.": 1
+        }
       }
     }
   ],
   "sources": [
-    {
-      "title": "PhD Candidate in Access, Actors and Accountability: The Role of Researchers in AI Governance — University of Amsterdam (UvA) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/364331/phd-candidate-in-access-actors-and-accountability-the-role-of-researchers-in-ai-governance"
-    },
-    {
-      "title": "PhD Position: From Ecological Violence to Ecologies of Care in Latin America and the Caribbean - Nijmegen, The Netherlands | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-position-ecological-violence-ecologies-care-latin-america-and"
-    },
-    {
-      "title": "PhD position on Critical approaches to Designing for Belonging — University of Twente (UT) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/362880/phd-position-on-critical-approaches-to-designing-for-belonging"
-    },
-    {
-      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/de/node/472087"
-    },
-    {
-      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/jobs/462078"
-    },
-    {
-      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/jobs/453287"
-    },
     {
       "title": "PhD position Participatory Data Governance for a Just Energy Transition — Delft University of Technology (TU Delft) — AcademicTransfer",
       "url": "https://www.academictransfer.com/en/jobs/365288/phd-position-participatory-data-governance-for-a-just-energy-transition"
@@ -93,6 +83,10 @@
     {
       "title": "PhD on worker-augmenting technology implementation — Eindhoven University of Technology (TU&#x2F;e) — AcademicTransfer",
       "url": "https://www.academictransfer.com/en/jobs/365397/phd-on-worker-augmenting-technology-implementation"
+    },
+    {
+      "title": "PhD Candidate in Access, Actors and Accountability: The Role of Researchers in AI Governance — University of Amsterdam (UvA) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/364331/phd-candidate-in-access-actors-and-accountability-the-role-of-researchers-in-ai-governance"
     },
     {
       "title": "Postdoc In Human–AI Interaction and Risk-minimizing Digital Design in Gambling — Eindhoven University of Technology (TU&#x2F;e) — AcademicTransfer",
@@ -133,6 +127,10 @@
     {
       "title": "Jobs and Career Opportunities in Europe | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/jobs/464075"
+    },
+    {
+      "title": "PhD Position: From Ecological Violence to Ecologies of Care in Latin America and the Caribbean - Nijmegen, The Netherlands | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-position-ecological-violence-ecologies-care-latin-america-and"
     },
     {
       "title": "Doctoral Researcher (PhD Student), Bioreactor Development - Joensuu, Finland | EURAXESS",
@@ -223,6 +221,10 @@
       "url": "https://www.academictransfer.com/en/jobs/363997/2-phd-positions-on-measuring-the-future-of-power-electronics"
     },
     {
+      "title": "PhD position on Critical approaches to Designing for Belonging — University of Twente (UT) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/362880/phd-position-on-critical-approaches-to-designing-for-belonging"
+    },
+    {
       "title": "Assistant Professor In Ultra-Low Latency Hybrid Neuromorphic Photonics — Eindhoven University of Technology (TU&#x2F;e) — AcademicTransfer",
       "url": "https://www.academictransfer.com/en/jobs/365389/assistant-professor-in-ultra-low-latency-hybrid-neuromorphic-photonics"
     },
@@ -241,6 +243,10 @@
     {
       "title": "Jobs and Career Opportunities in Europe | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/jobs/431925"
+    },
+    {
+      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/de/node/472087"
     },
     {
       "title": "Jobs and Career Opportunities in Europe | EURAXESS",
@@ -309,6 +315,14 @@
     {
       "title": "Jobs and Career Opportunities in Europe | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/jobs/462074"
+    },
+    {
+      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/jobs/462078"
+    },
+    {
+      "title": "Jobs and Career Opportunities in Europe | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/jobs/453287"
     },
     {
       "title": "France: 15 PhD Positions in REFFRACTEUR Doctoral Network | EURAXESS",
