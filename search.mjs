@@ -953,7 +953,7 @@ async function extractReviewBatch(pages) {
 }
 
 function extractionResponseExcerpt(value, maxChars = 420) {
-  return String(value || "").replace(/[\\u0000-\\u001f\\u007f]/g, " ").replace(/\\s+/g, " ").trim().slice(0, maxChars);
+  return String(value || "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, maxChars);
 }
 
 async function extractWithFallback(primary, fallback, pages) {
