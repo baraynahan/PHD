@@ -689,7 +689,7 @@ async function geminiFormatGenerate(provider, prompt, useSearch, allowEmpty) {
   const body = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     ...(useSearch ? { tools: [{ google_search: {} }] } : {}),
-    generationConfig: { temperature: 0.1, responseMimeType: "text/plain" }
+    generationConfig: { responseMimeType: "text/plain" }
   };
   const response = await fetch(endpoint, {
     method: "POST",
