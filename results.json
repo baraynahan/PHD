@@ -32,7 +32,7 @@
     "url_grounded": true,
     "first_seen": "2026-10-07T01:21:16.973Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T16:48:00.030Z",
+    "verification_checked_at": "2026-11-14T12:51:38.346Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-envisioning-housing-consumption-corridors-through-participatory"
   },
@@ -69,7 +69,7 @@
     "url_grounded": true,
     "first_seen": "2026-11-08T16:48:00.026Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T16:48:00.030Z",
+    "verification_checked_at": "2026-11-14T12:51:38.346Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://euraxess.ec.europa.eu/jobs/453287"
   },
@@ -106,7 +106,7 @@
     "url_grounded": true,
     "first_seen": "2026-11-07T16:16:37.386Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T16:48:00.030Z",
+    "verification_checked_at": "2026-11-14T12:51:38.346Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://euraxess.ec.europa.eu/jobs/453287"
   },
@@ -143,7 +143,7 @@
     "url_grounded": true,
     "first_seen": "2026-11-02T11:34:13.461Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T16:48:00.030Z",
+    "verification_checked_at": "2026-11-14T12:51:38.346Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-research-fellowship-critical-design-public-service-systems-youth"
   },
@@ -180,7 +180,7 @@
     "url_grounded": true,
     "first_seen": "2026-10-07T01:21:16.978Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T16:48:00.030Z",
+    "verification_checked_at": "2026-11-14T12:51:38.346Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://www.linkedin.com/posts/richard-b%C3%A4rnthaler-62480a328_fully-funded-phd-in-political-economy-of-activity-7409156642363084800-fEaT"
   },
@@ -217,7 +217,7 @@
     "url_grounded": true,
     "first_seen": "2026-10-31T11:34:29.081Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T16:48:00.417Z",
+    "verification_checked_at": "2026-11-14T12:51:38.826Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://euraxess.ec.europa.eu/jobs/453287"
   },
@@ -254,7 +254,7 @@
     "url_grounded": true,
     "first_seen": "2026-11-07T12:15:42.931Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T16:48:00.417Z",
+    "verification_checked_at": "2026-11-14T12:51:38.826Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://www.academictransfer.com/en/jobs/365288/phd-position-participatory-data-governance-for-a-just-energy-transition"
   },
@@ -291,7 +291,7 @@
     "url_grounded": true,
     "first_seen": "2026-10-07T01:21:16.973Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T16:48:00.417Z",
+    "verification_checked_at": "2026-11-14T12:51:38.826Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://www.isecoeco.org/ph-d-scholarships-in-sustainability-transformations-germany"
   },
@@ -328,7 +328,7 @@
     "url_grounded": true,
     "first_seen": "2026-10-31T11:34:29.082Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T16:48:00.417Z",
+    "verification_checked_at": "2026-11-14T12:51:38.826Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://www.academictransfer.com/nl/jobs/365051/phd-assessing-social-sustainability-in-short-food-supply-chains"
   },
@@ -365,7 +365,7 @@
     "url_grounded": true,
     "first_seen": "2026-11-07T16:16:37.387Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T16:48:00.417Z",
+    "verification_checked_at": "2026-11-14T12:51:38.826Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://www.academictransfer.com/en/jobs/365397/phd-on-worker-augmenting-technology-implementation"
   },
@@ -402,9 +402,46 @@
     "url_grounded": true,
     "first_seen": "2026-11-08T16:48:00.027Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T16:48:01.358Z",
+    "verification_checked_at": "2026-11-14T12:51:39.664Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/phd-fellowship-communication-and-leadership-communicating-environmental"
+  },
+  {
+    "title": "PhD in Labour Migration in Digital Industrial Policy",
+    "university": "Vrije Universiteit Amsterdam (VU)",
+    "country": "Netherlands",
+    "city": "Amsterdam",
+    "url": "https://www.academictransfer.com/en/jobs/365342/phd-in-labour-migration-in-digital-industrial-policy",
+    "deadline": "2026-12-01",
+    "deadline_type": "dated",
+    "start_date": "",
+    "geo_tier": 1,
+    "score_basis": "ai",
+    "funding": "This fully funded four-year PhD position is part of an ERC Starting Grant. Salary of € 3.204,00 (PhD) and maximum €4.051,00 (PhD) gross per month in the fourth year, for a full-time employment. Contract initially for 1 year, extendable to 4 years.",
+    "overall_score": 70,
+    "topic_fit": 15,
+    "politics_fit": 15,
+    "design_fit": 0,
+    "methods_fit": 20,
+    "funding_quality": 20,
+    "why_it_matches": "This PhD position aligns well with the candidate's strong interests in political economy, governance, policy, and social/political transformation. The project's focus on the political economy of digital capitalism and labour migration offers a critical lens on contemporary systemic issues, which resonates with the candidate's trajectory towards understanding consumption systems and broader societal change. The research methods (qualitative, policy analysis, process tracing) are a perfect match for the candidate's comfort with such approaches. The position is fully funded in a Tier 1 country (Netherlands).",
+    "original_text": "PhD in Labour Migration in Digital Industrial Policy — Vrije Universiteit Amsterdam (VU) — AcademicTransfer For candidates For employers For members AcademicTransfer Jobs and employers Jobs Jobs Archive Employers Premium employers Academic employers Universities of Applied Sciences Career journey Orientation Matching Preparation E-learning Events en English (EN) Nederlands (NL) PhD in Labour Migration in Digital Industrial Policy How is the EU’s quest for digital autonomy reshaping labour markets? Join this PhD project to explore how policymakers, employers and trade unions shape labour migration in Europe’s digital transformation. Deadline 1 Dec ’26 Published 5 Nov ’26 Vacancy ID 6012 Apply now 17 days remaining Save Research fields Political sciences; Sociology Job types PhD Education level University graduate Weekly hours 38 hours per week Salary indication €3204—€4051 per month Location De Boelelaan 1105, 1081HV, Amsterdam View on Google Maps Job description This fully funded four-year PhD position is part of an ERC Starting Grant ‘Migrant Labor in EU’s Pivot to Digital Autonomy’ funded by the European Research Council and led by Dr. Julia Rone at the Department of Political Science and Public Administration, Vrije Universiteit Amsterdam. The broader ERC project develops new explanations of how the EU (and individual member states) change labour migration policies to further their digital industrial policy ambitions. The project will offer a novel theorization of how the governance of labour migration intersects with digital capitalism, positioning the EU and its member states as active “catching-up” actors. The project is structured around four interlinked objectives: to conceptualize and map migrant labour across the digital stack in the EU, with a focus on flagship EU projects on networks, semiconductor chips, cloud, and AI. to analyse the strategic interactions between firms, trade unions, and policy makers in shaping digital labour migration regimes to analyse how migrant workers themselves experience, assess and (fail to) shape labour policies and workplace conditions in digital industry across the stack to advance a meso- and macro-level theorization of the (re)configuration of labour migration regimes in service of digital capitalism. The PhD project The PhD project will primarily contribute to Objectives 2 and 4. Your research will examine specifically how policy makers, employers and trade unions interact to decide who counts as a high-skilled, mid-skilled and low-skilled migrant in the digital industrial sector, what rules apply to them, and what rights they have. The main sectors analysed will be strategic priority sectors in EU digital industrial policy, including networks, semiconductor chips, cloud, and AI. The project will involve a cross-national comparative policy analysis, process tracing, and qualitative interviews. Experience with survey methods will be a plus but is not essential. Your duties As a PhD candidate, you will complete a cumulative PhD dissertation within four years, consisting of four publishable journal articles. Working closely with your supervisory team, led by Dr. Julia Rone, and in collaboration with the ERC research team, which includes two other postdoctoral researchers, you will play an integral role in advancing Objectives 2 and 4 of the ERC project. As part of your PhD, you will conduct comparative cross-national analyses on labour migration policies in the service of industrial policy, followed by a process tracing to explain the differences in the relative influence of various actors (such as employers or trade unions) in different national contexts and the EU more broadly. Your research will contribute to a broader theorization of the relation between infrastructural labour and digital capitalism in the current AI boom. You will actively participate in the intellectual life of the Department of Political Science and Public Administration at the VU, present your work at international conferences and workshops, contribute to collaborative research activities within the project, and have the opportunity to undertake research stays abroad within the project’s international network of collaborators. Requirements We are looking for a PhD candidate who: has obtained a (research) master’s degree in Political Economy, Political Science, Sociology, Migration Studies, or a closely related field has a strong interest in the political economy of digital capitalism and labour migration is familiar with qualitative semi-structured interviews has experience with qualitative research and comparative research design has experience in process tracing possesses excellent academic writing skills in English works independently and responsibly, while also collaborating well with colleagues is communicative, open-minded, and engaged in interdisciplinary research environments As a university, we strive for equal opportunities for all, recognising that diversity takes many forms. We believe that diversity in all its complexity is invaluable for the quality of our teaching, research and service. We are always looking for talent with diverse backgrounds and experiences. This also means that we are committed to creating an inclusive community so that we can use diversity as an asset. We realise that each individual brings a unique set of skills, expertise and mindset. Therefore, we are happy to invite anyone who recognises themselves in the profile to apply, even if you do not meet all the requirements. Conditions of employment Fixed-term contract : 1 year. A challenging position in a socially engaged organisation. At VU Amsterdam, you contribute to education, research and service for a better world. And that is valuable. So in return for your efforts, we offer you: a salary of € 3.204,00 (PhD) and maximum €4.051,00 (PhD) gross per month in the fourth year, for a full-time employment an employment contract of initially 1 year. If there is sufficient perspective, thi",
+    "strategic_fit": "This position offers an opportunity to deepen expertise in political economy and governance within a specific, highly relevant contemporary domain (digital capitalism and labour). While not directly in design, it allows the candidate to apply their systemic thinking and critical perspective to policy-oriented research, potentially bridging into areas like design for policy or systemic interventions from a political economy perspective in future roles. It expands the candidate's research portfolio into a core social science discipline (Political Science/Sociology) as desired.",
+    "why_it_is_not_perfect": "The primary mismatch is the complete absence of a design dimension. The candidate has a strong design background (Industrial Design, Service Design lecturer, Design Researcher) and interests in various design fields (transition, social, service, systemic, critical design). This project is purely social science/political science focused, without any explicit connection to design theory or practice. While the candidate is open to non-design departments, a project with some design dimension would be a better fit for their core identity. The specific topic of 'labour migration' is also not a direct thematic interest like 'sustainable consumption' or 'degrowth', though it falls under the broader 'political economy' umbrella.",
+    "supervisor": "Dr. Julia Rone",
+    "classification": "Political sciences; Sociology",
+    "research_area": "Labour Migration, Digital Industrial Policy, Political Economy of Digital Capitalism, EU digital autonomy, governance of labour migration, strategic interactions between firms, trade unions, and policy makers.",
+    "application_language": "English",
+    "ielts_requirement": "Not specified on official university website",
+    "ielts_source_url": "",
+    "ai_provider": "Gemini",
+    "ai_model": "",
+    "url_grounded": true,
+    "first_seen": "2026-11-14T12:51:38.343Z",
+    "verification_status": "Verified",
+    "verification_checked_at": "2026-11-14T12:51:39.664Z",
+    "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
+    "verification_url": "https://www.academictransfer.com/en/jobs/365342/phd-in-labour-migration-in-digital-industrial-policy"
   },
   {
     "title": "Doctoral Researcher in the ECOJUST project — Ecologically Just Climate Resilient Development",
@@ -439,7 +476,7 @@
     "url_grounded": true,
     "first_seen": "2026-11-02T11:34:13.461Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T16:48:01.358Z",
+    "verification_checked_at": "2026-11-14T12:51:39.664Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://euraxess.ec.europa.eu/jobs/453287"
   },
@@ -476,7 +513,7 @@
     "url_grounded": true,
     "first_seen": "2026-11-08T18:29:21.468Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T18:29:21.472Z",
+    "verification_checked_at": "2026-11-14T12:51:39.664Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://euraxess.ec.europa.eu/worldwide/india/news/europe-15-phd-positions-available-regulaire-doctoral-network"
   },
@@ -513,7 +550,7 @@
     "url_grounded": true,
     "first_seen": "2026-11-02T01:24:04.182Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T16:48:01.358Z",
+    "verification_checked_at": "2026-11-14T12:51:39.664Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://euraxess.ec.europa.eu/jobs/453287"
   },
@@ -550,7 +587,7 @@
     "url_grounded": true,
     "first_seen": "2026-10-31T11:34:29.082Z",
     "verification_status": "Verified",
-    "verification_checked_at": "2026-11-08T16:48:01.358Z",
+    "verification_checked_at": "2026-11-14T12:51:40.056Z",
     "verification_note": "HTTP 200; PhD/doctoral + vacancy signals present",
     "verification_url": "https://www.academictransfer.com/en/jobs/364942/phd-student-on-key-performance-indicators-for-biodiversity-inclusive-agriculture"
   }
