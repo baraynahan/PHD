@@ -74,6 +74,23 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           CLEANUP_ONLY: ${{ github.event.inputs.cleanup_only == 'true' }}
+
+          MAX_PAGES: ${{ vars.MAX_PAGES }}
+          TIER3_MAX_PAGES: ${{ vars.TIER3_MAX_PAGES }}
+          AI_REVIEW_BUDGET: ${{ vars.AI_REVIEW_BUDGET }}
+          AI_REVIEW_BUDGET_TIER3: ${{ vars.AI_REVIEW_BUDGET_TIER3 }}
+          QUERIES_EU: ${{ vars.QUERIES_EU }}
+          QUERIES_TIER3: ${{ vars.QUERIES_TIER3 }}
+          EXTRACTION_BATCH_SIZE: ${{ vars.EXTRACTION_BATCH_SIZE }}
+          PAGE_TEXT_CHARS: ${{ vars.PAGE_TEXT_CHARS }}
+          SEARCH_RESULTS_PER_QUERY: ${{ vars.SEARCH_RESULTS_PER_QUERY }}
+          FETCH_CONCURRENCY: ${{ vars.FETCH_CONCURRENCY }}
+          AI_CALL_GAP_MS: ${{ vars.AI_CALL_GAP_MS }}
+          AI_MAX_ATTEMPTS: ${{ vars.AI_MAX_ATTEMPTS }}
+          AI_RETRY_BASE_DELAY_MS: ${{ vars.AI_RETRY_BASE_DELAY_MS }}
+          IELTS_LOOKUP_ENABLED: ${{ vars.IELTS_LOOKUP_ENABLED }}
+          IELTS_LOOKUP_MIN_SCORE: ${{ vars.IELTS_LOOKUP_MIN_SCORE }}
+          IELTS_LOOKUP_MAX_PER_RUN: ${{ vars.IELTS_LOOKUP_MAX_PER_RUN }}
         run: |
           bun search.mjs
 
