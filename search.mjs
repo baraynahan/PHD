@@ -39,12 +39,12 @@ const CFG = {
   AI_REVIEW_BUDGET_TIER3:  envInt("AI_REVIEW_BUDGET_TIER3", 4),
   QUERIES_EU:              envInt("QUERIES_EU", 18),
   QUERIES_TIER3:           envInt("QUERIES_TIER3", 6),
-  EXTRACTION_BATCH_SIZE:   envInt("EXTRACTION_BATCH_SIZE", 2),
+  EXTRACTION_BATCH_SIZE:   Math.max(1, envInt("EXTRACTION_BATCH_SIZE", 2)),
   PAGE_TEXT_CHARS:         envInt("PAGE_TEXT_CHARS", 3500),
-  SEARCH_RESULTS_PER_QUERY: envInt("SEARCH_RESULTS_PER_QUERY", 8),
-  FETCH_CONCURRENCY:       envInt("FETCH_CONCURRENCY", 6),
+  SEARCH_RESULTS_PER_QUERY: Math.max(1, envInt("SEARCH_RESULTS_PER_QUERY", 8)),
+  FETCH_CONCURRENCY:       Math.max(1, envInt("FETCH_CONCURRENCY", 6)),
   AI_CALL_GAP_MS:          envInt("AI_CALL_GAP_MS", 8000),
-  AI_MAX_ATTEMPTS:         envInt("AI_MAX_ATTEMPTS", 2),
+  AI_MAX_ATTEMPTS:         Math.max(1, envInt("AI_MAX_ATTEMPTS", 2)),
   AI_RETRY_BASE_DELAY_MS:  envInt("AI_RETRY_BASE_DELAY_MS", 6000),
   IELTS_LOOKUP_ENABLED:    envBool("IELTS_LOOKUP_ENABLED", false),
   IELTS_LOOKUP_MIN_SCORE:  envInt("IELTS_LOOKUP_MIN_SCORE", 90),
@@ -1742,7 +1742,7 @@ async function callAllProviders(blocked) {
   console.log(`Single discovery pipeline: ${SEARCH.name}; primary reviewer: ${REVIEW.name}; optional AI fallback: ${SEARCH_REVIEW.configured ? SEARCH_REVIEW.name : "not configured"}`);
   const run = await runProvider(PROVIDERS[0], blocked);
   if (run.status !== "ok") {
-    throw new Error("Primary Tavily-based pipeline failed: " + (run.error || run.status));
+    throw new Error("Primary configured search pipeline failed: " + (run.error || run.status));
   }
   return [run];
 }
