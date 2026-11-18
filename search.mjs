@@ -39,13 +39,13 @@ const CFG = {
   AI_REVIEW_BUDGET_TIER3:  envInt("AI_REVIEW_BUDGET_TIER3", 4),
   QUERIES_EU:              envInt("QUERIES_EU", 18),
   QUERIES_TIER3:           envInt("QUERIES_TIER3", 6),
-  EXTRACTION_BATCH_SIZE:   Math.max(1, envInt("EXTRACTION_BATCH_SIZE", 2)),
-  PAGE_TEXT_CHARS:         envInt("PAGE_TEXT_CHARS", 3500),
+  EXTRACTION_BATCH_SIZE:   1,
+  PAGE_TEXT_CHARS:         Math.max(1000, Math.min(2500, envInt("PAGE_TEXT_CHARS", 2500))),
   SEARCH_RESULTS_PER_QUERY: Math.max(1, envInt("SEARCH_RESULTS_PER_QUERY", 8)),
   FETCH_CONCURRENCY:       Math.max(1, envInt("FETCH_CONCURRENCY", 6)),
-  AI_CALL_GAP_MS:          envInt("AI_CALL_GAP_MS", 8000),
-  AI_MAX_ATTEMPTS:         Math.max(1, envInt("AI_MAX_ATTEMPTS", 2)),
-  AI_RETRY_BASE_DELAY_MS:  envInt("AI_RETRY_BASE_DELAY_MS", 6000),
+  AI_CALL_GAP_MS:          Math.max(20000, envInt("AI_CALL_GAP_MS", 20000)),
+  AI_MAX_ATTEMPTS:         Math.max(3, Math.min(5, envInt("AI_MAX_ATTEMPTS", 3))),
+  AI_RETRY_BASE_DELAY_MS:  Math.max(15000, envInt("AI_RETRY_BASE_DELAY_MS", 15000)),
   IELTS_LOOKUP_ENABLED:    envBool("IELTS_LOOKUP_ENABLED", false),
   IELTS_LOOKUP_MIN_SCORE:  envInt("IELTS_LOOKUP_MIN_SCORE", 90),
   IELTS_LOOKUP_MAX_PER_RUN: envInt("IELTS_LOOKUP_MAX_PER_RUN", 3)
@@ -121,9 +121,10 @@ function safeErrorMessage(error) {
   return message.length > 300 ? `${message.slice(0, 300)}…` : message;
 }
 
-function isQuotaError(error) {
+function isPermanentQuotaError(error) {
   const m = String(error?.message || error || "").toLowerCase();
-  return /quota exceeded|resource_exhausted|resource exhausted|insufficient_quota|out of credits|billing|exceeded your current quota/.test(m);
+  // Do not classify ordinary TPM/RPM 429 rate limits as exhausted quota.
+  return /insufficient_quota|out of credits|billing (?:disabled|hard limit)|exceeded your current quota|quota (?:has been )?exceeded/.test(m);
 }
 
 // ============================================================================
@@ -644,6 +645,26 @@ const GEMINI_MAX_ATTEMPTS = Math.max(2, CFG.AI_MAX_ATTEMPTS);
 const GEMINI_RETRY_DELAYS_MS = [15000, 30000, 60000];
 const failedThisRun = new Set();
 
+function retryDelayFromMessage(message) {
+  const m = String(message || "");
+  const seconds = m.match(/(?:try again|retry|reset)(?: in| after)?\s+(\d+(?:\.\d+)?)\s*s(?:ec(?:ond)?s?)?/i);
+  if (seconds) return Math.min(120000, Math.max(1000, Math.ceil(Number(seconds[1]) * 1000)));
+  const minutes = m.match(/(?:try again|retry|reset)(?: in| after)?\s+(\d+(?:\.\d+)?)\s*m(?:in(?:ute)?s?)?/i);
+  if (minutes) return Math.min(120000, Math.max(1000, Math.ceil(Number(minutes[1]) * 60000)));
+  return 0;
+}
+
+function retryDelayFromResponse(response, message) {
+  const header = String(response.headers.get("retry-after") || "").trim();
+  if (header) {
+    const seconds = Number(header);
+    if (Number.isFinite(seconds) && seconds > 0) return Math.min(120000, Math.ceil(seconds * 1000));
+    const date = Date.parse(header);
+    if (Number.isFinite(date)) return Math.min(120000, Math.max(1000, date - Date.now()));
+  }
+  return retryDelayFromMessage(message);
+}
+
 async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = false } = {}) {
   if (!provider.configured) throw new Error(`${provider.name} is not configured (missing: ${provider.missing.join(", ")}).`);
   if (failedThisRun.has(provider.prefix)) {
@@ -664,13 +685,19 @@ async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = fa
       return await call();
     } catch (error) {
       lastError = error;
-      if (isQuotaError(error)) {
+      if (isPermanentQuotaError(error)) {
         failedThisRun.add(provider.prefix);
-        console.error(`[${provider.name}] quota exhausted — marking provider dead for this run.`);
+        console.error(`[${provider.name}] billing/quota limit exhausted — disabling provider for this run.`);
         throw error;
       }
-      if (!error.retryable || attempt === maxAttempts) {
-        if (error.retryable) failedThisRun.add(provider.prefix);
+      if (!error.retryable) {
+        failedThisRun.add(provider.prefix);
+        console.error(`[${provider.name}] non-retryable API error — disabling provider for this run.`);
+        break;
+      }
+      if (attempt === maxAttempts) {
+        failedThisRun.add(provider.prefix);
+        console.error(`[${provider.name}] retry limit reached after ${maxAttempts} attempts.`);
         break;
       }
       const wait = Number(error.retryAfterMs) > 0
@@ -678,7 +705,7 @@ async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = fa
         : provider.format === "gemini"
         ? GEMINI_RETRY_DELAYS_MS[Math.min(attempt - 1, GEMINI_RETRY_DELAYS_MS.length - 1)]
         : CFG.AI_RETRY_BASE_DELAY_MS * attempt;
-      console.warn(`[${provider.name}] attempt ${attempt}/${maxAttempts} failed (${safeErrorMessage(error)}); retrying in ${wait / 1000}s...`);
+      console.warn(`[${provider.name}] transient API error on attempt ${attempt}/${maxAttempts} (${safeErrorMessage(error)}); retrying in ${Math.ceil(wait / 1000)}s...`);
       await sleep(wait);
     }
   }
@@ -711,8 +738,8 @@ async function geminiFormatGenerate(provider, prompt, useSearch, allowEmpty) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const msg = data?.error?.message || `${provider.name} HTTP ${response.status}`;
-    const retryAfter = Number(response.headers.get("retry-after") || 0);
-    throw apiError(msg, isRetryableStatus(response.status), retryAfter > 0 ? retryAfter * 1000 : 0);
+    const retryAfterMs = retryDelayFromResponse(response, msg);
+    throw apiError(msg, isRetryableStatus(response.status), retryAfterMs);
   }
   const text = (data?.candidates || []).flatMap(c => c?.content?.parts || []).map(p => p?.text || "").join("\n").trim();
   if (!text && !allowEmpty) {
@@ -736,8 +763,8 @@ async function openaiFormatGenerate(provider, prompt, allowEmpty) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const msg = data?.error?.message || `${provider.name} HTTP ${response.status}`;
-    const retryAfter = Number(response.headers.get("retry-after") || 0);
-    throw apiError(msg, isRetryableStatus(response.status), retryAfter > 0 ? retryAfter * 1000 : 0);
+    const retryAfterMs = retryDelayFromResponse(response, msg);
+    throw apiError(msg, isRetryableStatus(response.status), retryAfterMs);
   }
   const text = data?.choices?.[0]?.message?.content || "";
   if (!text && !allowEmpty) {
@@ -1598,7 +1625,7 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
   }
   stats.extraction_batches = batches;
   stats.batches_failed = failedBatches;
-  stats.empty_batches = emptyBatches;
+  stats.batches_empty = emptyBatches;
   stats.fallback_batches = fallbackBatches;
   stats.ai_returned = results.length;
 
@@ -1671,7 +1698,7 @@ async function runProvider(provider, blocked) {
     const rawResults = Array.isArray(response.results) ? response.results : [];
     run.returned = rawResults.length;
     run.sources = response.sources;
-    run.detail = `${run.stats.pages_read || 0} pages read, ${run.stats.sent_to_ai || 0} sent to AI`;
+    run.detail = `${run.stats.pages_read || 0} pages read, ${run.stats.sent_to_ai || 0} sent to AI, ${run.stats.batches_failed || 0} failed batches, ${run.stats.batches_empty || 0} empty batches`;
 
     const grounded = rawResults.filter(r => r.url_grounded === true);
     if (grounded.length < rawResults.length) {
@@ -1739,7 +1766,7 @@ async function runProvider(provider, blocked) {
 }
 
 async function callAllProviders(blocked) {
-  console.log(`Single discovery pipeline: ${SEARCH.name}; primary reviewer: ${REVIEW.name}; optional AI fallback: ${SEARCH_REVIEW.configured ? SEARCH_REVIEW.name : "not configured"}`);
+  console.log(`Single discovery pipeline: ${SEARCH.name}; primary reviewer: ${REVIEW.name}; extraction fallback: ${SEARCH_REVIEW.configured ? SEARCH_REVIEW.name : "not configured"}`);
   const run = await runProvider(PROVIDERS[0], blocked);
   if (run.status !== "ok") {
     throw new Error("Primary configured search pipeline failed: " + (run.error || run.status));
@@ -1972,7 +1999,12 @@ async function main() {
       `Completed with ${failed.length} failed provider(s); successful provider results were retained.`
     );
   } else {
-    console.log("All AI providers completed successfully.");
+    const batchWarnings = runs.reduce((n, run) => n + Number(run.stats?.batches_failed || 0) + Number(run.stats?.batches_empty || 0), 0);
+    if (batchWarnings > 0) {
+      console.warn(`Pipeline finished with ${batchWarnings} extraction batch warning(s); see the run diagnostics above.`);
+    } else {
+      console.log("Pipeline finished with no extraction batch errors or empty responses.");
+    }
   }
 }
 
