@@ -36,7 +36,7 @@ concurrency:
 
 jobs:
   search-and-deploy:
-    name: Search, notify, and deploy
+    name: Search, notify, build, and upload
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -147,8 +147,19 @@ jobs:
         with:
           path: "."
 
+  deploy:
+    name: Deploy GitHub Pages
+    needs: search-and-deploy
+    if: always() && needs.search-and-deploy.result != 'cancelled'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
       - name: Deploy to GitHub Pages
-        if: always()
         id: deployment
         uses: actions/deploy-pages@v4
         with:
