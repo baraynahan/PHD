@@ -20,7 +20,9 @@ const CLEANUP_ONLY = String(process.env.CLEANUP_ONLY || "").toLowerCase() === "t
 // TUNABLE BUDGETS
 // ============================================================================
 function envInt(name, fallback) {
-  const v = Number(process.env[name]);
+  const raw = String(process.env[name] ?? "").trim();
+  if (!raw) return fallback;
+  const v = Number(raw);
   return Number.isFinite(v) && v >= 0 ? v : fallback;
 }
 function envBool(name, fallback) {
