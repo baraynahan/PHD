@@ -647,9 +647,9 @@ const failedThisRun = new Set();
 
 function retryDelayFromMessage(message) {
   const m = String(message || "");
-  const seconds = m.match(/(?:try again|retry|reset)(?: in| after)?\\s+(\\d+(?:\\.\\d+)?)\\s*s(?:ec(?:ond)?s?)?/i);
+  const seconds = m.match(/(?:try again|retry|reset)(?: in| after)?\s+(\d+(?:\.\d+)?)\s*s(?:ec(?:ond)?s?)?/i);
   if (seconds) return Math.min(120000, Math.max(1000, Math.ceil(Number(seconds[1]) * 1000)));
-  const minutes = m.match(/(?:try again|retry|reset)(?: in| after)?\\s+(\\d+(?:\\.\\d+)?)\\s*m(?:in(?:ute)?s?)?/i);
+  const minutes = m.match(/(?:try again|retry|reset)(?: in| after)?\s+(\d+(?:\.\d+)?)\s*m(?:in(?:ute)?s?)?/i);
   if (minutes) return Math.min(120000, Math.max(1000, Math.ceil(Number(minutes[1]) * 60000)));
   return 0;
 }
