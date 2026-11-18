@@ -33,14 +33,17 @@ function envBool(name, fallback) {
 const CFG = {
   MAX_PAGES:               envInt("MAX_PAGES", 120),
   TIER3_MAX_PAGES:         envInt("TIER3_MAX_PAGES", 40),
-  AI_REVIEW_BUDGET:        envInt("AI_REVIEW_BUDGET", 25),
-  AI_REVIEW_BUDGET_TIER3:  envInt("AI_REVIEW_BUDGET_TIER3", 12),
-  QUERIES_EU:              envInt("QUERIES_EU", 24),
-  QUERIES_TIER3:           envInt("QUERIES_TIER3", 8),
-  EXTRACTION_BATCH_SIZE:   envInt("EXTRACTION_BATCH_SIZE", 6),
-  PAGE_TEXT_CHARS:         envInt("PAGE_TEXT_CHARS", 7000),
-  SEARCH_RESULTS_PER_QUERY: envInt("SEARCH_RESULTS_PER_QUERY", 10),
-  FETCH_CONCURRENCY:       envInt("FETCH_CONCURRENCY", 10),
+  AI_REVIEW_BUDGET:        envInt("AI_REVIEW_BUDGET", 12),
+  AI_REVIEW_BUDGET_TIER3:  envInt("AI_REVIEW_BUDGET_TIER3", 4),
+  QUERIES_EU:              envInt("QUERIES_EU", 18),
+  QUERIES_TIER3:           envInt("QUERIES_TIER3", 6),
+  EXTRACTION_BATCH_SIZE:   envInt("EXTRACTION_BATCH_SIZE", 2),
+  PAGE_TEXT_CHARS:         envInt("PAGE_TEXT_CHARS", 3500),
+  SEARCH_RESULTS_PER_QUERY: envInt("SEARCH_RESULTS_PER_QUERY", 8),
+  FETCH_CONCURRENCY:       envInt("FETCH_CONCURRENCY", 6),
+  AI_CALL_GAP_MS:          envInt("AI_CALL_GAP_MS", 8000),
+  AI_MAX_ATTEMPTS:         envInt("AI_MAX_ATTEMPTS", 2),
+  AI_RETRY_BASE_DELAY_MS:  envInt("AI_RETRY_BASE_DELAY_MS", 6000),
   IELTS_LOOKUP_ENABLED:    envBool("IELTS_LOOKUP_ENABLED", false),
   IELTS_LOOKUP_MIN_SCORE:  envInt("IELTS_LOOKUP_MIN_SCORE", 90),
   IELTS_LOOKUP_MAX_PER_RUN: envInt("IELTS_LOOKUP_MAX_PER_RUN", 3)
@@ -99,13 +102,12 @@ ${THIS_YEAR} or ${THIS_YEAR + 1}. Ignore anything that closed before ${TODAY}.
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-if (!SEARCH_REVIEW.configured && !(SEARCH.configured && REVIEW.configured)) {
+if (!SEARCH.configured || !REVIEW.configured) {
   throw new Error(
-    "No provider is fully configured. Set the SEARCH_REVIEW_* variables + secret, " +
-    "and/or the SEARCH_* and REVIEW_* variables + secrets.\n" +
-    `Missing for search+review provider: ${SEARCH_REVIEW.missing.join(", ") || "nothing"}\n` +
-    `Missing for search provider: ${SEARCH.missing.join(", ") || "nothing"}\n` +
-    `Missing for review provider: ${REVIEW.missing.join(", ") || "nothing"}`
+    "The primary free pipeline requires SEARCH_* (search API) and REVIEW_* (AI reviewer). " +
+    "SEARCH_REVIEW_* is optional and is used only as an AI extraction fallback.\n" +
+    `Missing for SEARCH: ${SEARCH.missing.join(", ") || "nothing"}\n` +
+    `Missing for REVIEW: ${REVIEW.missing.join(", ") || "nothing"}`
   );
 }
 
@@ -635,8 +637,8 @@ function tier3QueriesForRun(count) {
 // ============================================================================
 // AI CALLS
 // ============================================================================
-const AI_MAX_ATTEMPTS = 2;
-const GEMINI_MAX_ATTEMPTS = 4;
+const AI_MAX_ATTEMPTS = CFG.AI_MAX_ATTEMPTS;
+const GEMINI_MAX_ATTEMPTS = Math.max(2, CFG.AI_MAX_ATTEMPTS);
 const GEMINI_RETRY_DELAYS_MS = [15000, 30000, 60000];
 const failedThisRun = new Set();
 
@@ -669,9 +671,11 @@ async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = fa
         if (error.retryable) failedThisRun.add(provider.prefix);
         break;
       }
-      const wait = provider.format === "gemini"
-        ? GEMINI_RETRY_DELAYS_MS[attempt - 1]
-        : 4000 * attempt;
+      const wait = Number(error.retryAfterMs) > 0
+        ? Math.min(Number(error.retryAfterMs), 120000)
+        : provider.format === "gemini"
+        ? GEMINI_RETRY_DELAYS_MS[Math.min(attempt - 1, GEMINI_RETRY_DELAYS_MS.length - 1)]
+        : CFG.AI_RETRY_BASE_DELAY_MS * attempt;
       console.warn(`[${provider.name}] attempt ${attempt}/${maxAttempts} failed (${safeErrorMessage(error)}); retrying in ${wait / 1000}s...`);
       await sleep(wait);
     }
@@ -679,9 +683,10 @@ async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = fa
   throw lastError;
 }
 
-function apiError(message, retryable) {
+function apiError(message, retryable, retryAfterMs = 0) {
   const e = new Error(message);
   e.retryable = retryable;
+  e.retryAfterMs = retryAfterMs;
   return e;
 }
 const isRetryableStatus = s => s === 429 || s >= 500;
@@ -704,7 +709,8 @@ async function geminiFormatGenerate(provider, prompt, useSearch, allowEmpty) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const msg = data?.error?.message || `${provider.name} HTTP ${response.status}`;
-    throw apiError(msg, isRetryableStatus(response.status));
+    const retryAfter = Number(response.headers.get("retry-after") || 0);
+    throw apiError(msg, isRetryableStatus(response.status), retryAfter > 0 ? retryAfter * 1000 : 0);
   }
   const text = (data?.candidates || []).flatMap(c => c?.content?.parts || []).map(p => p?.text || "").join("\n").trim();
   if (!text && !allowEmpty) {
@@ -728,7 +734,8 @@ async function openaiFormatGenerate(provider, prompt, allowEmpty) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const msg = data?.error?.message || `${provider.name} HTTP ${response.status}`;
-    throw apiError(msg, isRetryableStatus(response.status));
+    const retryAfter = Number(response.headers.get("retry-after") || 0);
+    throw apiError(msg, isRetryableStatus(response.status), retryAfter > 0 ? retryAfter * 1000 : 0);
   }
   const text = data?.choices?.[0]?.message?.content || "";
   if (!text && !allowEmpty) {
@@ -786,7 +793,7 @@ const SEARCH_REVIEW_CALL_GAP_MS = 4000;
 const SEARCH_MAX_RESULTS_PER_QUERY = CFG.SEARCH_RESULTS_PER_QUERY;
 const SEARCH_CALL_GAP_MS = 400;
 const REVIEW_MAX_PAGES = MAX_PAGES;
-const REVIEW_CALL_GAP_MS = 3000;
+const REVIEW_CALL_GAP_MS = CFG.AI_CALL_GAP_MS;
 const EXTRACTION_BATCH_SIZE = CFG.EXTRACTION_BATCH_SIZE;
 const AI_REVIEW_BUDGET = CFG.AI_REVIEW_BUDGET;
 
@@ -1635,15 +1642,7 @@ async function callSearchThenReviewProvider(blocked, stats) {
 
 const PROVIDERS = [
   {
-    id: "search_review",
-    label: SEARCH_REVIEW.name,
-    model: SEARCH_REVIEW.model,
-    configured: SEARCH_REVIEW.configured,
-    missing: SEARCH_REVIEW.missing,
-    call: callSearchReviewProvider
-  },
-  {
-    id: "search_then_review",
+    id: "tavily_review",
     label: REVIEW.name,
     model: `${REVIEW.model || "?"} (search: ${SEARCH.name})`,
     configured: SEARCH.configured && REVIEW.configured,
@@ -1738,12 +1737,12 @@ async function runProvider(provider, blocked) {
 }
 
 async function callAllProviders(blocked) {
-  console.log(`AI providers: ${PROVIDERS.map(p => `${p.label} (${p.model})`).join(", ")}`);
-  const runs = await Promise.all(PROVIDERS.map(p => runProvider(p, blocked)));
-  if (!runs.some(r => r.status === "ok")) {
-    throw new Error("No AI provider succeeded: " + runs.map(r => `${r.label}: ${r.error || r.status}`).join(" | "));
+  console.log(`Single discovery pipeline: ${SEARCH.name}; primary reviewer: ${REVIEW.name}; optional AI fallback: ${SEARCH_REVIEW.configured ? SEARCH_REVIEW.name : "not configured"}`);
+  const run = await runProvider(PROVIDERS[0], blocked);
+  if (run.status !== "ok") {
+    throw new Error("Primary Tavily-based pipeline failed: " + (run.error || run.status));
   }
-  return runs;
+  return [run];
 }
 
 // ============================================================================
@@ -1872,7 +1871,7 @@ async function main() {
       results: [], sources: [], stats: {}
     }];
   } else {
-    console.log(`Running new search across ${PROVIDERS.map(p => p.label).join(" + ")}...`);
+    console.log(`Running one discovery pipeline: ${SEARCH.name} search → ${REVIEW.name} review (optional extraction fallback: ${SEARCH_REVIEW.configured ? SEARCH_REVIEW.name : "off"}).`);
     runs = await callAllProviders(blocked);
   }
 
