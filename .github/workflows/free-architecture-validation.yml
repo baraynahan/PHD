@@ -1,0 +1,30 @@
+name: Free architecture validation
+
+on:
+  push:
+    branches:
+      - free-architecture
+    paths:
+      - "search.mjs"
+      - ".github/workflows/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "search.mjs"
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Syntax and patch validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: node --check search.mjs
+      - name: Check patch whitespace
+        run: git diff --check
