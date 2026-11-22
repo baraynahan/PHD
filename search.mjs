@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import {
   existsSync,
   readFileSync,
@@ -122,7 +123,7 @@ ${THIS_YEAR} or ${THIS_YEAR + 1}. Ignore anything that closed before ${TODAY}.
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-if (!SEARCH.configured || !REVIEW.configured) {
+if (process.env.SELF_TEST !== "true" && (!SEARCH.configured || !REVIEW.configured)) {
   throw new Error(
     "The primary free pipeline requires SEARCH_* (search API) and REVIEW_* (AI reviewer). " +
     "SEARCH_REVIEW_* is optional and is used only as an AI extraction fallback.\n" +
@@ -2378,7 +2379,58 @@ async function main() {
   }
 }
 
-main().catch(async error => {
+function runSelfTests() {
+  assert.equal(
+    normalizeUniversity("Delft University of Technology (TU Delft)"),
+    normalizeUniversity("TU Delft"),
+    "university aliases should normalize to the same key"
+  );
+
+  assert.equal(
+    isLikelyVacancyPage({ title: "PhD Studentship — Sustainable Consumption", url: "https://example.org/job.pdf", fullText: "Fully funded PhD position with stipend." }),
+    true,
+    "a doctoral vacancy PDF should be retained"
+  );
+  for (const title of [
+    "What Is Speculative Design? Definition and Origins",
+    "Postdoctoral Research Associate in Design",
+    "Lecturer in Law x6",
+    "Scholarships for International Students by Country",
+    "Abstract Book — 2026 Conference"
+  ]) {
+    assert.equal(isLikelyVacancyPage({ title, url: "https://example.org/page", fullText: "PhD research and sustainability." }), false, title + " should be filtered");
+  }
+
+  assert.equal(isClearlyExpiredPage({ url: "https://example.org/job", jobPosting: { validThrough: "2020-01-01" }, fullText: "" }), true);
+  assert.equal(isClearlyExpiredPage({ url: "https://example.org/job", jobPosting: { validThrough: "2099-01-01" }, fullText: "" }), false);
+  assert.ok(backoffMs({ message: "Rate limit reached. Please try again in 22.05s." }, 1) >= 23550);
+
+  const structured = attachPageData(
+    [{ page_id: 1 }],
+    [{ id: 1, key: "source-key", url: "https://example.org/phd", jobPosting: { organization: "University of Zurich", country: "Switzerland" }, fullText: "doctoral vacancy", text: "doctoral vacancy" }]
+  )[0];
+  assert.equal(structured.university, "University of Zurich");
+  assert.equal(structured.university_confidence, "source");
+
+  const unknown = attachPageData(
+    [{ page_id: 2 }],
+    [{ id: 2, key: "unknown-key", url: "https://example.org/phd2", jobPosting: null, fullText: "doctoral vacancy", text: "doctoral vacancy" }]
+  )[0];
+  assert.equal(unknown.university, "Unknown institution");
+  assert.equal(unknown.university_confidence, "unknown");
+
+  const merged = dedupeSimilar([
+    { title: "PhD position Participatory Data Governance", university: "TU Delft", url: "https://example.org/position", deadline: "2027-01-01", overall_score: 82 },
+    { title: "PhD position Participatory Data Governance", university: "Delft University of Technology (TU Delft)", url: "https://example.org/position", deadline: "2027-01-01", overall_score: 74 }
+  ]);
+  assert.equal(merged.length, 1, "same URL should always deduplicate");
+  console.log("Radar regression self-tests passed.");
+}
+
+if (process.env.SELF_TEST === "true") {
+  runSelfTests();
+} else {
+  main().catch(async error => {
   console.error("RADAR FAILED");
   console.error(error?.stack || error);
   process.exitCode = 1;
@@ -2386,3 +2438,5 @@ main().catch(async error => {
     try { await sendRunAlert([`fatal: ${safeErrorMessage(error)}`], []); } catch {}
   }
 });
+
+}
