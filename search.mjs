@@ -1431,6 +1431,13 @@ function mergeResultRecords(a, b) {
     url_grounded: Boolean(a.url_grounded || b.url_grounded),
     verification_status: a.verification_status === "Verified" || b.verification_status === "Verified" ? "Verified" : "Not verified"
   };
+  const knownUniversity = [a, b].find(x => x.university && x.university !== "Unknown institution" && x.university_confidence !== "unknown");
+  if (knownUniversity) {
+    merged.university = knownUniversity.university;
+    merged.university_confidence = knownUniversity.university_confidence || "source";
+  }
+  const knownCountry = [a, b].find(x => x.country && x.country !== "Unknown");
+  if (knownCountry) merged.country = knownCountry.country;
   if (!String(merged.verification_note || "").trim()) merged.verification_note = String(other.verification_note || "").trim();
   if (!String(merged.verification_url || "").trim()) merged.verification_url = normalizeURL(other.verification_url);
   if (!String(merged.ielts_source_url || "").trim()) merged.ielts_source_url = normalizeURL(other.ielts_source_url);
@@ -1703,7 +1710,6 @@ function attachPageData(items, batch) {
       ...(lang !== "Unknown" ? { application_language: lang } : {})
     };
   });
-}
 }
 
 // ============================================================================
