@@ -77,5 +77,10 @@ For an OpenAI-compatible provider, use its API base URL, model ID and `openai` f
 - Search 2 and Search 3, and Review 2 and Review 3, are optional in the code; the primary pipeline requires Search 1 and Reviewer 1. Configure all six secrets to enable the complete fallback chain.
 - Search 3 uses Gemini Google Search grounding. Google's current pricing page lists a free allowance for Gemini 2.5 Flash grounding, subject to daily limits; check the current quota and billing status of the Google project before enabling it.
 - GitHub does not provide folders for Variables or Secrets. The consistent `SEARCH_1_`, `SEARCH_2_`, `SEARCH_3_`, `REVIEW_1_`, `REVIEW_2_`, and `REVIEW_3_` prefixes keep the entries grouped alphabetically.
-- Existing non-provider tuning variables (page budgets, query counts, delays, score thresholds and Telegram settings) remain unchanged.
+- Existing query budgets remain the base values. Two optional additive variables widen weekly discovery without changing AI review limits:
+  - `EXTRA_QUERIES_EU`: defaults to `8` additional Europe-first searches (24 + 8 = 32).
+  - `EXTRA_QUERIES_TIER3`: defaults to `4` additional Canada/Australia/New Zealand searches (8 + 4 = 12).
+- The AI extraction budget is unchanged by these additions: `AI_REVIEW_BUDGET` and `AI_REVIEW_BUDGET_TIER3` still cap the pages sent to AI. Extra hits are deduplicated, pre-screened and queued for later runs when the review budget is full.
+- Search coverage now includes adjacent social-science disciplines without requiring the word design, rotating official-university domain searches, and expanded local-language vacancy terminology.
+- Existing non-provider tuning variables (page budgets, delays, score thresholds and Telegram settings) remain unchanged.
 - The old single-provider settings (`SEARCH_API_KEY`, `SEARCH_NAME`, `SEARCH_BASE_URL`, `SEARCH_FORMAT`, `REVIEW_API_KEY`, `REVIEW_NAME`, `REVIEW_BASE_URL`, `REVIEW_MODEL`, `REVIEW_FORMAT`), plus `SEARCH_REVIEW_*` and `OPENROUTER_*`, are no longer read by this version. General tuning variables such as `SEARCH_DEPTH`, `SEARCH_TIME_RANGE` and `SEARCH_RESULTS_PER_QUERY` are still used. After adding the new settings, remove the obsolete provider entries from GitHub Settings → Secrets and variables → Actions. Keep `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`.
