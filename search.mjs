@@ -816,7 +816,7 @@ async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = fa
       : p.format === "openai"
       ? () => openaiFormatGenerate(p, prompt, allowEmpty)
       : null;
-    if (!call) throw new Error(`${provider.prefix}_FORMAT "${provider.format}" is not supported.`);
+    if (!call) { failedThisRun.add(provider.prefix); throw new Error(`${provider.prefix}_FORMAT "${provider.format}" is not supported.`); }
     try {
       const out = await call();
       failStreak.set(provider.prefix, 0);
@@ -2288,6 +2288,9 @@ async function main() {
 }
 
 function runSelfTests() {
+  assert.equal(SEARCH_PROVIDERS.map(p => p.prefix).join(","), "SEARCH_1,SEARCH_2,SEARCH_3");
+  assert.equal(REVIEW_PROVIDERS.map(p => p.prefix).join(","), "REVIEW_1,REVIEW_2,REVIEW_3");
+
   assert.equal(
     normalizeUniversity("Delft University of Technology (TU Delft)"),
     normalizeUniversity("TU Delft"),
