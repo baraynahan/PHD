@@ -41,11 +41,11 @@ const CFG = {
   AI_REVIEW_BUDGET_TIER3:  envInt("AI_REVIEW_BUDGET_TIER3", 8),
   QUERIES_EU:              envInt("QUERIES_EU", 24),
   QUERIES_TIER3:           envInt("QUERIES_TIER3", 8),
-  EXTRACTION_BATCH_SIZE:   Math.max(1, envInt("EXTRACTION_BATCH_SIZE", 6)),
+  EXTRACTION_BATCH_SIZE:   Math.max(1, envInt("EXTRACTION_BATCH_SIZE", 4)),
   PAGE_TEXT_CHARS:         envInt("PAGE_TEXT_CHARS", 3200),
   SEARCH_RESULTS_PER_QUERY: Math.max(1, envInt("SEARCH_RESULTS_PER_QUERY", 8)),
   FETCH_CONCURRENCY:       Math.max(1, envInt("FETCH_CONCURRENCY", 6)),
-  AI_CALL_GAP_MS:          envInt("AI_CALL_GAP_MS", 8000),
+  AI_CALL_GAP_MS:          envInt("AI_CALL_GAP_MS", 25000),
   AI_MAX_ATTEMPTS:         Math.max(1, envInt("AI_MAX_ATTEMPTS", 4)),
   AI_RETRY_BASE_DELAY_MS:  envInt("AI_RETRY_BASE_DELAY_MS", 20000),
   IELTS_LOOKUP_ENABLED:    envBool("IELTS_LOOKUP_ENABLED", false),
@@ -105,6 +105,7 @@ function readProviderConfig(prefix, { kind = "ai", defaultName }) {
 const SEARCH_REVIEW = readProviderConfig("SEARCH_REVIEW", { kind: "ai", defaultName: "Search+Review AI" });
 const SEARCH = readProviderConfig("SEARCH", { kind: "search", defaultName: "Search API" });
 const REVIEW = readProviderConfig("REVIEW", { kind: "ai", defaultName: "Review AI" });
+const OPENROUTER = readProviderConfig("OPENROUTER", { kind: "ai", defaultName: "OpenRouter fallback" });
 
 function endpointURL(baseUrl, path) {
   const base = baseUrl.replace(/\/+$/, "");
@@ -132,7 +133,7 @@ if (!SEARCH.configured || !REVIEW.configured) {
 
 function safeErrorMessage(error) {
   let message = String(error?.message || error || "Unknown error");
-  for (const secret of [SEARCH_REVIEW.apiKey, SEARCH.apiKey, REVIEW.apiKey, TELEGRAM_BOT_TOKEN]) {
+  for (const secret of [SEARCH_REVIEW.apiKey, SEARCH.apiKey, REVIEW.apiKey, OPENROUTER.apiKey, TELEGRAM_BOT_TOKEN]) {
     if (secret) message = message.split(secret).join("***");
   }
   return message.length > 300 ? `${message.slice(0, 300)}…` : message;
@@ -558,6 +559,30 @@ async function loadPage(hit) {
   }
 }
 
+const NON_VACANCY_TITLE_RE = /\b(what is|how to apply|abstract book|conference abstracts?|conference programme|programme catalogue|catalog(?:ue)?|search results?|scholarships? for|funding opportunities|lecturer|postdoc(?:toral)?|professor|senior research lead|career opportunities|jobs and career opportunities|how to)\b/i;
+const GENERIC_PAGE_TITLE_RE = /^(about|news|search results?|careers?|jobs and career opportunities|scholarships for international students|funding opportunities)\b/i;
+
+function isLikelyVacancyPage(page) {
+  const title = String(page.jobPosting?.title || page.title || "").trim();
+  const early = String(page.fullText || page.text || "").slice(0, 1400);
+  const combined = title + " " + early;
+  if (NON_VACANCY_TITLE_RE.test(title) || GENERIC_PAGE_TITLE_RE.test(title)) return false;
+  if (page.jobPosting) return DOCTORAL_RE.test(String(page.jobPosting.title || "") + " " + early);
+  const titleIsDoctoral = DOCTORAL_RE.test(title);
+  const earlyIsDoctoral = DOCTORAL_RE.test(early);
+  const hasVacancySignal = /\b(position|vacancy|studentship|doctoral researcher|research fellow|phd candidate|funded phd|stipendiat|promovend|doktorand|doctorant)\b/i.test(combined);
+  const isPdf = /\.pdf(?:$|[?#])/i.test(page.url) || /\.pdf$/i.test(title);
+  if (isPdf) return titleIsDoctoral && hasVacancySignal && FUNDING_RE.test(combined);
+  return titleIsDoctoral || (earlyIsDoctoral && hasVacancySignal);
+}
+
+function isClearlyExpiredPage(page) {
+  const structured = normalizeDeadline(page.jobPosting?.validThrough || "");
+  if (structured && structured < TODAY) return true;
+  const inferred = inferDeadlineFromText(String(page.fullText || "").slice(0, 6000));
+  return Boolean(inferred.deadline && inferred.deadline < TODAY);
+}
+
 async function fetchHitPages(hits, maxPages, seen, tier3 = false) {
   const unique = [];
   const keys = new Set();
@@ -599,8 +624,12 @@ async function fetchHitPages(hits, maxPages, seen, tier3 = false) {
       skipped.push({ ...p, reason: p.reason || "page too short" });
       continue;
     }
-    if (!DOCTORAL_RE.test(p.fullText) && !p.jobPosting) {
-      skipped.push({ ...p, reason: "not obviously doctoral" });
+    if (!isLikelyVacancyPage(p)) {
+      skipped.push({ ...p, reason: "not a specific doctoral vacancy page" });
+      continue;
+    }
+    if (isClearlyExpiredPage(p)) {
+      skipped.push({ ...p, reason: "clearly expired deadline" });
       continue;
     }
     pages.push({ ...p, isTier3: tier3 });
@@ -773,7 +802,10 @@ function pickModel(provider) {
   return models[i % models.length];
 }
 function backoffMs(error, attempt) {
-  if (Number(error.retryAfterMs) > 0) return Math.min(Number(error.retryAfterMs) + 1000, 180000);
+  if (Number(error.retryAfterMs) > 0) return Math.min(Number(error.retryAfterMs) + 1500, 180000);
+  const message = String(error?.message || error || "");
+  const retryIn = message.match(/(?:try again|retry|wait)\s+(?:in|after)\s+(\d+(?:\.\d+)?)\s*(seconds?|secs?|s)\b/i);
+  if (retryIn) return Math.min(Math.ceil(Number(retryIn[1]) * 1000) + 1500, 180000);
   const base = CFG.AI_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1);
   return Math.min(base + Math.floor(Math.random() * 0.25 * base), 180000);
 }
@@ -1121,8 +1153,7 @@ function extractionResponseExcerpt(value, maxChars = 420) {
 }
 
 async function extractWithFallback(primary, fallback, pages) {
-  const attempts = [primary];
-  if (fallback && fallback.configured && fallback.prefix !== primary.prefix) attempts.push(fallback);
+  const attempts = [primary, ...(Array.isArray(fallback) ? fallback : [fallback]).filter(p => p && p.configured && p.prefix !== primary.prefix)];
   let lastError;
   for (const provider of attempts) {
     if (failedThisRun.has(provider.prefix)) {
@@ -1358,13 +1389,20 @@ function normalizeIdentityText(value) {
     .replace(/\s+/g, " ");
 }
 
+function normalizeUniversity(value) {
+  return normalizeIdentityText(value)
+    .split(" ")
+    .filter(word => !["university", "of", "the", "technology", "technical", "institute", "college", "school", "tu"].includes(word))
+    .join(" ");
+}
+
 function resultIdentity(item) {
+  const url = normalizeURL(item.url);
+  if (url) return "url:" + urlKey(url);
   const title = normalizeIdentityText(item.title);
-  const university = normalizeIdentityText(item.university);
+  const university = normalizeUniversity(item.university);
   const deadline = normalizeDeadline(item.deadline);
-  return title && university && deadline
-    ? `${university}|${title}|${deadline}`
-    : normalizeURL(item.url);
+  return title && university && deadline ? university + "|" + title + "|" + deadline : "";
 }
 
 function chooseBetterResult(a, b) {
@@ -1407,7 +1445,9 @@ function acronymsOf(t) {
 }
 // Same university + near-identical title (or shared project acronym + overlapping title) = same vacancy.
 function sameJob(a, b) {
-  if (normalizeIdentityText(a.university) !== normalizeIdentityText(b.university)) return false;
+  const urlA = normalizeURL(a.url), urlB = normalizeURL(b.url);
+  if (urlA && urlB && urlKey(urlA) === urlKey(urlB)) return true;
+  if (normalizeUniversity(a.university) !== normalizeUniversity(b.university)) return false;
   if (a.deadline && b.deadline && a.deadline !== b.deadline) return false;
   const ta = titleTokens(a.title), tb = titleTokens(b.title);
   const inter = [...ta].filter(w => tb.has(w)).length;
@@ -1647,11 +1687,23 @@ function attachPageData(items, batch) {
     const page = byId || byURL;
     if (!page) return { ...item, url_grounded: false };
     const lang = detectLanguage(page.fullText || page.text);
+    const structuredUniversity = String(page.jobPosting?.organization || "").trim();
+    const university = String(item.university || structuredUniversity).trim();
+    const country = String(item.country || page.jobPosting?.country || "").trim();
     return {
-      ...item, url: page.url, original_text: page.text, url_grounded: true,
+      ...item,
+      url: page.url,
+      university: university || "Unknown institution",
+      university_confidence: university ? "source" : "unknown",
+      country: country || "Unknown",
+      city: String(item.city || page.jobPosting?.city || "").trim(),
+      original_text: page.text,
+      _source_page_key: page.key || seenKey(page.url),
+      url_grounded: true,
       ...(lang !== "Unknown" ? { application_language: lang } : {})
     };
   });
+}
 }
 
 // ============================================================================
@@ -1681,7 +1733,7 @@ function knownTitleIndex() {
   }
   const add = r => {
     if (!r || !r.title) return;
-    idx.push({ tokens: fpTokens(r.title), key: seenKey(r.url || ""), uni: String(r.university || "").toLowerCase().replace(/\(.*?\)/g, "").trim() });
+    idx.push({ tokens: fpTokens(r.title), key: seenKey(r.url || ""), uni: normalizeUniversity(r.university) });
   };
   for (const r of loadJSON(RESULTS_FILE, [])) add(r);
   for (const r of Object.values(loadJSON(ARCHIVE_FILE, {}) || {})) add(r);
@@ -1694,7 +1746,7 @@ function findDuplicate(page, idx) {
     if (k.key === page.key) continue;                    // same URL = an update of the same page, handled by the content hash
     if (!fpSimilar(tokens, k.tokens)) continue;
     // for known results we also know the university: the page must mention it, otherwise it is another institution's post
-    if (k.uni.length > 3 && !String(page.fullText || "").toLowerCase().includes(k.uni)) continue;
+    if (k.uni.length > 2 && !normalizeUniversity(String(page.title || "") + " " + String(page.fullText || "")).includes(k.uni)) continue;
     return k;
   }
   return null;
@@ -1883,7 +1935,7 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
     const batchLabel = `batch ${batches}/${totalBatches}`;
     console.log(`[${label}] ${batchLabel}: sending ${batch.length} pages to extraction:`);
     for (const page of batch) console.log(`  PAGE ${page.id} | ${String(page.title || "(untitled)").slice(0, 120)} | ${page.url}`);
-    if (failedThisRun.has(REVIEW.prefix) && failedThisRun.has(SEARCH_REVIEW.prefix)) {
+    if ([REVIEW, SEARCH_REVIEW, OPENROUTER].every(p => failedThisRun.has(p.prefix) || !p.configured)) {
       // Every AI provider is dead: keep the remaining pages for the next run instead of burning attempts.
       failedBatches++;
       failedPages.push(...batch);
@@ -1896,8 +1948,15 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
       const extractedModel = Array.isArray(extracted) ? providerModelForLabel(label) : (extracted.provider?.model || "");
       if (raw.length === 0) emptyBatches++;
       else console.log(`[${label}] ${batchLabel}: ${raw.length} opportunities returned by ${extractedBy} (${extractedModel || "model not reported"}).`);
-      reviewedOK.push(...batch);
-      results.push(...attachPageData(raw, batch).map(item => ({ ...item, _extracted_by: extractedBy, _ai_model: extractedModel })));
+      const attached = attachPageData(raw, batch);
+      const incompleteKeys = new Set(attached
+        .filter(item => !String(item.title || "").trim() || !String(item.country || "").trim())
+        .map(item => item._source_page_key).filter(Boolean));
+      for (const page of batch) {
+        if (incompleteKeys.has(page.key || seenKey(page.url))) failedPages.push(page);
+        else reviewedOK.push(page);
+      }
+      results.push(...attached.map(item => ({ ...item, _extracted_by: extractedBy, _ai_model: extractedModel })));
     } catch (error) {
       failedBatches++;
       failedPages.push(...batch);
@@ -1946,7 +2005,7 @@ async function callSearchThenReviewProvider(blocked, stats) {
   return reviewPages({
     label: REVIEW.name, mainHits, tier3Hits, mainMax: REVIEW_MAX_PAGES,
     gapMs: REVIEW_CALL_GAP_MS,
-    extract: pages => extractWithFallback(REVIEW, SEARCH_REVIEW, pages),
+    extract: pages => extractWithFallback(REVIEW, [SEARCH_REVIEW, OPENROUTER], pages),
     hitsLabel: `${SEARCH.name} hits`, blocked, stats
   });
 }
@@ -2048,7 +2107,7 @@ async function runProvider(provider, blocked) {
 }
 
 async function callAllProviders(blocked) {
-  console.log(`Single discovery pipeline: ${SEARCH.name}; primary reviewer: ${REVIEW.name}; optional AI fallback: ${SEARCH_REVIEW.configured ? SEARCH_REVIEW.name : "not configured"}`);
+  console.log("Single discovery pipeline: " + SEARCH.name + "; primary reviewer: " + REVIEW.name + "; extraction fallbacks: " + [SEARCH_REVIEW, OPENROUTER].filter(p => p.configured).map(p => p.name).join(" → "));
   // A failed run no longer aborts early: existing results are still re-verified and saved, and an alert is sent.
   const run = await runProvider(PROVIDERS[0], blocked);
   if (run.status !== "ok") console.warn("Primary search pipeline failed: " + (run.error || run.status));
