@@ -67,6 +67,11 @@ jobs:
           REVIEW_MODEL: ${{ vars.REVIEW_MODEL }}
           REVIEW_FORMAT: ${{ vars.REVIEW_FORMAT }}
           REVIEW_API_KEY: ${{ secrets.REVIEW_API_KEY }}
+          OPENROUTER_NAME: ${{ vars.OPENROUTER_NAME }}
+          OPENROUTER_BASE_URL: ${{ vars.OPENROUTER_BASE_URL }}
+          OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
+          OPENROUTER_FORMAT: ${{ vars.OPENROUTER_FORMAT }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
