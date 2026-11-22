@@ -2426,6 +2426,34 @@ function runSelfTests() {
     { title: "PhD position Participatory Data Governance", university: "Delft University of Technology (TU Delft)", url: "https://example.org/position", deadline: "2027-01-01", overall_score: 74 }
   ]);
   assert.equal(merged.length, 1, "same URL should always deduplicate");
+  assert.equal(
+    sameJob(
+      { title: "PhD position Participatory Data Governance", university: "TU Delft", url: "https://mirror.example/job-a", deadline: "2027-01-01" },
+      { title: "PhD position Participatory Data Governance", university: "Delft University of Technology (TU Delft)", url: "https://mirror.example/job-b", deadline: "2027-01-01" }
+    ),
+    true,
+    "Delft university aliases should deduplicate across mirrors"
+  );
+  assert.equal(
+    sameJob(
+      { title: "PhD position Social Design", university: "Unknown institution", url: "https://mirror.example/job-c" },
+      { title: "PhD position Social Design", university: "Unknown institution", url: "https://mirror.example/job-d" }
+    ),
+    false,
+    "unknown institutions must not cause unrelated vacancies to merge"
+  );
+  const unknownInstitutionResult = cleanResults([{
+    title: "PhD position in socio-ecological transition",
+    university: "Unknown institution",
+    university_confidence: "unknown",
+    country: "Unknown",
+    url: "https://example.org/unknown-university-phd",
+    overall_score: 80,
+    deadline: "2099-01-01"
+  }]);
+  assert.equal(unknownInstitutionResult.length, 1, "a relevant vacancy must survive a missing university field");
+  assert.equal(unknownInstitutionResult[0].verification_status, "Not verified");
+  assert.equal(unknownInstitutionResult[0].university_confidence, "unknown");
   console.log("Radar regression self-tests passed.");
 }
 
