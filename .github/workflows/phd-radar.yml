@@ -112,6 +112,8 @@ jobs:
           AI_REVIEW_BUDGET_TIER3: ${{ vars.AI_REVIEW_BUDGET_TIER3 }}
           QUERIES_EU: ${{ vars.QUERIES_EU }}
           QUERIES_TIER3: ${{ vars.QUERIES_TIER3 }}
+          EXTRA_QUERIES_EU: ${{ vars.EXTRA_QUERIES_EU }}
+          EXTRA_QUERIES_TIER3: ${{ vars.EXTRA_QUERIES_TIER3 }}
           EXTRACTION_BATCH_SIZE: ${{ vars.EXTRACTION_BATCH_SIZE }}
           PAGE_TEXT_CHARS: ${{ vars.PAGE_TEXT_CHARS }}
           SEARCH_RESULTS_PER_QUERY: ${{ vars.SEARCH_RESULTS_PER_QUERY }}
