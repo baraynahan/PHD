@@ -5,15 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PhD Radar</title>
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f4f4f4;color:#171717}header{background:#111;color:white;padding:45px 24px}header .inner,main{max-width:1100px;margin:auto}h1{margin:0;font-size:38px}.subtitle{margin-top:10px;color:#aaa;font-size:16px}main{margin:30px auto;padding:0 20px}.controls{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:10px;flex-wrap:wrap}.search-button{border:0;border-radius:9px;background:#111;color:#fff;padding:12px 18px;font:inherit;font-weight:600;cursor:pointer}.search-button:hover{opacity:.88}.search-button:disabled{opacity:.55;cursor:wait}.help{color:#666;font-size:13px}#providerBreakdown{margin-bottom:20px}.filters{background:white;border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.05)}.filters input,.filters select{border:1px solid #ddd;border-radius:8px;padding:8px 10px;font:inherit;background:#fafafa}.filters input[type=text]{flex:1;min-width:180px}.filters .pill{border:1px solid #ddd;background:#fafafa;border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}.filters .pill.active{background:#111;color:#fff;border-color:#111}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin-bottom:30px}.stat{background:white;border-radius:12px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.05)}.stat-number{font-size:32px;font-weight:700}.stat-label{color:#666;margin-top:5px}.position{background:white;border-radius:14px;padding:25px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.05)}.top{display:flex;justify-content:space-between;gap:20px}.title{font-size:22px;font-weight:700;line-height:1.3}.university{margin-top:8px;color:#555}.score{min-width:75px;height:75px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#111;color:white;font-size:21px;font-weight:700;flex-shrink:0}.meta{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}.tag{background:#eee;padding:6px 10px;border-radius:7px;font-size:13px}.tag.country{font-weight:600}.tag.ai-provider{font-weight:600;background:#f5efff}.tag.warning{background:#fff0f0}.tag.ielts{background:#f0f0ff}.tag.verification{font-weight:600}.tag.verification.ok{background:#eef8ee}.tag.verification.warn{background:#fff4e5}.tag.verification.closed{background:#f0f0f0;color:#666}.tag.new{background:#e6f0ff;color:#0a3d91;font-weight:600}.tag.days{background:#e9f7ee;color:#0a5a2a;font-weight:600}.tag.days.urgent{background:#ffe9e9;color:#8b1a1a}.verification-notice{background:#fff4e5;border:1px solid #f0d7a5;border-radius:12px;padding:14px 16px;margin-bottom:24px;line-height:1.5}.tag a{color:inherit}.section{margin-top:17px;line-height:1.6}.section strong{display:block;margin-bottom:5px}.subscores{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.subscore{font-size:12px;background:#f6f6f6;border-radius:6px;padding:4px 8px;color:#555}.original{margin-top:22px;border-top:1px solid #eee;padding-top:14px}.original summary{cursor:pointer;font-weight:600}.original-text{margin-top:12px;padding:14px;background:#fafafa;border-radius:8px;color:#444;font-size:14px;line-height:1.7;white-space:pre-wrap;max-height:500px;overflow:auto}.button{display:inline-block;margin-top:20px;padding:10px 16px;border-radius:8px;background:#111;color:white;text-decoration:none}.empty{background:white;padding:50px;text-align:center;border-radius:12px}.watchlist{margin-top:30px;background:white;border-radius:12px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.05)}.watchlist summary{cursor:pointer;font-weight:600}.watchlist ul{margin:12px 0 0 20px;padding:0;line-height:1.7}.watchlist a{color:inherit}@media(max-width:700px){.controls{align-items:flex-start;flex-direction:column}.top{flex-direction:column}.score{width:70px;height:70px}h1{font-size:30px}}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f4f4f4;color:#171717}header{background:#111;color:white;padding:45px 24px}header .inner,main{max-width:1100px;margin:auto}h1{margin:0;font-size:38px}.subtitle{margin-top:10px;color:#aaa;font-size:16px}main{margin:30px auto;padding:0 20px}.controls{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:10px;flex-wrap:wrap}.search-button{border:0;border-radius:9px;background:#111;color:#fff;padding:12px 18px;font:inherit;font-weight:600;cursor:pointer}.search-button:hover{opacity:.88}.search-button:disabled{opacity:.55;cursor:wait}.search-button.secondary{background:#fff;color:#222;border:1px solid #ccc}.search-button.secondary:hover{background:#f0f0f0}.help{color:#666;font-size:13px}#providerBreakdown{margin-bottom:20px}.filters{background:white;border-radius:12px;padding:14px 18px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.05)}.filters input,.filters select{border:1px solid #ddd;border-radius:8px;padding:8px 10px;font:inherit;background:#fafafa}.filters input[type=text]{flex:1;min-width:180px}.filters .pill{border:1px solid #ddd;background:#fafafa;border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}.filters .pill.active{background:#111;color:#fff;border-color:#111}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px;margin-bottom:30px}.stat{background:white;border-radius:12px;padding:20px;box-shadow:0 2px 10px rgba(0,0,0,.05)}.stat-number{font-size:32px;font-weight:700}.stat-label{color:#666;margin-top:5px}.position{background:white;border-radius:14px;padding:25px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.05)}.top{display:flex;justify-content:space-between;gap:20px}.title{font-size:22px;font-weight:700;line-height:1.3}.university{margin-top:8px;color:#555}.score{min-width:75px;height:75px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#111;color:white;font-size:21px;font-weight:700;flex-shrink:0}.meta{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}.tag{background:#eee;padding:6px 10px;border-radius:7px;font-size:13px}.tag.country{font-weight:600}.tag.ai-provider{font-weight:600;background:#f5efff}.tag.warning{background:#fff0f0}.tag.ielts{background:#f0f0ff}.tag.verification{font-weight:600}.tag.verification.ok{background:#eef8ee}.tag.verification.warn{background:#fff4e5}.tag.verification.closed{background:#f0f0f0;color:#666}.tag.new{background:#e6f0ff;color:#0a3d91;font-weight:600}.tag.days{background:#e9f7ee;color:#0a5a2a;font-weight:600}.tag.days.urgent{background:#ffe9e9;color:#8b1a1a}.verification-notice{background:#fff4e5;border:1px solid #f0d7a5;border-radius:12px;padding:14px 16px;margin-bottom:24px;line-height:1.5}.tag a{color:inherit}.section{margin-top:17px;line-height:1.6}.section strong{display:block;margin-bottom:5px}.subscores{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.subscore{font-size:12px;background:#f6f6f6;border-radius:6px;padding:4px 8px;color:#555}.original{margin-top:22px;border-top:1px solid #eee;padding-top:14px}.original summary{cursor:pointer;font-weight:600}.original-text{margin-top:12px;padding:14px;background:#fafafa;border-radius:8px;color:#444;font-size:14px;line-height:1.7;white-space:pre-wrap;max-height:500px;overflow:auto}.button{display:inline-block;margin-top:20px;padding:10px 16px;border-radius:8px;background:#111;color:white;text-decoration:none}.empty{background:white;padding:50px;text-align:center;border-radius:12px}.watchlist{margin-top:30px;background:white;border-radius:12px;padding:18px;box-shadow:0 2px 10px rgba(0,0,0,.05)}.watchlist summary{cursor:pointer;font-weight:600}.watchlist ul{margin:12px 0 0 20px;padding:0;line-height:1.7}.watchlist a{color:inherit}@media(max-width:700px){.controls{align-items:flex-start;flex-direction:column}.top{flex-direction:column}.score{width:70px;height:70px}h1{font-size:30px}}
 </style>
 </head>
 <body>
 <header><div class="inner"><h1>PhD Radar</h1><div class="subtitle">Industrial Design · Sustainability · Consumption · Social & Political Transformation</div></div></header>
 <main>
 <div class="controls">
-<div class="help">Results are automatically updated twice a week (Tue & Sat, 06:00 UTC).</div>
+<div class="help" id="scheduleInfo">Loading automatic search schedule…</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
 <button id="searchButton" class="search-button" onclick="manualSearch()">🔎 Search for new PhDs</button>
+<button id="clearButton" class="search-button secondary" onclick="manualSearch(true)">↻ Start fresh (clear old results)</button>
+</div>
 </div>
 <div class="help" id="providerBreakdown"></div>
 <div class="verification-notice"><strong>🔎 Verification:</strong> The radar checks whether the vacancy is reachable, appears to be a PhD vacancy, and whether the page indicates that the application is still open. Closed/expired vacancies are removed from the active feed; promising but inconclusive candidates remain visible as <strong>Not verified</strong>.</div>
@@ -254,15 +257,30 @@ function escapeHTML(value){
     .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-function manualSearch(){
-  const button = document.getElementById("searchButton");
+async function loadSchedule(){
+  const target = document.getElementById("scheduleInfo");
+  try{
+    const response = await fetch("schedule.json?" + Date.now());
+    if(!response.ok) throw new Error("HTTP " + response.status);
+    const schedule = await response.json();
+    target.textContent = schedule.label || "Automatic search schedule is configured in GitHub Actions.";
+  }catch(error){
+    target.textContent = "Automatic search schedule is configured in GitHub Actions.";
+    console.error("Could not load schedule display:", error);
+  }
+}
+
+function manualSearch(clearPrevious = false){
+  const button = document.getElementById(clearPrevious ? "clearButton" : "searchButton");
+  const original = clearPrevious ? "↻ Start fresh (clear old results)" : "🔎 Search for new PhDs";
   button.disabled = true;
-  button.textContent = "⏳ Starting search…";
+  button.textContent = clearPrevious ? "⏳ Opening fresh search…" : "⏳ Opening search…";
   window.open("https://github.com/baraynahan/PHD/actions/workflows/phd-radar.yml", "_blank", "noopener");
-  setTimeout(() => { button.disabled = false; button.textContent = "🔎 Search for new PhDs"; }, 2500);
+  setTimeout(() => { button.disabled = false; button.textContent = original; }, 2500);
 }
 
 loadResults();
+loadSchedule();
 </script>
 </body>
 </html>
