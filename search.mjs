@@ -1455,7 +1455,9 @@ function acronymsOf(t) {
 function sameJob(a, b) {
   const urlA = normalizeURL(a.url), urlB = normalizeURL(b.url);
   if (urlA && urlB && urlKey(urlA) === urlKey(urlB)) return true;
-  if (normalizeUniversity(a.university) !== normalizeUniversity(b.university)) return false;
+  const uniA = normalizeUniversity(a.university), uniB = normalizeUniversity(b.university);
+  if (!uniA || !uniB || uniA === "unknown institution" || uniB === "unknown institution") return false;
+  if (uniA !== uniB) return false;
   if (a.deadline && b.deadline && a.deadline !== b.deadline) return false;
   const ta = titleTokens(a.title), tb = titleTokens(b.title);
   const inter = [...ta].filter(w => tb.has(w)).length;
@@ -2114,7 +2116,7 @@ async function runProvider(provider, blocked) {
 }
 
 async function callAllProviders(blocked) {
-  console.log("Single discovery pipeline: " + SEARCH.name + "; primary reviewer: " + REVIEW.name + "; extraction fallbacks: " + [SEARCH_REVIEW, OPENROUTER].filter(p => p.configured).map(p => p.name).join(" → "));
+  console.log("Single discovery pipeline: " + SEARCH.name + "; primary reviewer: " + REVIEW.name + "; extraction fallbacks: " + ([SEARCH_REVIEW, OPENROUTER].filter(p => p.configured).map(p => p.name).join(" → ") || "none configured"));
   // A failed run no longer aborts early: existing results are still re-verified and saved, and an alert is sent.
   const run = await runProvider(PROVIDERS[0], blocked);
   if (run.status !== "ok") console.warn("Primary search pipeline failed: " + (run.error || run.status));
