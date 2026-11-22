@@ -3,6 +3,7 @@ import {
   readFileSync,
   writeFileSync
 } from "node:fs";
+import { createHash } from "node:crypto";
 
 const RESULTS_FILE = "results.json";
 const NOTIFIED_FILE = "notified.json";
@@ -35,20 +36,33 @@ function envBool(name, fallback) {
 const CFG = {
   MAX_PAGES:               envInt("MAX_PAGES", 120),
   TIER3_MAX_PAGES:         envInt("TIER3_MAX_PAGES", 40),
-  AI_REVIEW_BUDGET:        envInt("AI_REVIEW_BUDGET", 12),
-  AI_REVIEW_BUDGET_TIER3:  envInt("AI_REVIEW_BUDGET_TIER3", 4),
-  QUERIES_EU:              envInt("QUERIES_EU", 18),
-  QUERIES_TIER3:           envInt("QUERIES_TIER3", 6),
-  EXTRACTION_BATCH_SIZE:   Math.max(1, envInt("EXTRACTION_BATCH_SIZE", 2)),
-  PAGE_TEXT_CHARS:         envInt("PAGE_TEXT_CHARS", 3500),
+  // Budgets now apply to NEW / CHANGED pages only (already-reviewed pages are skipped).
+  AI_REVIEW_BUDGET:        envInt("AI_REVIEW_BUDGET", 24),
+  AI_REVIEW_BUDGET_TIER3:  envInt("AI_REVIEW_BUDGET_TIER3", 8),
+  QUERIES_EU:              envInt("QUERIES_EU", 24),
+  QUERIES_TIER3:           envInt("QUERIES_TIER3", 8),
+  EXTRACTION_BATCH_SIZE:   Math.max(1, envInt("EXTRACTION_BATCH_SIZE", 6)),
+  PAGE_TEXT_CHARS:         envInt("PAGE_TEXT_CHARS", 3200),
   SEARCH_RESULTS_PER_QUERY: Math.max(1, envInt("SEARCH_RESULTS_PER_QUERY", 8)),
   FETCH_CONCURRENCY:       Math.max(1, envInt("FETCH_CONCURRENCY", 6)),
   AI_CALL_GAP_MS:          envInt("AI_CALL_GAP_MS", 8000),
-  AI_MAX_ATTEMPTS:         Math.max(1, envInt("AI_MAX_ATTEMPTS", 2)),
-  AI_RETRY_BASE_DELAY_MS:  envInt("AI_RETRY_BASE_DELAY_MS", 6000),
+  AI_MAX_ATTEMPTS:         Math.max(1, envInt("AI_MAX_ATTEMPTS", 4)),
+  AI_RETRY_BASE_DELAY_MS:  envInt("AI_RETRY_BASE_DELAY_MS", 20000),
   IELTS_LOOKUP_ENABLED:    envBool("IELTS_LOOKUP_ENABLED", false),
   IELTS_LOOKUP_MIN_SCORE:  envInt("IELTS_LOOKUP_MIN_SCORE", 90),
-  IELTS_LOOKUP_MAX_PER_RUN: envInt("IELTS_LOOKUP_MAX_PER_RUN", 3)
+  IELTS_LOOKUP_MAX_PER_RUN: envInt("IELTS_LOOKUP_MAX_PER_RUN", 3),
+  // Search API
+  SEARCH_DEPTH:            String(process.env.SEARCH_DEPTH || "basic").toLowerCase(),      // basic = 1 credit, advanced = 2
+  SEARCH_TIME_RANGE:       String(process.env.SEARCH_TIME_RANGE || "month").toLowerCase(), // day|week|month|year|none
+  SEARCH_RAW_CONTENT:      envBool("SEARCH_RAW_CONTENT", true),                            // page text straight from the search API (bypasses 403s)
+  // Review cache
+  RECHECK_DAYS:            envInt("RECHECK_DAYS", 45),
+  BACKLOG_PER_RUN:         envInt("BACKLOG_PER_RUN", 40),
+  PRESCREEN_MIN_THEME:     envInt("PRESCREEN_MIN_THEME", 3),
+  // Scoring gates (fit = topic+politics+design+methods, 0-80)
+  MIN_FIT:                 envInt("MIN_FIT", 36),
+  MIN_TOPIC:               envInt("MIN_TOPIC", 8),
+  MIN_OVERALL:             envInt("MIN_OVERALL", 50)
 };
 
 // ============================================================================
@@ -70,7 +84,10 @@ function detectFormat(baseUrl, kind) {
 function readProviderConfig(prefix, { kind = "ai", defaultName }) {
   const baseUrl = envValue(`${prefix}_BASE_URL`);
   const apiKey = envValue(`${prefix}_API_KEY`);
-  const model = envValue(`${prefix}_MODEL`);
+  // *_MODEL may be a comma-separated list: calls are spread round-robin across the models,
+  // so per-model rate limits are shared instead of exhausted one by one.
+  const models = envValue(`${prefix}_MODEL`).split(",").map(s => s.trim()).filter(Boolean);
+  const model = models[0] || "";
   const missing = [];
   if (!baseUrl) missing.push(`${prefix}_BASE_URL (variable)`);
   if (kind === "ai" && !model) missing.push(`${prefix}_MODEL (variable)`);
@@ -78,7 +95,7 @@ function readProviderConfig(prefix, { kind = "ai", defaultName }) {
   return {
     prefix, kind,
     name: envValue(`${prefix}_NAME`) || defaultName,
-    baseUrl, apiKey, model,
+    baseUrl, apiKey, model, models,
     format: (envValue(`${prefix}_FORMAT`) || detectFormat(baseUrl, kind)).toLowerCase(),
     missing,
     configured: missing.length === 0
@@ -123,7 +140,11 @@ function safeErrorMessage(error) {
 
 function isQuotaError(error) {
   const m = String(error?.message || error || "").toLowerCase();
-  return /quota exceeded|resource_exhausted|resource exhausted|insufficient_quota|out of credits|billing|exceeded your current quota/.test(m);
+  // Only hard limits (daily quota / credits / billing) disable a model for the whole run.
+  // Per-minute 429 / RESOURCE_EXHAUSTED is an ordinary rate limit and is retried with backoff.
+  const hard = /insufficient_quota|out of credits|billing|exceeded your current quota|per ?day|perday|daily|limit: 0/;
+  const soft = /per ?minute|perminute|rate.?limit|try again in|retry in|too many requests/;
+  return hard.test(m) && !soft.test(m);
 }
 
 // ============================================================================
@@ -218,13 +239,7 @@ Always convert deadlines to ISO YYYY-MM-DD when one is given. Be careful:
 Canadian pages may use month/day/year, European and Australian pages use
 day/month/year.
 
-IMPORTANT LANGUAGE RULES:
-1. Determine the actual language of the PhD position/application from the
-   supplied page text.
-2. Do NOT reject or filter a position because of its language.
-3. If the position is not in English, mark it as "Not English".
-4. If it is in English, mark it as "English".
-5. If the language cannot be verified, mark it as "Unknown".
+Do not reject a position because of its language (the program detects the language itself).
 `;
 
 const URL_INTEGRITY_RULE = `
@@ -237,57 +252,21 @@ URL, still copy the PAGE header URL verbatim — never a different one.
 `;
 
 const OUTPUT_RULES = `
-Return ONLY a valid JSON array. Every object MUST contain:
-{
-  "page_id": <integer — the PAGE number from the header you used>,
-  "title": "...",
-  "university": "...",
-  "country": "...",
-  "city": "...",
-  "deadline": "YYYY-MM-DD (or empty if the deadline is rolling or not stated)",
-  "deadline_type": "dated | rolling | unknown",
-  "start_date": "...",
-  "url": "... (copy verbatim from the PAGE header)",
-  "funding": "...",
-  "supervisor": "...",
-  "classification": "...",
-  "research_area": "...",
-  "application_language": "English | Not English | Unknown",
-  "overall_score": 0,
-  "topic_fit": 0,
-  "politics_fit": 0,
-  "design_fit": 0,
-  "methods_fit": 0,
-  "funding_quality": 0,
-  "why_it_matches": "...",
-  "strategic_fit": "...",
-  "why_it_is_not_perfect": "...",
-  "eligible": true,
-  "reject_reason": ""
-}
+Return ONLY a valid JSON array (no Markdown fences). Include one object per page that is a specific
+PhD/doctoral vacancy; omit pages that are not. Use "" for anything you cannot determine. Never invent data.
+{"page_id":<int>,"title":"","university":"","country":"","city":"",
+ "deadline":"YYYY-MM-DD or empty","deadline_type":"dated|rolling|unknown",
+ "start_date":"","funding":"<short>","supervisor":"","research_area":"<few words>",
+ "topic_fit":0,"politics_fit":0,"design_fit":0,"methods_fit":0,"funding_quality":0,
+ "why_it_matches":"<ONE sentence>","eligible":true,"reject_reason":""}
 
-SCORING — read carefully:
-- "overall_score" is 0-100. It should equal the sum of the five sub-scores below.
-- Each sub-score is 0-20. Use these anchors consistently:
-    topic_fit:       20 = the vacancy IS one of the candidate's core themes;
-                     15 = strongly overlaps; 10 = related but peripheral;
-                     5 = tangential mention only; 0 = unrelated topic.
-    politics_fit:    20 = degrowth/post-growth/political-economy is the core;
-                     15 = strong presence; 10 = adjacent framing; 0 = absent.
-    design_fit:      20 = design-led project (design/service/systemic/transition/
-                     social design); 15 = design methods named explicitly;
-                     5 = design mentioned only in passing; 0 = no design dimension.
-    methods_fit:     20 = qualitative / participatory / theoretical methods
-                     perfectly match; 15 = strongly compatible; 0 = purely
-                     quantitative / computational / experimental.
-    funding_quality: 15-20 = fully funded, stipend + duration stated; 8-10 =
-                     funding mentioned but unclear; 0-5 = no funding mentioned.
-- A genuinely central fit should total 80+. A clearly unrelated position
-  (auditing, finance, AI/organisational studies, health, engineering) must
-  total below 60 even if "sustainability" appears once on the page.
-
-Use an empty string for any field you could not determine from the page text.
-Do not invent information, dates, IELTS scores, language status or URLs.
+Each score is 0-20:
+- topic_fit: 20 = core theme of the candidate; 15 = strong overlap; 10 = related but peripheral; 5 = tangential; 0 = unrelated.
+- politics_fit: 20 = degrowth/post-growth/political economy is the core; 15 = strong; 10 = adjacent; 0 = absent.
+- design_fit: 20 = design-led (design/service/systemic/transition/social design); 15 = design methods named; 5 = passing; 0 = none.
+- methods_fit: 20 = qualitative/participatory/theoretical fits perfectly; 15 = compatible; 0 = purely quantitative/computational/experimental.
+- funding_quality: 15-20 = funded, stipend/salary/duration stated; 8-10 = unclear; 0-5 = none mentioned.
+A clearly unrelated position (auditing, finance, AI, health, engineering) must have topic_fit <= 4 even if "sustainability" is mentioned once.
 `;
 
 // ============================================================================
@@ -439,33 +418,81 @@ function extractJobPosting(html) {
   return null;
 }
 
+function decodeEntities(s) {
+  return s.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">")
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => { try { return String.fromCodePoint(parseInt(n, 16)); } catch { return " "; } })
+    .replace(/&#(\d+);/g, (_, n) => { try { return String.fromCodePoint(Number(n)); } catch { return " "; } });
+}
+
 function extractMainText(html) {
-  const main = html.match(/<main[\s\S]*?<\/main>/i)
-    || html.match(/<article[\s\S]*?<\/article>/i)
-    || html.match(/<div[^>]+(?:id|class)=["'][^"']*(?:content|vacanc|job|main)[^"']*["'][\s\S]*?<\/div>/i);
-  const source = main ? main[0] : html;
-  return source
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
-    .replace(/<svg[\s\S]*?<\/svg>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">")
+  let body = (html.match(/<body[\s\S]*<\/body>/i) || [html])[0];
+  body = body.replace(/<(script|style|noscript|svg|nav|footer|aside|form)\b[\s\S]*?<\/\1>/gi, " ");
+  const main = body.match(/<main[\s\S]*?<\/main>/i) || body.match(/<article[\s\S]*?<\/article>/i);
+  const source = main && main[0].length > 800 ? main[0] : body;
+  return decodeEntities(source.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+}
+
+// Markdown returned by the search API (include_raw_content) -> plain text
+function mdToText(md) {
+  return String(md || "")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/[#*_>`|]+/g, " ")
     .replace(/\s+/g, " ").trim();
 }
 
-function keywordWindow(text, max) {
+// Compact page digest for the AI: the beginning (title / topic) + windows around deadline, funding, supervisor...
+const DIGEST_ANCHORS = /deadline|closing date|closes on|apply by|application (?:deadline|period)|applications? (?:must|are due|close)|stipend|salary|gross|fully funded|funding|scholarship|start date|starting date|commencement|supervis|promotor|\bfte\b|bewerbung|frist|sluitingsdatum|solliciteren|ansökan|søknadsfrist|ansøgningsfrist|hakuaika|scadenza/ig;
+function buildDigest(fullText, max) {
+  const text = String(fullText || "");
   if (text.length <= max) return text;
-  const lower = text.toLowerCase();
-  const anchors = ["deadline", "closing date", "apply", "application", "funding", "stipend", "salary", "supervisor"];
-  let best = 0;
-  for (const a of anchors) {
-    const i = lower.indexOf(a);
-    if (i !== -1 && (best === 0 || i < best)) best = i;
+  const headLen = Math.floor(max * 0.45);
+  const parts = [text.slice(0, headLen)];
+  const covered = [[0, headLen]];
+  let used = headLen, windows = 0;
+  const re = new RegExp(DIGEST_ANCHORS.source, "ig");
+  let m;
+  while ((m = re.exec(text)) && used < max && windows < 10) {
+    const s = Math.max(0, m.index - 170), e = Math.min(text.length, m.index + 170);
+    if (covered.some(([a, b]) => s < b && e > a)) continue;
+    covered.push([s, e]);
+    parts.push(text.slice(s, e));
+    used += e - s;
+    windows++;
   }
-  const start = Math.max(0, best - Math.floor(max / 4));
-  return text.slice(start, start + max);
+  return parts.join(" … ").slice(0, max);
+}
+
+const LANG_WORDS = {
+  en: ["the", "and", "of", "to", "for", "with", "will", "is", "you", "our"],
+  nl: ["de", "het", "een", "van", "voor", "en", "met", "wij", "je", "ons"],
+  de: ["der", "die", "und", "das", "für", "mit", "wir", "ein", "sie", "ihre"],
+  sv: ["och", "att", "för", "som", "med", "vi", "är", "du", "en", "det"],
+  no: ["og", "å", "til", "som", "med", "vi", "er", "du", "en", "det"],
+  da: ["og", "at", "til", "som", "med", "vi", "er", "du", "en", "det"],
+  fi: ["ja", "on", "ole", "että", "työ", "sekä", "tai", "hakija", "ei", "kanssa"],
+  it: ["il", "di", "che", "per", "con", "una", "della", "sono", "e", "dei"],
+  fr: ["le", "la", "les", "des", "et", "pour", "avec", "une", "du", "est"],
+  es: ["el", "los", "las", "de", "y", "para", "con", "una", "por", "del"]
+};
+function detectLanguage(text) {
+  const words = String(text || "").slice(0, 5000).toLowerCase().replace(/[^\p{L}\s]/gu, " ").split(/\s+/).filter(Boolean);
+  if (words.length < 40) return "Unknown";
+  const freq = new Map();
+  for (const w of words) freq.set(w, (freq.get(w) || 0) + 1);
+  const score = {};
+  for (const [lang, list] of Object.entries(LANG_WORDS)) score[lang] = list.reduce((a, w) => a + (freq.get(w) || 0), 0);
+  const best = Object.entries(score).filter(([l]) => l !== "en").sort((a, b) => b[1] - a[1])[0];
+  if (score.en >= 12 && score.en >= best[1] * 1.5) return "English";
+  if (best[1] >= 12 && best[1] >= score.en * 1.5) return "Not English";
+  return "Unknown";
+}
+
+function contentHash(text) {
+  const norm = String(text || "").toLowerCase().replace(/\d+/g, "").replace(/[^\p{L}]+/gu, " ").slice(0, 6000);
+  return createHash("sha1").update(norm).digest("hex").slice(0, 16);
 }
 
 async function fetchPage(url) {
@@ -484,83 +511,129 @@ async function fetchPage(url) {
     const finalURL = normalizeURL(response.url || url);
     const contentType = String(response.headers.get("content-type") || "");
     if (!response.ok || !contentType.includes("text")) {
-      return { ok: false, url: finalURL, title: "", text: "", jobPosting: null, reason: `HTTP ${response.status} / ${contentType || "unknown content type"}` };
+      return { ok: false, url: finalURL, title: "", text: "", fullText: "", jobPosting: null, reason: `HTTP ${response.status} / ${contentType || "unknown content type"}` };
     }
     const html = await response.text();
     const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-    const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
+    const title = titleMatch ? decodeEntities(titleMatch[1].replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim() : "";
     const jobPosting = extractJobPosting(html);
-    const text = keywordWindow(extractMainText(html), PAGE_TEXT_CHARS);
-    return { ok: true, url: finalURL, title, text, jobPosting, reason: "" };
+    const fullText = extractMainText(html).slice(0, 24000);
+    return { ok: true, url: finalURL, title, fullText, text: buildDigest(fullText, PAGE_TEXT_CHARS), jobPosting, reason: "" };
   } finally {
     clearTimeout(timeout);
   }
 }
 
-const DOCTORAL_RE = /phd|ph\.d|doctoral|doctorate|doctor of philosophy|higher degree by research|\bhdr\b|promotion|promovend|doktorand/i;
+const DOCTORAL_RE = /phd|ph\.d|doctoral|doctorate|doctor of philosophy|higher degree by research|\bhdr\b|promotion|promovend|doktorand|doktorgrad|stipendiat|doctorant|dottorat|tohtori|väitös|predoctoral|early.stage researcher|\besr\b/i;
 
-async function fetchHitPages(hits, maxPages, seen) {
+// Hosts that block datacenter IPs (GitHub Actions): use the text delivered by the search API instead of fetching.
+const RAW_FIRST_HOSTS = /(^|\.)(findaphd\.com|jobs\.ac\.uk|jobbnorge\.no|academicpositions\.[a-z.]+|universityaffairs\.ca)$/;
+const hostFailStreak = new Map();
+const fetchStats = { raw_used: 0, circuit_skipped: 0 };
+function hostOf(url) { try { return new URL(url).host.toLowerCase(); } catch { return "invalid"; } }
+
+function pageFromRaw(hit) {
+  const fullText = mdToText(hit.raw).slice(0, 24000);
+  if (fullText.length < 300) return null;
+  return { ok: true, url: hit.url, title: hit.title || "", fullText, text: buildDigest(fullText, PAGE_TEXT_CHARS), jobPosting: null, reason: "", fromRaw: true };
+}
+
+async function loadPage(hit) {
+  const host = hostOf(hit.url);
+  const raw = hit.raw ? pageFromRaw(hit) : null;
+  const streak = hostFailStreak.get(host) || 0;
+  const strip = { raw: undefined };
+  if (raw && (RAW_FIRST_HOSTS.test(host) || streak >= 3)) { fetchStats.raw_used++; return { ...hit, ...raw, ...strip }; }
+  if (!raw && streak >= 3) { fetchStats.circuit_skipped++; return { ...hit, ...strip, ok: false, reason: "host blocks automated fetches (circuit open)" }; }
+  try {
+    const page = await fetchPage(hit.url);
+    if (page.ok && page.fullText.length >= 300) { hostFailStreak.set(host, 0); return { ...hit, ...page, ...strip }; }
+    hostFailStreak.set(host, streak + 1);
+    if (raw) { fetchStats.raw_used++; return { ...hit, ...raw, ...strip }; }
+    return { ...hit, ...page, ...strip, ok: false, reason: page.reason || "page too short" };
+  } catch (e) {
+    hostFailStreak.set(host, streak + 1);
+    if (raw) { fetchStats.raw_used++; return { ...hit, ...raw, ...strip }; }
+    return { ...hit, ...strip, ok: false, reason: safeErrorMessage(e) };
+  }
+}
+
+async function fetchHitPages(hits, maxPages, seen, tier3 = false) {
   const unique = [];
-  const seenURLs = new Set();
+  const keys = new Set();
   for (const hit of hits) {
     const u = normalizeURL(hit.url);
-    if (!u || seenURLs.has(u)) continue;
-    seenURLs.add(u);
-    unique.push({ ...hit, url: u });
+    const k = urlKey(u);
+    if (!u || keys.has(k)) continue;
+    keys.add(k);
+    unique.push({ ...hit, url: u, key: k });
   }
 
-  const scored = unique.map(hit => {
-    const entry = seen[hit.url];
-    if (!entry) return { hit, rank: 0 };
-    const ageDays = (Date.now() - Date.parse(entry.last_checked || 0)) / 86400000;
-    if (entry.outcome === "result") return { hit, rank: 1 + ageDays / 1000 };
-    if (String(entry.outcome || "").startsWith("skipped")) return { hit, rank: 2 + ageDays / 1000 };
-    return { hit, rank: 3 + ageDays / 1000 };
+  // Do not keep hammering URLs that failed recently, unless the search API already gave us their text.
+  const candidates = unique.filter(h => {
+    const e = seen[h.key];
+    if (!e || h.raw) return true;
+    return !(String(e.outcome || "").startsWith("skipped") && ageDays(e.last_checked) < 14);
+  });
+  const skippedRecently = unique.length - candidates.length;
+
+  const scored = candidates.map(hit => {
+    const e = seen[hit.key];
+    if (!e) return { hit, rank: 0 };
+    if (e.outcome === "pending") return { hit, rank: 0.5 };
+    if (e.outcome === "result") return { hit, rank: 1 + ageDays(e.last_checked) / 1000 };
+    return { hit, rank: 3 + ageDays(e.last_checked) / 1000 };
   });
   scored.sort((a, b) => a.rank - b.rank);
 
   const queue = scored.slice(0, maxPages * 3).map(s => s.hit);
   const fetched = await mapPool(queue, FETCH_CONCURRENCY, hit =>
-    perHost(hit.url, async () => {
-      try { return { ...hit, ...(await fetchPage(hit.url)) }; }
-      catch (e) { return { ...hit, ok: false, reason: safeErrorMessage(e) }; }
-    })
+    (hit.raw && RAW_FIRST_HOSTS.test(hostOf(hit.url)))
+      ? loadPage(hit)
+      : perHost(hit.url, () => loadPage(hit))
   );
 
   const pages = [], skipped = [];
   for (const p of fetched) {
-    if (!p.ok || !p.text || p.text.length < 300) {
+    if (!p.ok || !p.fullText || p.fullText.length < 300) {
       skipped.push({ ...p, reason: p.reason || "page too short" });
       continue;
     }
-    if (!DOCTORAL_RE.test(p.text) && !p.jobPosting) {
+    if (!DOCTORAL_RE.test(p.fullText) && !p.jobPosting) {
       skipped.push({ ...p, reason: "not obviously doctoral" });
       continue;
     }
-    pages.push(p);
+    pages.push({ ...p, isTier3: tier3 });
     if (pages.length >= maxPages) break;
   }
-  return { pages, skipped };
+  return { pages, skipped, skippedRecently };
 }
 
 async function gatherPages(mainHits, tier3Hits, mainMax, seen) {
-  const main = await fetchHitPages(mainHits, mainMax, seen);
-  const seenURLs = new Set(main.pages.map(p => normalizeURL(p.url)));
-  const tier3 = await fetchHitPages(tier3Hits.filter(h => !seenURLs.has(normalizeURL(h.url))), TIER3_MAX_PAGES, seen);
+  const main = await fetchHitPages(mainHits, mainMax, seen, false);
+  const mainKeys = new Set(main.pages.map(p => p.key));
+  const tier3 = await fetchHitPages(tier3Hits.filter(h => !mainKeys.has(urlKey(h.url))), TIER3_MAX_PAGES, seen, true);
   const pages = [...main.pages, ...tier3.pages].map((page, index) => ({ ...page, id: index + 1 }));
-  return { pages, skipped: [...main.skipped, ...tier3.skipped], tier3Count: tier3.pages.length };
+  return {
+    pages, skipped: [...main.skipped, ...tier3.skipped],
+    tier3Count: tier3.pages.length,
+    skippedRecently: main.skippedRecently + tier3.skippedRecently
+  };
 }
 
 // ============================================================================
 // PRE-SCREEN
 // ============================================================================
 const THEME_WEIGHTS = [
-  [/degrowth|post-?growth|post-?consumer|sufficiency/gi, 7],
-  [/sustainable consumption|consumption practice|product longevity|repair|reuse|circular econom/gi, 5],
-  [/transition design|social design|design justice|co-?design|participatory design|service design|product-?service system/gi, 5],
-  [/commons|sharing econom|access-?based|ownership model|collaborative consumption/gi, 4],
-  [/socio-?technical transition|transition studies|social practice theor|political ecolog|political econom/gi, 4],
-  [/sustainab\w+|governance|public policy|lifestyle/gi, 1]
+  [/degrowth|post-?growth|post-?consumer|sufficiency|consumption corridor|doughnut economic|wellbeing economy|eco-?social|social-ecological|planetary boundar/gi, 7],
+  [/sustainable consumption|consumption practice|product longevity|repair|reuse|circular econom|right to repair|discard studies|voluntary simplicity/gi, 5],
+  [/transition design|social design|design justice|co-?design|participatory design|service design|product-?service system|design fiction|speculative design|more-than-human|pluriverse|systemic design/gi, 5],
+  [/commons|sharing econom|access-?based|ownership model|collaborative consumption|platform cooperativ/gi, 4],
+  [/socio-?technical transition|transition studies|sustainability transition|just transition|social practice theor|political ecolog|political econom/gi, 4],
+  // local-language equivalents (Nordic, DACH, NL, IT, FR)
+  [/postwachstum|wachstumskritik|suffizienz|nachhaltige[nr]? konsum|degroei|duurzame consumptie|hållbar konsumtion|bærekraftig forbruk|bæredygtigt forbrug|kestävä kulutus|consumo sostenibile|decrescita|consommation durable|décroissance/gi, 6],
+  [/transformationsdesign|nachhaltigkeitstransformation|sozial-ökologische transformation|politische ökonomie|transitieontwerp|politieke economie|omställning|omstilling|kestävyysmurros|politisk økonomi|politisk ekonomi/gi, 4],
+  [/sustainab\w+|governance|public policy|lifestyle|nachhaltigkeit|duurzaamheid|hållbarhet|bærekraft|bæredygtighed/gi, 1]
 ];
 const ANTI_WEIGHTS = [
   [/machine learning|deep learning|neural network|large language model/gi, -6],
@@ -569,12 +642,18 @@ const ANTI_WEIGHTS = [
 ];
 const FUNDING_RE = /fully funded|stipend|salary|scholarship|tariff|collective labour|tv-?l|studentship|tax-?free|per annum|gross monthly/i;
 
-function prescreen(page) {
-  const text = `${page.title || ""} ${page.text || ""}`;
+function themeScore(page) {
+  const text = `${page.title || ""} ${page.fullText || page.text || ""}`;
   let score = 0;
   for (const [re, w] of [...THEME_WEIGHTS, ...ANTI_WEIGHTS]) {
     score += Math.min(3, (text.match(re) || []).length) * w;
   }
+  return score;
+}
+
+function prescreen(page, theme = themeScore(page)) {
+  const text = `${page.title || ""} ${page.fullText || page.text || ""}`;
+  let score = theme;
   if (FUNDING_RE.test(text)) score += 4;
   if (page.jobPosting?.validThrough) score += 4;
   return score;
@@ -582,7 +661,7 @@ function prescreen(page) {
 
 function rankByPrescreen(pages) {
   return pages
-    .map(p => ({ ...p, prescreen: prescreen(p) }))
+    .map(p => { const theme = themeScore(p); return { ...p, theme, prescreen: prescreen(p, theme) }; })
     .sort((a, b) => b.prescreen - a.prescreen);
 }
 
@@ -595,94 +674,155 @@ const THEMES = [
   "access-based consumption", "commons", "social practices", "sustainable lifestyles",
   "transition design", "social design", "design justice", "participatory design",
   "product-service systems", "systemic design", "sustainability transitions",
-  "political economy of sustainability", "consumption governance", "social innovation"
+  "political economy of sustainability", "consumption governance", "social innovation",
+  // added: themes that produced the best matches so far or sit on the candidate's trajectory
+  "consumption corridors", "doughnut economics wellbeing economy", "eco-social policy",
+  "just transition", "design fictions speculative design", "more-than-human design",
+  "pluriverse decolonial design", "energy poverty housing consumption", "discard studies waste",
+  "right to repair", "voluntary simplicity downshifting", "macromarketing critical consumer research",
+  "platform cooperativism", "design for sufficiency", "service design public services",
+  "sustainable fashion textiles longevity", "living labs urban transitions", "design anthropology"
 ];
+
+const AGGREGATORS = ["academictransfer.com", "jobs.ac.uk", "euraxess.ec.europa.eu", "findaphd.com", "jobbnorge.no", "academicpositions.com"];
+const TIER3_AGG = ["findaphd.com", "universityaffairs.ca"];
 
 const FRAMES = [
   t => `fully funded PhD position ${t}`,
   t => `PhD vacancy ${t} ${THIS_YEAR + 1}`,
   t => `doctoral researcher position ${t} deadline`,
-  t => `PhD studentship ${t} stipend`
+  t => `PhD studentship fellowship ${t} stipend`
 ];
 
-const SITES = [
-  "academictransfer.com", "jobs.ac.uk", "euraxess.ec.europa.eu",
-  "findaphd.com", "jobbnorge.no", "academicpositions.com"
+// Local-language vacancy words: many Tier-1 ads are not written in English.
+const LOCAL = {
+  de: { jobs: ["Promotionsstelle", "Doktorand*in wissenschaftliche Mitarbeit"], themes: ["Postwachstum nachhaltiger Konsum", "Transformationsdesign Nachhaltigkeit", "Suffizienz politische Ökonomie"] },
+  nl: { jobs: ["promovendus PhD-positie"], themes: ["duurzame consumptie", "transitie ontwerp duurzaamheid", "degroei"] },
+  sv: { jobs: ["doktorand doktorandtjänst"], themes: ["hållbar konsumtion", "design omställning hållbarhet"] },
+  da: { jobs: ["ph.d.-stipendiat"], themes: ["bæredygtigt forbrug", "design bæredygtig omstilling"] },
+  no: { jobs: ["stipendiat doktorgrad"], themes: ["bærekraftig forbruk", "design bærekraft omstilling"] },
+  fi: { jobs: ["tohtorikoulutettava väitöskirjatutkija"], themes: ["kestävä kulutus", "muotoilu kestävyysmurros"] },
+  it: { jobs: ["borsa di dottorato"], themes: ["consumo sostenibile", "design sostenibilità transizione"] },
+  fr: { jobs: ["contrat doctoral doctorant"], themes: ["consommation durable", "design transition écologique"] }
+};
+
+// Always-on core queries (job boards only, last month) so the best themes are covered every run.
+const CORE_QUERIES = [
+  { q: "PhD doctoral researcher degrowth post-growth sufficiency political economy consumption", domains: AGGREGATORS, time_range: "month" },
+  { q: "PhD doctoral sustainable consumption product longevity repair circular economy design", domains: AGGREGATORS, time_range: "month" },
+  { q: "PhD doctoral transition design social design service design systemic design participatory", domains: AGGREGATORS, time_range: "month" },
+  { q: "PhD doctoral sustainability transitions social practices governance policy design justice", domains: AGGREGATORS, time_range: "month" }
 ];
 
-const TIER3_SITES = ["findaphd.com", "universityaffairs.ca"];
+// A new slot every 3.5 days, so a Tue + Sat schedule never repeats the same rotating queries.
+function runSlot() {
+  return Math.floor((Date.now() - Date.UTC(2026, 0, 1)) / (3.5 * 86400000));
+}
 
-function weekIndex() {
-  const start = Date.UTC(THIS_YEAR, 0, 1);
-  return Math.floor((Date.now() - start) / (7 * 86400000));
+function rotate(pool, count) {
+  if (!pool.length || count <= 0) return [];
+  const start = (runSlot() * count) % pool.length;
+  return Array.from({ length: Math.min(count, pool.length) }, (_, i) => pool[(start + i) % pool.length]);
+}
+
+function mainQueryPool() {
+  const pool = [];
+  THEMES.forEach((t, i) => {
+    pool.push({ q: FRAMES[i % FRAMES.length](t) });                         // open web
+    pool.push({ q: `PhD doctoral position ${t}`, domains: AGGREGATORS });    // job boards (include_domains, not site:)
+  });
+  for (const spec of Object.values(LOCAL)) {
+    for (const job of spec.jobs) for (const theme of spec.themes) pool.push({ q: `${job} ${theme}` });
+  }
+  return pool;
 }
 
 function queriesForRun(count) {
-  const all = [];
-  for (const t of THEMES) for (const f of FRAMES) all.push(f(t));
-  for (const t of THEMES) for (const s of SITES) all.push(`site:${s} PhD ${t}`);
-  const start = (weekIndex() * count) % all.length;
-  return Array.from({ length: Math.min(count, all.length) }, (_, i) => all[(start + i) % all.length]);
+  return [...CORE_QUERIES, ...rotate(mainQueryPool(), Math.max(0, count - CORE_QUERIES.length))];
 }
 
 function tier3QueriesForRun(count) {
-  const all = [];
+  const pool = [];
   for (const t of THEMES) {
-    all.push(`fully funded PhD ${t} Australia findaphd`);
-    all.push(`PhD scholarship ${THIS_YEAR + 1} ${t} Canada university`);
-    for (const s of TIER3_SITES) all.push(`site:${s} PhD ${t}`);
+    pool.push({ q: `funded PhD project ${t} Australia HDR scholarship` });
+    pool.push({ q: `PhD scholarship ${THIS_YEAR + 1} ${t} Canada university` });
+    pool.push({ q: `funded PhD ${t} New Zealand`, });
+    pool.push({ q: `PhD ${t}`, domains: TIER3_AGG });
   }
-  const start = (weekIndex() * count) % all.length;
-  return Array.from({ length: Math.min(count, all.length) }, (_, i) => all[(start + i) % all.length]);
+  return rotate(pool, count);
 }
 
 // ============================================================================
 // AI CALLS
 // ============================================================================
-const AI_MAX_ATTEMPTS = CFG.AI_MAX_ATTEMPTS;
-const GEMINI_MAX_ATTEMPTS = Math.max(2, CFG.AI_MAX_ATTEMPTS);
-const GEMINI_RETRY_DELAYS_MS = [15000, 30000, 60000];
-const failedThisRun = new Set();
+const failedThisRun = new Set();   // providers considered dead for this run
+const deadModels = new Set();     // `${prefix}::${model}` disabled by a hard (daily/credit) quota
+const failStreak = new Map();     // consecutive fully-retried failures per provider
+const rrIndex = new Map();
+const AI_STREAK_LIMIT = 3;        // provider is only abandoned after this many consecutive failed calls
 
-async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = false } = {}) {
+function liveModels(provider) {
+  const all = provider.models?.length ? provider.models : [provider.model];
+  return all.filter(m => !deadModels.has(`${provider.prefix}::${m}`));
+}
+function pickModel(provider) {
+  const models = liveModels(provider);
+  if (!models.length) return null;
+  const i = rrIndex.get(provider.prefix) || 0;
+  rrIndex.set(provider.prefix, i + 1);
+  return models[i % models.length];
+}
+function backoffMs(error, attempt) {
+  if (Number(error.retryAfterMs) > 0) return Math.min(Number(error.retryAfterMs) + 1000, 180000);
+  const base = CFG.AI_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1);
+  return Math.min(base + Math.floor(Math.random() * 0.25 * base), 180000);
+}
+
+async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = false, json = false } = {}) {
   if (!provider.configured) throw new Error(`${provider.name} is not configured (missing: ${provider.missing.join(", ")}).`);
   if (failedThisRun.has(provider.prefix)) {
     throw new Error(`${provider.name} already failed earlier this run — skipping.`);
   }
-
-  const call = provider.format === "gemini"
-    ? () => geminiFormatGenerate(provider, prompt, useSearch, allowEmpty)
-    : provider.format === "openai"
-    ? () => openaiFormatGenerate(provider, prompt, allowEmpty)
-    : null;
-  if (!call) throw new Error(`${provider.prefix}_FORMAT "${provider.format}" is not supported.`);
-
-  const maxAttempts = provider.format === "gemini" ? GEMINI_MAX_ATTEMPTS : AI_MAX_ATTEMPTS;
   let lastError;
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+  for (let attempt = 1; attempt <= CFG.AI_MAX_ATTEMPTS; attempt++) {
+    const model = pickModel(provider);
+    if (!model) break;
+    const p = { ...provider, model };
+    const call = p.format === "gemini"
+      ? () => geminiFormatGenerate(p, prompt, useSearch, allowEmpty, json)
+      : p.format === "openai"
+      ? () => openaiFormatGenerate(p, prompt, allowEmpty)
+      : null;
+    if (!call) throw new Error(`${provider.prefix}_FORMAT "${provider.format}" is not supported.`);
     try {
-      return await call();
+      const out = await call();
+      failStreak.set(provider.prefix, 0);
+      return { ...out, model };
     } catch (error) {
       lastError = error;
       if (isQuotaError(error)) {
-        failedThisRun.add(provider.prefix);
-        console.error(`[${provider.name}] quota exhausted — marking provider dead for this run.`);
-        throw error;
+        deadModels.add(`${provider.prefix}::${model}`);
+        console.error(`[${provider.name}] ${model}: hard quota reached — model disabled for this run.`);
+        continue; // try another model (if any) on the next attempt
       }
-      if (!error.retryable || attempt === maxAttempts) {
-        if (error.retryable) failedThisRun.add(provider.prefix);
-        break;
-      }
-      const wait = Number(error.retryAfterMs) > 0
-        ? Math.min(Number(error.retryAfterMs), 120000)
-        : provider.format === "gemini"
-        ? GEMINI_RETRY_DELAYS_MS[Math.min(attempt - 1, GEMINI_RETRY_DELAYS_MS.length - 1)]
-        : CFG.AI_RETRY_BASE_DELAY_MS * attempt;
-      console.warn(`[${provider.name}] attempt ${attempt}/${maxAttempts} failed (${safeErrorMessage(error)}); retrying in ${wait / 1000}s...`);
+      if (!error.retryable || attempt === CFG.AI_MAX_ATTEMPTS) break;
+      const wait = backoffMs(error, attempt);
+      console.warn(`[${provider.name}] ${model} attempt ${attempt}/${CFG.AI_MAX_ATTEMPTS} failed (${safeErrorMessage(error)}); retrying in ${Math.round(wait / 1000)}s...`);
       await sleep(wait);
     }
   }
-  throw lastError;
+  if (!liveModels(provider).length) {
+    failedThisRun.add(provider.prefix);
+    console.error(`[${provider.name}] all models hit a hard quota — provider disabled for this run.`);
+  } else {
+    const streak = (failStreak.get(provider.prefix) || 0) + 1;
+    failStreak.set(provider.prefix, streak);
+    if (streak >= AI_STREAK_LIMIT) {
+      failedThisRun.add(provider.prefix);
+      console.error(`[${provider.name}] ${streak} consecutive failed calls — provider disabled for this run.`);
+    }
+  }
+  throw lastError || new Error(`${provider.name}: no usable model.`);
 }
 
 function apiError(message, retryable, retryAfterMs = 0) {
@@ -693,7 +833,7 @@ function apiError(message, retryable, retryAfterMs = 0) {
 }
 const isRetryableStatus = s => s === 429 || s >= 500;
 
-async function geminiFormatGenerate(provider, prompt, useSearch, allowEmpty) {
+async function geminiFormatGenerate(provider, prompt, useSearch, allowEmpty, json = false) {
   const base = provider.baseUrl.replace(/\/+$/, "");
   const endpoint = /:generatecontent$/i.test(base)
     ? base
@@ -701,7 +841,7 @@ async function geminiFormatGenerate(provider, prompt, useSearch, allowEmpty) {
   const body = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     ...(useSearch ? { tools: [{ google_search: {} }] } : {}),
-    generationConfig: { temperature: 0.1, responseMimeType: "text/plain" }
+    generationConfig: { temperature: 0.1, responseMimeType: (json && !useSearch) ? "application/json" : "text/plain" }
   };
   const response = await fetch(endpoint, {
     method: "POST",
@@ -835,31 +975,47 @@ The program will take URLs only from your web search tool's source metadata, not
   return allHits;
 }
 
-async function webSearch(query) {
+let BLOCKED_CACHE = { domains: [], urls: [] };
+const ALWAYS_EXCLUDE = ["facebook.com", "instagram.com", "linkedin.com", "youtube.com", "google.com", "tiktok.com", "x.com", "twitter.com", "pinterest.com"];
+let SEARCH_QUOTA_HIT = false;
+
+async function webSearch(spec, attempt = 1) {
+  const { q: query, domains = [], time_range: timeRange } = typeof spec === "string" ? { q: spec } : spec;
+  const range = (timeRange || CFG.SEARCH_TIME_RANGE || "").toLowerCase();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000);
+  const timeout = setTimeout(() => controller.abort(), 25000);
   const n = SEARCH_MAX_RESULTS_PER_QUERY;
   try {
     let response, pick;
     if (SEARCH.format === "tavily") {
+      const body = {
+        query, search_depth: CFG.SEARCH_DEPTH, max_results: n, include_answer: false,
+        include_raw_content: CFG.SEARCH_RAW_CONTENT ? "markdown" : false,
+        exclude_domains: [...new Set([...ALWAYS_EXCLUDE, ...BLOCKED_CACHE.domains])].slice(0, 140)
+      };
+      if (range && range !== "none") body.time_range = range;
+      if (domains.length) body.include_domains = domains;
       response = await fetch(endpointURL(SEARCH.baseUrl, "/search"), {
         method: "POST", signal: controller.signal,
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SEARCH.apiKey}` },
-        body: JSON.stringify({ api_key: SEARCH.apiKey, query, search_depth: "advanced", max_results: n, include_answer: false, include_raw_content: false, time_range: "year" })
+        body: JSON.stringify(body)
       });
-      pick = d => (d.results || []).map(r => ({ title: r.title, url: r.url }));
+      pick = d => (d.results || []).map(r => ({ title: r.title, url: r.url, raw: r.raw_content || "", snippet: r.content || "" }));
     } else if (SEARCH.format === "serper") {
+      const q = domains.length ? `(${domains.map(d => `site:${d}`).join(" OR ")}) ${query}` : query;
+      const tbs = { day: "qdr:d", week: "qdr:w", month: "qdr:m", year: "qdr:y" }[range];
       response = await fetch(endpointURL(SEARCH.baseUrl, "/search"), {
         method: "POST", signal: controller.signal,
         headers: { "Content-Type": "application/json", "X-API-KEY": SEARCH.apiKey },
-        body: JSON.stringify({ q: query, num: n, tbs: "qdr:y" })
+        body: JSON.stringify({ q, num: n, ...(tbs ? { tbs } : {}) })
       });
       pick = d => (d.organic || []).map(r => ({ title: r.title, url: r.link }));
     } else if (SEARCH.format === "brave") {
       const url = new URL(endpointURL(SEARCH.baseUrl, "/res/v1/web/search"));
-      url.searchParams.set("q", query);
+      url.searchParams.set("q", domains.length ? `(${domains.map(d => `site:${d}`).join(" OR ")}) ${query}` : query);
       url.searchParams.set("count", String(Math.min(n, 20)));
-      url.searchParams.set("freshness", "py");
+      const fresh = { day: "pd", week: "pw", month: "pm", year: "py" }[range];
+      if (fresh) url.searchParams.set("freshness", fresh);
       response = await fetch(url, { signal: controller.signal, headers: { "Accept": "application/json", "X-Subscription-Token": SEARCH.apiKey } });
       pick = d => (d.web?.results || []).map(r => ({ title: r.title, url: r.url }));
     } else {
@@ -867,6 +1023,16 @@ async function webSearch(query) {
     }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
+      if ([432, 433].includes(response.status)) {            // Tavily: plan / pay-as-you-go limit exhausted
+        SEARCH_QUOTA_HIT = true;
+        console.error(`[${SEARCH.name}] plan limit reached (HTTP ${response.status}) — stopping further searches this run.`);
+        return [];
+      }
+      if (response.status === 429 && attempt < 3) {
+        const wait = Number(response.headers.get("retry-after") || 0) * 1000 || 5000 * attempt;
+        await sleep(Math.min(wait, 30000));
+        return webSearch(spec, attempt + 1);
+      }
       console.warn(`[${SEARCH.name}] error for query "${query}": ${response.status} ${safeErrorMessage(JSON.stringify(data))}`);
       return [];
     }
@@ -882,21 +1048,23 @@ async function webSearch(query) {
 
 async function searchDiscover(queries, tag = "Europe-first") {
   if (!SEARCH.configured) throw new Error(`${SEARCH.name} is not configured (missing: ${SEARCH.missing.join(", ")}).`);
-  console.log(`[${REVIEW.name}] ${SEARCH.name} search discovery starting (${tag})...`);
-  const allHits = [], seenURLs = new Set();
+  console.log(`[${REVIEW.name}] ${SEARCH.name} search discovery starting (${tag}, ${queries.length} queries, depth=${CFG.SEARCH_DEPTH}, range=${CFG.SEARCH_TIME_RANGE})...`);
+  const byKey = new Map();
   for (let i = 0; i < queries.length; i++) {
+    if (SEARCH_QUOTA_HIT) { console.warn(`[${SEARCH.name}] skipping remaining ${tag} queries (plan limit).`); break; }
     if (i > 0) await sleep(SEARCH_CALL_GAP_MS);
-    const query = queries[i];
-    const results = await webSearch(query);
+    const results = await webSearch(queries[i]);
     for (const item of results) {
       const url = normalizeURL(item.url);
-      if (!url || seenURLs.has(url)) continue;
-      seenURLs.add(url);
-      allHits.push({ title: String(item.title || url).trim(), url });
+      if (!url) continue;
+      const key = urlKey(url);
+      const prev = byKey.get(key);
+      if (prev) { if (!prev.raw && item.raw) prev.raw = item.raw; continue; }
+      byKey.set(key, { title: String(item.title || url).trim(), url, raw: item.raw || "", snippet: item.snippet || "" });
     }
-    if ((i + 1) % 10 === 0) console.log(`[${REVIEW.name}] ${tag} query ${i + 1}/${queries.length}: ${allHits.length} unique hits so far`);
+    if ((i + 1) % 10 === 0) console.log(`[${REVIEW.name}] ${tag} query ${i + 1}/${queries.length}: ${byKey.size} unique hits so far`);
   }
-  return allHits;
+  return [...byKey.values()];
 }
 
 // ============================================================================
@@ -905,44 +1073,31 @@ async function searchDiscover(queries, tag = "Europe-first") {
 function buildExtractionPrompt(pages) {
   const pageBlocks = pages.map(page => {
     const jp = page.jobPosting
-      ? `STRUCTURED DATA (schema.org JobPosting):\n${JSON.stringify({
+      ? `STRUCTURED DATA: ${JSON.stringify({
           title: page.jobPosting.title,
           organization: page.jobPosting.organization,
           country: page.jobPosting.country,
           city: page.jobPosting.city,
-          posted: page.jobPosting.posted,
           validThrough: page.jobPosting.validThrough
-        }, null, 2)}\n`
+        })}\n`
       : "";
     return `--- PAGE ${page.id} ---
 URL: ${page.url}
-${jp}CONTENT:
-${page.text}
+${jp}${page.text}
 --- END PAGE ${page.id} ---`;
   }).join("\n\n");
 
-  return `You are the extraction and verification stage of a funded PhD vacancy radar (Europe first, plus Canada, Australia and New Zealand; never the United States).
+  return `You are the extraction stage of a funded PhD vacancy radar (Europe first, plus Canada, Australia, New Zealand; never the United States).
 
 ${CANDIDATE_PROFILE}
 ${GEOGRAPHY}
 ${RULES}
 ${URL_INTEGRITY_RULE}
 ${OUTPUT_RULES}
-
-Use the supplied page contents as primary evidence. If STRUCTURED DATA is present, prefer its
-"validThrough" over any date mentioned in prose. A page is eligible when it describes one
-specific PhD/doctoral vacancy (or a Canada/Australia/NZ funded PhD project / project-linked
-scholarship), funding is clearly stated, and either (a) the deadline is explicitly stated and
-in the future (after ${TODAY}), or (b) the position is explicitly rolling / open until filled,
-or (c) the deadline is simply not stated on the page (set deadline_type="unknown").
-
-${DATE_CONTEXT}
-
-Do not turn a generic programme, news article, lab page or directory into a vacancy.
-
-For "url", copy the URL from the PAGE header you cite in "page_id" — character for character.
-
-Return ONLY a JSON array. Do not use Markdown fences.
+If STRUCTURED DATA is present, prefer its validThrough over dates in prose. ${DATE_CONTEXT}
+A page qualifies when it describes ONE specific PhD/doctoral vacancy (or a CA/AU/NZ funded project-linked PhD), funding is stated,
+and the deadline is either in the future, rolling/open-until-filled, or simply not stated (deadline_type="unknown").
+Never turn a generic programme, news item, lab page or directory into a vacancy. Pages may be in any language.
 
 ${pageBlocks}`;
 }
@@ -969,34 +1124,26 @@ async function extractWithFallback(primary, fallback, pages) {
   const attempts = [primary];
   if (fallback && fallback.configured && fallback.prefix !== primary.prefix) attempts.push(fallback);
   let lastError;
-  let lastEmpty = null;
   for (const provider of attempts) {
     if (failedThisRun.has(provider.prefix)) {
-      console.warn(`[${provider.name}] unavailable for this run; skipping extraction fallback attempt.`);
+      console.warn(`[${provider.name}] unavailable for this run; skipping.`);
       continue;
     }
     try {
-      const { text } = await aiGenerate(provider, buildExtractionPrompt(pages));
-      const parsed = extractJSON(text);
-      if (!Array.isArray(parsed)) throw new Error(`${provider.name} extraction response was not an array.`);
-      if (parsed.length === 0) {
-        lastEmpty = { items: parsed, provider };
-        console.warn(`[${provider.name}] returned an empty JSON array for this batch.`);
-        console.warn(`[${provider.name}] empty-response excerpt: ${extractionResponseExcerpt(text) || "(empty response text)"}`);
-        if (provider !== attempts[attempts.length - 1]) {
-          console.warn(`[${provider.name}] trying the alternate extraction provider for the same pages.`);
-        }
-        continue;
+      const { text, model } = await aiGenerate(provider, buildExtractionPrompt(pages), { json: true });
+      let parsed = extractJSON(text);
+      if (!Array.isArray(parsed) && parsed && typeof parsed === "object") {
+        const arr = Object.values(parsed).find(Array.isArray);
+        if (arr) parsed = arr;
       }
-      return { items: parsed, provider };
+      if (!Array.isArray(parsed)) throw new Error(`${provider.name} extraction response was not an array.`);
+      // An empty array is a valid answer ("no vacancy among these pages"): never pay for a second call.
+      if (parsed.length === 0) console.log(`[${provider.name}] batch contained no vacancies.`);
+      return { items: parsed, provider: { ...provider, model: model || provider.model } };
     } catch (error) {
       lastError = error;
       console.warn(`[${provider.name}] extraction failed: ${safeErrorMessage(error)}`);
     }
-  }
-  if (lastEmpty) {
-    console.warn("All available extraction providers returned no opportunities for this batch.");
-    return lastEmpty;
   }
   throw lastError || new Error("No configured extraction provider was available.");
 }
@@ -1075,22 +1222,31 @@ function toScore(v) {
   return m ? Number(m[0]) : NaN;
 }
 
-function subScoreOf(item) {
-  const keys = ["topic_fit", "politics_fit", "design_fit", "methods_fit", "funding_quality"];
-  const present = keys.map(k => toScore(item?.[k])).filter(Number.isFinite);
-  if (present.length === 0) return null;
-  const sum = present.reduce((a, b) => a + b, 0);
-  if (sum <= 0) return null;
-  return Math.round(sum);
+const FIT_KEYS = ["topic_fit", "politics_fit", "design_fit", "methods_fit"];
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+// Research fit only (0-80). Funding is a bonus, never a way to lift an off-topic position over the bar.
+function fitScoreOf(item) {
+  const vals = FIT_KEYS.map(k => toScore(item?.[k])).filter(Number.isFinite);
+  if (vals.length < 2) return null;
+  return Math.round(vals.reduce((a, v) => a + clamp(v, 0, 20), 0));
 }
 
-// Prefer a complete sub-score sum; otherwise fall back to whatever the model
-// put in overall_score. Either path is fine — the prompt asks for both.
+// overall = fit scaled to 90 + funding scaled to 10.
 function computeScore(item) {
-  const sub = subScoreOf(item);
-  if (sub !== null) return sub;
+  const fit = fitScoreOf(item);
+  if (fit !== null) {
+    const funding = clamp(toScore(item.funding_quality) || 0, 0, 20);
+    return Math.round(fit * 1.125 + funding / 2);
+  }
   const overall = toScore(item.overall_score);
   return Number.isFinite(overall) ? Math.round(overall) : null;
+}
+
+function passesFitGate(item) {
+  const fit = fitScoreOf(item);
+  if (fit === null) return true;
+  return fit >= CFG.MIN_FIT && clamp(toScore(item.topic_fit) || 0, 0, 20) >= CFG.MIN_TOPIC;
 }
 
 function inferDeadlineFromText(text) {
@@ -1146,7 +1302,7 @@ function hardModelReject(item) {
   // Uncertainty about verification, deadline, funding detail, page content, etc.
   // should not erase a potentially useful lead; it remains visible as
   // "Not verified" so the user can inspect it manually.
-  return /not (a )?(phd|doctoral|vacancy|position)|generic (phd )?program|phd programme|not funded|unfunded|no funding|funding absent|unrelated|irrelevant|wrong (country|location)|united states|usa|closed|expired|past deadline|not a specific (phd|doctoral) project/.test(reason);
+  return /deadline (has )?(already )?(passed|expired)|has passed|already passed|duplicate of|not (a )?(phd|doctoral|vacancy|position)|generic (phd )?program|phd programme|not funded|unfunded|no funding|funding absent|unrelated|irrelevant|wrong (country|location)|united states|usa|closed|expired|past deadline|not a specific (phd|doctoral) project/.test(reason);
 }
 
 function explainRejection(item) {
@@ -1160,7 +1316,8 @@ function explainRejection(item) {
   if (item.eligible === false) return `model uncertain — retained for verification: ${item.reject_reason || "no reason"}`;
   const score = computeScore(item);
   if (score === null) return "no valid score (sub-scores and overall_score both missing/unparseable)";
-  if (score < 60) return `score ${score} is below 60`;
+  if (score < CFG.MIN_OVERALL) return `score ${score} is below ${CFG.MIN_OVERALL}`;
+  if (!passesFitGate(item)) return `research fit too low (fit ${fitScoreOf(item)}/80, topic ${toScore(item.topic_fit) || 0}/20)`;
   const d = deadlineInfoOf(item);
   if (d.kind === "invalid") return `deadline is in the past or unparseable (got: ${JSON.stringify(d.raw)})`;
   return "passes";
@@ -1242,6 +1399,32 @@ function mergeResultRecords(a, b) {
   return merged;
 }
 
+function titleTokens(t) {
+  return new Set(normalizeIdentityText(t).split(" ").filter(w => w.length > 3));
+}
+function acronymsOf(t) {
+  return new Set((String(t || "").match(/\b[A-Z][A-Z0-9]{3,}\b/g) || []).map(s => s.toLowerCase()));
+}
+// Same university + near-identical title (or shared project acronym + overlapping title) = same vacancy.
+function sameJob(a, b) {
+  if (normalizeIdentityText(a.university) !== normalizeIdentityText(b.university)) return false;
+  if (a.deadline && b.deadline && a.deadline !== b.deadline) return false;
+  const ta = titleTokens(a.title), tb = titleTokens(b.title);
+  const inter = [...ta].filter(w => tb.has(w)).length;
+  const jac = inter / (new Set([...ta, ...tb]).size || 1);
+  if (jac >= 0.6) return true;
+  const aa = acronymsOf(a.title), ab = acronymsOf(b.title);
+  return jac >= 0.35 && [...aa].some(x => ab.has(x));
+}
+function dedupeSimilar(items) {
+  const out = [];
+  for (const item of items) {
+    const i = out.findIndex(o => sameJob(o, item));
+    if (i === -1) out.push(item); else out[i] = mergeResultRecords(out[i], item);
+  }
+  return out;
+}
+
 function cleanResults(results) {
   if (!Array.isArray(results)) return [];
   const byIdentity = new Map();
@@ -1259,7 +1442,8 @@ function cleanResults(results) {
     if (isUnitedStates(country)) continue;
 
     const score = computeScore(item);
-    if (score === null || score < 60) continue;
+    if (score === null || score < CFG.MIN_OVERALL) continue;
+    if (!passesFitGate(item)) continue;
 
     const dinfo = deadlineInfoOf(item);
     if (dinfo.kind === "invalid") continue;
@@ -1277,6 +1461,8 @@ function cleanResults(results) {
       score_basis: String(item.score_basis || "ai").trim() || "ai",
       funding: String(item.funding || "").trim(),
       overall_score: Math.round(score),
+      fit_score: fitScoreOf(item),
+      tier: score >= 75 ? "strong" : "possible",
       topic_fit: toScore(item.topic_fit) || 0,
       politics_fit: toScore(item.politics_fit) || 0,
       design_fit: toScore(item.design_fit) || 0,
@@ -1293,7 +1479,7 @@ function cleanResults(results) {
       ielts_requirement: String(item.ielts_requirement || "Not specified on official university website").trim(),
       ielts_source_url: normalizeURL(item.ielts_source_url),
       ai_provider: provider,
-      ai_model: String(item.ai_model || "").trim(),
+      ai_model: String(item.ai_model || item._ai_model || "").trim(),
       url_grounded: item.url_grounded === true,
       first_seen: String(item.first_seen || new Date().toISOString()),
       verification_status: ["Verified", "Not verified", "Closed"].includes(String(item.verification_status || "")) ? String(item.verification_status) : "Not verified",
@@ -1307,7 +1493,7 @@ function cleanResults(results) {
     byIdentity.set(identity, previous ? mergeResultRecords(previous, candidate) : candidate);
   }
 
-  const cleaned = Array.from(byIdentity.values());
+  const cleaned = dedupeSimilar(Array.from(byIdentity.values()));
   cleaned.sort((a, b) =>
     b.overall_score - a.overall_score ||
     a.geo_tier - b.geo_tier ||
@@ -1459,36 +1645,132 @@ function attachPageData(items, batch) {
     const byId = item.page_id != null ? batch.find(p => p.id === Number(item.page_id)) : null;
     const byURL = batch.find(p => normalizeURL(p.url) === normalizeURL(item.url));
     const page = byId || byURL;
-    return page
-      ? { ...item, url: page.url, original_text: page.text, url_grounded: true }
-      : { ...item, url_grounded: false };
+    if (!page) return { ...item, url_grounded: false };
+    const lang = detectLanguage(page.fullText || page.text);
+    return {
+      ...item, url: page.url, original_text: page.text, url_grounded: true,
+      ...(lang !== "Unknown" ? { application_language: lang } : {})
+    };
   });
 }
 
 // ============================================================================
 // SEEN CACHE
 // ============================================================================
+// ---- Title fingerprints: catch the SAME vacancy published under a different URL (mirrors, aggregators) before it costs an AI call.
+function cleanTitle(t) {
+  let s = String(t || "").split(/\s[|—–]\s/)[0];        // drop " — University — AcademicTransfer" / " | EURAXESS"
+  s = s.replace(/\s-\s[^-]*,[^-]*$/, "");               // drop trailing " - Oslo, Norway"
+  return s;
+}
+function fpTokens(title) {
+  return [...new Set(normalizeIdentityText(cleanTitle(title)).split(" ").filter(w => w.length > 3))].sort();
+}
+function fpSimilar(a, b) {
+  if (a.length < 4 || b.length < 4) return false;        // too generic to trust ("PhD position")
+  const sb = new Set(b);
+  const inter = a.filter(w => sb.has(w)).length;
+  return inter / (new Set([...a, ...b]).size) >= 0.8;
+}
+
+// Everything already known: pages the AI reviewed, current results, archived (closed) results.
+function knownTitleIndex() {
+  const idx = [];
+  for (const [key, e] of Object.entries(seenCache)) {
+    if (e.tfp && e.ai_reviewed_at) idx.push({ tokens: e.tfp.split(" "), key, uni: "" });
+  }
+  const add = r => {
+    if (!r || !r.title) return;
+    idx.push({ tokens: fpTokens(r.title), key: seenKey(r.url || ""), uni: String(r.university || "").toLowerCase().replace(/\(.*?\)/g, "").trim() });
+  };
+  for (const r of loadJSON(RESULTS_FILE, [])) add(r);
+  for (const r of Object.values(loadJSON(ARCHIVE_FILE, {}) || {})) add(r);
+  return idx;
+}
+function findDuplicate(page, idx) {
+  const tokens = page.tfpTokens || [];
+  if (tokens.length < 4) return null;
+  for (const k of idx) {
+    if (k.key === page.key) continue;                    // same URL = an update of the same page, handled by the content hash
+    if (!fpSimilar(tokens, k.tokens)) continue;
+    // for known results we also know the university: the page must mention it, otherwise it is another institution's post
+    if (k.uni.length > 3 && !String(page.fullText || "").toLowerCase().includes(k.uni)) continue;
+    return k;
+  }
+  return null;
+}
+
 let seenCache = {};
+
+function ageDays(iso) {
+  const t = Date.parse(iso || "1970-01-01T00:00:00Z");
+  return Number.isFinite(t) ? (Date.now() - t) / 86400000 : 9999;
+}
+
+// Canonical key so /nl/ and /en/ AcademicTransfer pages (and EURAXESS locale variants) count as one URL.
+function urlKey(url) {
+  const u = normalizeURL(url);
+  try {
+    const p = new URL(u);
+    const host = p.host.toLowerCase();
+    if (host.endsWith("academictransfer.com")) {
+      const m = p.pathname.match(/\/jobs\/(\d+)/);
+      if (m) return `academictransfer.com/jobs/${m[1]}`;
+    }
+    if (host.endsWith("euraxess.ec.europa.eu")) {
+      return `euraxess.ec.europa.eu${p.pathname.replace(/^\/[a-z]{2}(?=\/)/, "")}${p.search}`;
+    }
+    return u;
+  } catch { return u; }
+}
+function seenKey(url) { return urlKey(url); }
+
 function loadSeen() { seenCache = loadJSON(SEEN_FILE, {}) || {}; }
-function saveSeen() { saveJSON(SEEN_FILE, seenCache); }
-function updateSeen(pages, skipped, results) {
+function saveSeen() {
+  for (const [k, v] of Object.entries(seenCache)) {
+    const age = ageDays(v.last_checked);
+    const o = String(v.outcome || "");
+    if (o.startsWith("skipped") && age > 45) delete seenCache[k];
+    else if (o === "pending" && age > 35) v.outcome = "prescreen-low";
+    else if (age > 200) delete seenCache[k];
+  }
+  writeFileSync(SEEN_FILE, JSON.stringify(seenCache) + "\n");   // compact: this file is large
+}
+
+function markSeen(key, patch) {
   const now = new Date().toISOString();
-  for (const p of pages) {
-    const u = normalizeURL(p.url);
-    const prev = seenCache[u] || { first_seen: now, checks: 0 };
-    seenCache[u] = { ...prev, last_checked: now, checks: (prev.checks || 0) + 1, outcome: "reviewed-no-result" };
+  const prev = seenCache[key] || { first_seen: now, checks: 0 };
+  seenCache[key] = { ...prev, ...patch, last_checked: now, checks: (prev.checks || 0) + 1 };
+}
+
+// A page needs no AI call when its content is unchanged since it was last reviewed (or rejected by the pre-screen).
+function isHandled(page) {
+  const e = seenCache[page.key || seenKey(page.url)];
+  if (!e || !e.hash || e.hash !== page.hash) return false;
+  if (!(e.ai_reviewed_at || e.outcome === "prescreen-low" || e.outcome === "duplicate")) return false;
+  return ageDays(e.ai_reviewed_at || e.last_checked) < CFG.RECHECK_DAYS;
+}
+
+function updateSeen({ reviewed = [], pending = [], lowTheme = [], duplicates = [], skipped = [], resultKeys = new Set() }) {
+  const now = new Date().toISOString();
+  for (const p of reviewed) {
+    const key = p.key || seenKey(p.url);
+    markSeen(key, { outcome: resultKeys.has(key) ? "result" : "reviewed-no-result", hash: p.hash, ai_reviewed_at: now, prescreen: p.prescreen, tfp: (p.tfpTokens || []).join(" ") || undefined, url: undefined, tier3: undefined });
+  }
+  for (const p of duplicates) {
+    markSeen(p.key || seenKey(p.url), { outcome: "duplicate", hash: p.hash, prescreen: p.prescreen, duplicate_of: p.duplicateOf });
+  }
+  for (const p of lowTheme) {
+    markSeen(p.key || seenKey(p.url), { outcome: "prescreen-low", hash: p.hash, prescreen: p.prescreen });
+  }
+  for (const p of pending) {
+    const key = p.key || seenKey(p.url);
+    markSeen(key, { outcome: "pending", hash: p.hash, prescreen: p.prescreen, url: p.url, tier3: p.isTier3 ? true : undefined });
   }
   for (const s of skipped) {
-    const u = normalizeURL(s.url);
-    if (!u) continue;
-    const prev = seenCache[u] || { first_seen: now, checks: 0 };
-    seenCache[u] = { ...prev, last_checked: now, checks: (prev.checks || 0) + 1, outcome: `skipped:${(s.reason || "unknown").slice(0, 80)}` };
-  }
-  for (const r of results) {
-    const u = normalizeURL(r.url);
-    if (!u) continue;
-    const prev = seenCache[u] || { first_seen: now, checks: 0 };
-    seenCache[u] = { ...prev, last_checked: now, checks: (prev.checks || 0) + 1, outcome: "result" };
+    const key = s.key || (s.url ? seenKey(s.url) : "");
+    if (!key) continue;
+    markSeen(key, { outcome: `skipped:${(s.reason || "unknown").slice(0, 80)}` });
   }
 }
 
@@ -1534,79 +1816,106 @@ function providerModelForLabel(label) {
 }
 
 async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract, hitsLabel, blocked, stats }) {
-  const blockedFilteredMain = filterBlocked(mainHits, blocked);
-  const blockedFilteredTier3 = filterBlocked(tier3Hits, blocked);
+  // 1) Pages found in earlier runs that never reached the AI (budget was full) are re-queued first.
+  const backlog = Object.values(seenCache)
+    .filter(e => e.outcome === "pending" && e.url)
+    .sort((a, b) => (b.prescreen || 0) - (a.prescreen || 0))
+    .slice(0, CFG.BACKLOG_PER_RUN);
+  const toHit = e => ({ title: e.url, url: e.url });
+  const blockedFilteredMain = filterBlocked([...mainHits, ...backlog.filter(e => !e.tier3).map(toHit)], blocked);
+  const blockedFilteredTier3 = filterBlocked([...tier3Hits, ...backlog.filter(e => e.tier3).map(toHit)], blocked);
   const hits = [...blockedFilteredMain, ...blockedFilteredTier3];
-  console.log(`[${label}] ${hits.length} distinct ${hitsLabel}. Opening the pages...`);
+  console.log(`[${label}] ${hits.length} distinct ${hitsLabel} (+${backlog.length} backlog). Opening the pages...`);
   stats.hits_total = hits.length;
+  stats.backlog_requeued = backlog.length;
 
-  const { pages, tier3Count, skipped } = await gatherPages(blockedFilteredMain, blockedFilteredTier3, mainMax, seenCache);
+  const { pages, tier3Count, skipped, skippedRecently } = await gatherPages(blockedFilteredMain, blockedFilteredTier3, mainMax, seenCache);
   console.log(`[${label}] ${pages.length} readable PhD-related pages (${tier3Count} Canada/Australia/NZ) of ${hits.length} hits.`);
   stats.pages_read = pages.length;
   stats.fetch_skipped = tally(skipped.map(s => s.reason));
+  stats.skipped_recently_failed = skippedRecently;
+  stats.pages_from_search_text = fetchStats.raw_used;
+  stats.fetch_circuit_skips = fetchStats.circuit_skipped;
 
-  const ranked = rankByPrescreen(pages);
-  const tier3Pages = ranked.filter(p => geoTier(p.country) === 3);
-  const mainPages = ranked.filter(p => geoTier(p.country) !== 3);
-  const toReview = [
-    ...mainPages.slice(0, AI_REVIEW_BUDGET),
-    ...tier3Pages.slice(0, CFG.AI_REVIEW_BUDGET_TIER3)
-  ];
-  stats.prescreen_dropped = ranked.length - toReview.length;
+  // 2) Split: unchanged-and-already-reviewed / off-theme / candidates for the AI.
+  const ranked = rankByPrescreen(pages.map(p => ({ ...p, hash: contentHash(p.fullText) })));
+  const handled = [], lowTheme = [], candidates = [];
+  for (const p of ranked) {
+    if (isHandled(p)) handled.push(p);
+    else if (p.theme < CFG.PRESCREEN_MIN_THEME) lowTheme.push(p);
+    else candidates.push(p);
+  }
+  const priority = p => p.prescreen + (seenCache[p.key] ? 0 : 5);          // fresh pages first
+  candidates.sort((a, b) => priority(b) - priority(a));
+
+  // 3) Same vacancy under another URL? Compare title fingerprints with everything already known
+  //    (reviewed pages, current results, archive) and with higher-priority candidates of this run.
+  const known = knownTitleIndex();
+  const fresh = [], duplicates = [];
+  for (const p of candidates) {
+    p.tfpTokens = fpTokens(p.title);
+    const dup = findDuplicate(p, known);
+    if (dup) { p.duplicateOf = dup.key.slice(0, 120); duplicates.push(p); continue; }
+    fresh.push(p);
+    if (p.tfpTokens.length >= 4) known.push({ tokens: p.tfpTokens, key: p.key, uni: "" });
+  }
+  stats.duplicates_skipped = duplicates.length;
+  const mainC = fresh.filter(p => !p.isTier3);
+  const tier3C = fresh.filter(p => p.isTier3);
+  const toReview = [...mainC.slice(0, AI_REVIEW_BUDGET), ...tier3C.slice(0, CFG.AI_REVIEW_BUDGET_TIER3)];
+  const reviewSet = new Set(toReview);
+  const pending = fresh.filter(p => !reviewSet.has(p));
+
+  stats.already_reviewed_skipped = handled.length;
+  stats.prescreen_off_theme = lowTheme.length;
   stats.sent_to_ai = toReview.length;
+  stats.queued_for_next_run = pending.length;
 
   const results = [];
+  const reviewedOK = [];
   const failedPages = [];
-  let failedBatches = 0;
-  let emptyBatches = 0;
-  let fallbackBatches = 0;
-  let batches = 0;
+  let failedBatches = 0, emptyBatches = 0, batches = 0;
+  const totalBatches = Math.ceil(toReview.length / EXTRACTION_BATCH_SIZE);
   for (let i = 0; i < toReview.length; i += EXTRACTION_BATCH_SIZE) {
     if (i > 0) await sleep(gapMs);
     batches++;
     const batch = toReview.slice(i, i + EXTRACTION_BATCH_SIZE);
-    const batchLabel = `batch ${batches}/${Math.ceil(toReview.length / EXTRACTION_BATCH_SIZE)}`;
+    const batchLabel = `batch ${batches}/${totalBatches}`;
     console.log(`[${label}] ${batchLabel}: sending ${batch.length} pages to extraction:`);
-    for (const page of batch) {
-      console.log(`  PAGE ${page.id} | ${String(page.title || "(untitled)").slice(0, 140)} | ${page.url}`);
+    for (const page of batch) console.log(`  PAGE ${page.id} | ${String(page.title || "(untitled)").slice(0, 120)} | ${page.url}`);
+    if (failedThisRun.has(REVIEW.prefix) && failedThisRun.has(SEARCH_REVIEW.prefix)) {
+      // Every AI provider is dead: keep the remaining pages for the next run instead of burning attempts.
+      failedBatches++;
+      failedPages.push(...batch);
+      continue;
     }
     try {
       const extracted = await extract(batch);
       const raw = Array.isArray(extracted) ? extracted : extracted.items;
       const extractedBy = Array.isArray(extracted) ? label : extracted.provider?.name || label;
       const extractedModel = Array.isArray(extracted) ? providerModelForLabel(label) : (extracted.provider?.model || "");
-      if (raw.length === 0) {
-        emptyBatches++;
-        console.warn(`[${label}] ${batchLabel}: 0 opportunities returned after trying available extraction providers.`);
-      } else {
-        console.log(`[${label}] ${batchLabel}: ${raw.length} opportunities returned by ${extractedBy} (${extractedModel || "model not reported"}).`);
-      }
-      if (extractedBy !== label) {
-        fallbackBatches++;
-        console.log(`[${label}] ${batchLabel}: fallback extraction succeeded via ${extractedBy}.`);
-      }
-      results.push(...attachPageData(raw, batch).map(item => ({
-        ...item,
-        _extracted_by: extractedBy,
-        _ai_model: extractedModel
-      })));
+      if (raw.length === 0) emptyBatches++;
+      else console.log(`[${label}] ${batchLabel}: ${raw.length} opportunities returned by ${extractedBy} (${extractedModel || "model not reported"}).`);
+      reviewedOK.push(...batch);
+      results.push(...attachPageData(raw, batch).map(item => ({ ...item, _extracted_by: extractedBy, _ai_model: extractedModel })));
     } catch (error) {
       failedBatches++;
       failedPages.push(...batch);
-      console.warn(`[${label}] ${batchLabel} failed for pages ${batch[0].id}-${batch[batch.length - 1].id}: ${safeErrorMessage(error)}`);
+      console.warn(`[${label}] ${batchLabel} failed: ${safeErrorMessage(error)}`);
     }
   }
   stats.extraction_batches = batches;
   stats.batches_failed = failedBatches;
   stats.empty_batches = emptyBatches;
-  stats.fallback_batches = fallbackBatches;
   stats.ai_returned = results.length;
 
-  if (batches > 0 && failedBatches === batches) {
-    throw new Error(`${label} found pages but could not read any of them.`);
-  }
+  // Only pages that really went through the AI count as reviewed; failed ones are retried next run.
+  const resultKeys = new Set(results.map(r => seenKey(r.url || "")));
+  updateSeen({ reviewed: reviewedOK, pending: [...pending, ...failedPages], lowTheme, duplicates, skipped, resultKeys });
 
-  updateSeen(pages, skipped, results);
+  if (batches > 0 && failedBatches === batches) {
+    throw new Error(`${label}: every extraction batch failed (pages were kept for the next run).`);
+  }
   return { results, sources: pages.map(p => ({ title: p.title || p.url, url: p.url })), pages };
 }
 
@@ -1740,10 +2049,9 @@ async function runProvider(provider, blocked) {
 
 async function callAllProviders(blocked) {
   console.log(`Single discovery pipeline: ${SEARCH.name}; primary reviewer: ${REVIEW.name}; optional AI fallback: ${SEARCH_REVIEW.configured ? SEARCH_REVIEW.name : "not configured"}`);
+  // A failed run no longer aborts early: existing results are still re-verified and saved, and an alert is sent.
   const run = await runProvider(PROVIDERS[0], blocked);
-  if (run.status !== "ok") {
-    throw new Error("Primary configured search pipeline failed: " + (run.error || run.status));
-  }
+  if (run.status !== "ok") console.warn("Primary search pipeline failed: " + (run.error || run.status));
   return [run];
 }
 
@@ -1825,6 +2133,8 @@ async function notifyExceptionalMatches(results) {
 
   for (const [url, { best, providers }] of byURL) {
     const previousScore = Number(notified[url]?.score || 0);
+    // re-notify only on a clear improvement (+5), so a re-scoring of the same vacancy does not spam Telegram
+    if (previousScore > 0 && Number(best.overall_score) < previousScore + 5) continue;
     if (previousScore >= Number(best.overall_score)) continue;
     if (await sendTelegramMessage(formatTelegramMessage(best, providers))) {
       notified[url] = { score: Number(best.overall_score), notified_at: new Date().toISOString() };
@@ -1832,6 +2142,20 @@ async function notifyExceptionalMatches(results) {
     }
   }
   if (changed) saveJSON(NOTIFIED_FILE, notified);
+}
+
+let alertSent = false;
+async function sendRunAlert(problems, runs) {
+  alertSent = true;
+  const s = runs.map(r => r.stats || {})[0] || {};
+  const lines = [
+    "⚠️ PhD Radar — run had problems",
+    ...problems.map(p => `• ${p}`),
+    "",
+    `Pages read: ${s.pages_read ?? "-"} · sent to AI: ${s.sent_to_ai ?? "-"} · queued for next run: ${s.queued_for_next_run ?? "-"}`,
+    "Pages that failed are kept and retried automatically on the next run."
+  ];
+  await sendTelegramMessage(lines.join("\n"));
 }
 
 // ============================================================================
@@ -1858,6 +2182,7 @@ async function main() {
   loadSeen();
   loadUniversitiesCache();
   const blocked = loadBlocked();
+  BLOCKED_CACHE = blocked;
 
   console.log(`Budgets: pages≤${MAX_PAGES} (+${TIER3_MAX_PAGES} tier3), ai_review≤${CFG.AI_REVIEW_BUDGET} (+${CFG.AI_REVIEW_BUDGET_TIER3} tier3), queries≤${CFG.QUERIES_EU} (+${CFG.QUERIES_TIER3} tier3), ielts=${CFG.IELTS_LOOKUP_ENABLED ? `on (max ${CFG.IELTS_LOOKUP_MAX_PER_RUN})` : "off"}`);
 
@@ -1949,6 +2274,18 @@ async function main() {
 
   await notifyExceptionalMatches(verifiedResults);
 
+  if (!CLEANUP_ONLY) {
+    const problems = [];
+    for (const run of runs) {
+      const s = run.stats || {};
+      if (run.status === "failed") problems.push(`${run.label}: ${run.error || "failed"}`);
+      else if (s.batches_failed > 0) problems.push(`${s.batches_failed}/${s.extraction_batches} AI batches failed`);
+    }
+    if (failedProviderLabels.length) problems.push(`providers disabled this run: ${failedProviderLabels.join(", ")}`);
+    if (SEARCH_QUOTA_HIT) problems.push("search API plan limit reached");
+    if (problems.length) await sendRunAlert(problems, runs);
+  }
+
   for (const label of PROVIDERS.map(p => p.label)) {
     const mine = verifiedResults.filter(r => providerLabelsOf(r.ai_provider).includes(label));
     if (!mine.length) continue;
@@ -1976,8 +2313,11 @@ async function main() {
   }
 }
 
-main().catch(error => {
+main().catch(async error => {
   console.error("RADAR FAILED");
   console.error(error?.stack || error);
   process.exitCode = 1;
+  if (!alertSent && !CLEANUP_ONLY) {
+    try { await sendRunAlert([`fatal: ${safeErrorMessage(error)}`], []); } catch {}
+  }
 });

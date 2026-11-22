@@ -21,6 +21,7 @@
 <div class="filters" id="filters" style="display:none">
   <input type="text" id="filterText" placeholder="Search title, university, country…">
   <select id="filterCountry"><option value="">All countries</option></select>
+  <select id="filterLevel"><option value="">All levels</option><option value="strong">Strong (75+)</option><option value="possible">Possible (50–74)</option></select>
   <select id="filterTier"><option value="">All tiers</option><option value="1">Tier 1</option><option value="2">Tier 2</option><option value="3">Tier 3</option><option value="4">Other</option></select>
   <select id="filterVerification"><option value="">Any verification</option><option value="Verified">Verified</option><option value="Not verified">Not verified</option></select>
   <select id="filterSort"><option value="score">Sort: score</option><option value="deadline">Sort: deadline soonest</option><option value="newest">Sort: newest first</option></select>
@@ -93,7 +94,7 @@ function populateFilters(){
     sel.appendChild(opt);
   }
   const bind = id => document.getElementById(id).addEventListener("input", render);
-  ["filterText","filterCountry","filterTier","filterVerification","filterSort"].forEach(bind);
+  ["filterText","filterCountry","filterTier","filterLevel","filterVerification","filterSort"].forEach(bind);
   document.querySelectorAll(".filters .pill").forEach(btn => {
     btn.addEventListener("click", () => {
       ACTIVE_WINDOW = Number(btn.dataset.window);
@@ -141,6 +142,8 @@ function applyFilters(){
   if (text) list = list.filter(r => [r.title, r.university, r.country, r.city, r.research_area, r.classification].filter(Boolean).join(" ").toLowerCase().includes(text));
   if (country) list = list.filter(r => r.country === country);
   if (tier) list = list.filter(r => String(r.geo_tier) === tier);
+  const level = document.getElementById("filterLevel").value;
+  if (level) list = list.filter(r => (r.tier || (Number(r.overall_score) >= 75 ? "strong" : "possible")) === level);
   if (verification) list = list.filter(r => r.verification_status === verification);
   if (ACTIVE_WINDOW > 0) {
     list = list.filter(r => {
