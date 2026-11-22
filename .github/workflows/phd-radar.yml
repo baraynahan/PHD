@@ -48,6 +48,7 @@ jobs:
           node-version: 22
 
       - name: Validate JavaScript syntax
+        id: syntax
         run: node --check search.mjs
 
       - name: Run PhD search
@@ -179,7 +180,7 @@ jobs:
 
       # Make a broken search visible (red run) after results were committed and the site deployed.
       - name: Fail the run if the search step failed
-        if: steps.search.outcome == 'failure'
+        if: steps.search.outcome == 'failure' || steps.syntax.outcome == 'failure'
         run: |
-          echo "The search step failed - see its log (a Telegram alert was sent if configured)."
+          echo "The syntax check or search step failed - see its log."
           exit 1
