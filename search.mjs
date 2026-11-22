@@ -739,9 +739,9 @@ const CORE_QUERIES = [
   { q: "PhD doctoral sustainability transitions social practices governance policy design justice", domains: AGGREGATORS, time_range: "month" }
 ];
 
-// A new slot every 3.5 days, so a Tue + Sat schedule never repeats the same rotating queries.
+// Rotate the query pool once per weekly Saturday search.
 function runSlot() {
-  return Math.floor((Date.now() - Date.UTC(2026, 0, 1)) / (3.5 * 86400000));
+  return Math.floor((Date.now() - Date.UTC(2026, 0, 1)) / (7 * 86400000));
 }
 
 function rotate(pool, count) {
