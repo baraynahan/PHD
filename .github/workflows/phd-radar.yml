@@ -16,10 +16,14 @@ on:
         description: "Cleanup only: re-check saved results + blocked.json, no AI/search API calls"
         type: boolean
         default: false
+      clear_previous_results:
+        description: "Start fresh: replace active results with this run's new findings (keeps caches and Telegram history)"
+        type: boolean
+        default: false
 
   schedule:
-    # Twice a week (Tuesday + Saturday 06:00 UTC). Cheap now: only new/changed pages go to the AI.
-    - cron: "0 6 * * 2,6"
+    # Weekly on Saturday at 08:00 Asia/Tehran (04:30 UTC).
+    - cron: "30 4 * * 6"
 
 permissions:
   contents: write
@@ -100,6 +104,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           CLEANUP_ONLY: ${{ github.event.inputs.cleanup_only == 'true' || github.event_name == 'push' }}
+          CLEAR_PREVIOUS_RESULTS: ${{ github.event.inputs.clear_previous_results == 'true' }}
 
           MAX_PAGES: ${{ vars.MAX_PAGES }}
           TIER3_MAX_PAGES: ${{ vars.TIER3_MAX_PAGES }}
@@ -177,13 +182,40 @@ jobs:
         if: always()
         uses: actions/configure-pages@v5
 
-      - name: Prepare site (only what the page needs)
+      - name: Prepare site and publish the schedule from this workflow
         if: always()
         run: |
           mkdir -p _site
           for f in index.html results.json sources.json; do
             [ -f "$f" ] && cp "$f" _site/
           done
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const workflow = fs.readFileSync(".github/workflows/phd-radar.yml", "utf8");
+          const scheduleBlock = workflow.match(/schedule:\\s*([\\s\\S]*?)(?=\\n\\S|$)/);
+          const cron = scheduleBlock?.[1]?.match(/cron:\\s*["']([^"']+)["']/)?.[1];
+          if (!cron) throw new Error("Could not read schedule cron from workflow.");
+          const fields = cron.trim().split(/\\s+/);
+          if (fields.length !== 5 || !/^\\d+$/.test(fields[0]) || !/^\\d+$/.test(fields[1]) || !/^\\d+$/.test(fields[4])) {
+            throw new Error("Schedule display currently requires numeric minute, hour and weekday fields.");
+          }
+          const [minute, hour, , , weekday] = fields.map(Number);
+          const reference = new Date(Date.UTC(2026, 0, 4 + weekday, hour, minute));
+          const parts = new Intl.DateTimeFormat("en-US", {
+            timeZone: "Asia/Tehran", weekday: "long", hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+          }).formatToParts(reference);
+          const value = Object.fromEntries(parts.map(part => [part.type, part.value]));
+          const time = `${value.hour.padStart(2, "0")}:${value.minute.padStart(2, "0")}`;
+          const data = {
+            cron,
+            timezone: "Asia/Tehran",
+            day: value.weekday,
+            time,
+            label: `Automatic search: every ${value.weekday} at ${time} (Tehran time).`
+          };
+          fs.writeFileSync("_site/schedule.json", JSON.stringify(data, null, 2) + "\\n");
+          console.log(data.label + ` [workflow cron: ${cron}]`);
+          NODE
 
       - name: Upload Pages artifact
         if: always()
