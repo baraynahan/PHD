@@ -114,7 +114,7 @@ ${THIS_YEAR} or ${THIS_YEAR + 1}. Ignore anything that closed before ${TODAY}.
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-if (process.env.SELF_TEST !== "true" && (!SEARCH_PRIMARY.configured || !REVIEW_PRIMARY.configured)) {
+if (process.env.SELF_TEST !== "true" && !CLEANUP_ONLY && (!SEARCH_PRIMARY.configured || !REVIEW_PRIMARY.configured)) {
   throw new Error(
     "The primary pipeline requires SEARCH_1_* and REVIEW_1_*. SEARCH_2/3 and REVIEW_2/3 are optional fallbacks.\n" +
     `Missing for SEARCH_1: ${SEARCH_PRIMARY.missing.join(", ") || "nothing"}\n` +
