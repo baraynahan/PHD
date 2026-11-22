@@ -1391,9 +1391,9 @@ function normalizeIdentityText(value) {
 }
 
 function normalizeUniversity(value) {
-  return normalizeIdentityText(value)
+  return [...new Set(normalizeIdentityText(value)
     .split(" ")
-    .filter(word => !["university", "of", "the", "technology", "technical", "institute", "college", "school", "tu"].includes(word))
+    .filter(word => !["university", "of", "the", "technology", "technical", "institute", "college", "school", "tu"].includes(word)))]
     .join(" ");
 }
 
