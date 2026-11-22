@@ -1,18 +1,14 @@
 name: PhD Radar
 
 on:
+  # A push only refreshes the Pages site + re-verifies saved results (CLEANUP_ONLY): it never spends search/AI quota.
   push:
     branches:
       - main
-    paths-ignore:
-      - "results.json"
-      - "notified.json"
-      - "sources.json"
-      - "seen.json"
-      - "universities.json"
-      - "archive.json"
-      - "blocked.json"
-      - "**.md"
+    paths:
+      - "index.html"
+      - "search.mjs"
+      - ".github/workflows/phd-radar.yml"
 
   workflow_dispatch:
     inputs:
@@ -22,8 +18,8 @@ on:
         default: false
 
   schedule:
-    # Once a week: Saturday 06:00 UTC.
-    - cron: "0 6 * * 6"
+    # Twice a week (Tuesday + Saturday 06:00 UTC). Cheap now: only new/changed pages go to the AI.
+    - cron: "0 6 * * 2,6"
 
 permissions:
   contents: write
@@ -46,12 +42,13 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          bun-version: latest
+          node-version: 22
 
       - name: Run PhD search
+        id: search
         continue-on-error: true
         env:
           SEARCH_REVIEW_NAME: ${{ vars.SEARCH_REVIEW_NAME }}
@@ -73,7 +70,7 @@ jobs:
 
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          CLEANUP_ONLY: ${{ github.event.inputs.cleanup_only == 'true' }}
+          CLEANUP_ONLY: ${{ github.event.inputs.cleanup_only == 'true' || github.event_name == 'push' }}
 
           MAX_PAGES: ${{ vars.MAX_PAGES }}
           TIER3_MAX_PAGES: ${{ vars.TIER3_MAX_PAGES }}
@@ -91,8 +88,18 @@ jobs:
           IELTS_LOOKUP_ENABLED: ${{ vars.IELTS_LOOKUP_ENABLED }}
           IELTS_LOOKUP_MIN_SCORE: ${{ vars.IELTS_LOOKUP_MIN_SCORE }}
           IELTS_LOOKUP_MAX_PER_RUN: ${{ vars.IELTS_LOOKUP_MAX_PER_RUN }}
+
+          SEARCH_DEPTH: ${{ vars.SEARCH_DEPTH }}
+          SEARCH_TIME_RANGE: ${{ vars.SEARCH_TIME_RANGE }}
+          SEARCH_RAW_CONTENT: ${{ vars.SEARCH_RAW_CONTENT }}
+          RECHECK_DAYS: ${{ vars.RECHECK_DAYS }}
+          BACKLOG_PER_RUN: ${{ vars.BACKLOG_PER_RUN }}
+          PRESCREEN_MIN_THEME: ${{ vars.PRESCREEN_MIN_THEME }}
+          MIN_FIT: ${{ vars.MIN_FIT }}
+          MIN_TOPIC: ${{ vars.MIN_TOPIC }}
+          MIN_OVERALL: ${{ vars.MIN_OVERALL }}
         run: |
-          bun search.mjs
+          node search.mjs
 
       - name: Commit updated results
         if: always()
@@ -141,11 +148,19 @@ jobs:
         if: always()
         uses: actions/configure-pages@v5
 
+      - name: Prepare site (only what the page needs)
+        if: always()
+        run: |
+          mkdir -p _site
+          for f in index.html results.json sources.json; do
+            [ -f "$f" ] && cp "$f" _site/
+          done
+
       - name: Upload Pages artifact
         if: always()
         uses: actions/upload-pages-artifact@v4
         with:
-          path: "."
+          path: "_site"
 
       - name: Deploy to GitHub Pages
         if: always()
@@ -153,3 +168,10 @@ jobs:
         uses: actions/deploy-pages@v4
         with:
           artifact_name: github-pages
+
+      # Make a broken search visible (red run) after results were committed and the site deployed.
+      - name: Fail the run if the search step failed
+        if: steps.search.outcome == 'failure'
+        run: |
+          echo "The search step failed - see its log (a Telegram alert was sent if configured)."
+          exit 1
