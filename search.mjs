@@ -1493,7 +1493,7 @@ function cleanResults(results) {
     const provider = providerLabelsOf(item._extracted_by || item.ai_provider).join(" + ") || "Unknown";
 
     const candidate = {
-      title, university, country, city, url,
+      title, university, university_confidence: item.university_confidence === "unknown" ? "unknown" : "source", country, city, url,
       deadline: dinfo.stored,
       deadline_type: dinfo.kind,
       start_date: String(item.start_date || "").trim(),
@@ -1522,7 +1522,7 @@ function cleanResults(results) {
       ai_model: String(item.ai_model || item._ai_model || "").trim(),
       url_grounded: item.url_grounded === true,
       first_seen: String(item.first_seen || new Date().toISOString()),
-      verification_status: ["Verified", "Not verified", "Closed"].includes(String(item.verification_status || "")) ? String(item.verification_status) : "Not verified",
+      verification_status: item.university_confidence === "unknown" ? "Not verified" : (["Verified", "Not verified", "Closed"].includes(String(item.verification_status || "")) ? String(item.verification_status) : "Not verified"),
       verification_checked_at: String(item.verification_checked_at || "").trim(),
       verification_note: String(item.verification_note || "").trim(),
       verification_url: normalizeURL(item.verification_url)
@@ -1950,7 +1950,7 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
       else console.log(`[${label}] ${batchLabel}: ${raw.length} opportunities returned by ${extractedBy} (${extractedModel || "model not reported"}).`);
       const attached = attachPageData(raw, batch);
       const incompleteKeys = new Set(attached
-        .filter(item => !String(item.title || "").trim() || !String(item.country || "").trim())
+        .filter(item => !String(item.title || "").trim() || !String(item.country || "").trim() || item.university_confidence === "unknown")
         .map(item => item._source_page_key).filter(Boolean));
       for (const page of batch) {
         if (incompleteKeys.has(page.key || seenKey(page.url))) failedPages.push(page);
@@ -1991,7 +1991,7 @@ async function callSearchReviewProvider(blocked, stats) {
   return reviewPages({
     label: SEARCH_REVIEW.name, mainHits, tier3Hits, mainMax: SEARCH_REVIEW_MAX_PAGES,
     gapMs: SEARCH_REVIEW_CALL_GAP_MS,
-    extract: pages => extractWithFallback(SEARCH_REVIEW, REVIEW, pages),
+    extract: pages => extractWithFallback(SEARCH_REVIEW, [REVIEW, OPENROUTER], pages),
     hitsLabel: "search hits", blocked, stats
   });
 }
