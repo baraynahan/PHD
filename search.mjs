@@ -126,7 +126,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 if (process.env.SELF_TEST !== "true" && (!SEARCH.configured || !REVIEW.configured)) {
   throw new Error(
     "The primary free pipeline requires SEARCH_* (search API) and REVIEW_* (AI reviewer). " +
-    "SEARCH_REVIEW_* is optional and is used only as an AI extraction fallback.\n" +
+    "SEARCH_REVIEW_* and OPENROUTER_* are optional AI extraction fallbacks.\n" +
     `Missing for SEARCH: ${SEARCH.missing.join(", ") || "nothing"}\n` +
     `Missing for REVIEW: ${REVIEW.missing.join(", ") || "nothing"}`
   );
@@ -2268,7 +2268,7 @@ async function main() {
       results: [], sources: [], stats: {}
     }];
   } else {
-    console.log(`Running one discovery pipeline: ${SEARCH.name} search → ${REVIEW.name} review (optional extraction fallback: ${SEARCH_REVIEW.configured ? SEARCH_REVIEW.name : "off"}).`);
+    console.log("Running one discovery pipeline: " + SEARCH.name + " search → " + REVIEW.name + " review (extraction fallbacks: " + ([SEARCH_REVIEW, OPENROUTER].filter(p => p.configured).map(p => p.name).join(" → ") || "off") + ").");
     runs = await callAllProviders(blocked);
   }
 
