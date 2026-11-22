@@ -17,6 +17,7 @@ const BLOCKED_FILE = "blocked.json";
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const CLEANUP_ONLY = String(process.env.CLEANUP_ONLY || "").toLowerCase() === "true";
+const CLEAR_PREVIOUS_RESULTS = String(process.env.CLEAR_PREVIOUS_RESULTS || "").toLowerCase() === "true";
 
 // ============================================================================
 // TUNABLE BUDGETS
@@ -2034,28 +2035,34 @@ async function callAllProviders(blocked) {
 // ============================================================================
 async function sendTelegramMessage(message, attempt = 1) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
-    console.log("Telegram secrets are not configured. Skipping Telegram.");
+    console.warn("Telegram secrets are not configured. Skipping Telegram.");
     return false;
   }
   const endpoint = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, disable_web_page_preview: false })
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!data.ok) {
-    if (data.error_code === 429 && attempt < 3) {
-      const retryAfter = Number(data.parameters?.retry_after || 5);
-      console.warn(`Telegram 429, retrying after ${retryAfter}s (attempt ${attempt})`);
-      await sleep(retryAfter * 1000);
-      return sendTelegramMessage(message, attempt + 1);
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: String(message).slice(0, 3900), disable_web_page_preview: false }),
+      signal: AbortSignal.timeout(20000)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.ok) {
+      if (data.error_code === 429 && attempt < 3) {
+        const retryAfter = Number(data.parameters?.retry_after || 5);
+        console.warn(`Telegram 429, retrying after ${retryAfter}s (attempt ${attempt})`);
+        await sleep(retryAfter * 1000);
+        return sendTelegramMessage(message, attempt + 1);
+      }
+      console.error(`Telegram API error (HTTP ${response.status}):`, JSON.stringify(data, null, 2));
+      return false;
     }
-    console.error("Telegram API error:", JSON.stringify(data, null, 2));
+    console.log("Telegram notification sent.");
+    return true;
+  } catch (error) {
+    console.error("Telegram request failed:", safeErrorMessage(error));
     return false;
   }
-  console.log("Telegram notification sent.");
-  return true;
 }
 
 function formatTelegramMessage(position, foundBy) {
@@ -2065,62 +2072,72 @@ function formatTelegramMessage(position, foundBy) {
   const groundingLine = position.url_grounded === false
     ? "⚠️ URL not confirmed in search results — double-check before applying\n"
     : "";
+  const short = (value, limit) => {
+    const text = String(value || "").trim();
+    return text.length > limit ? text.slice(0, limit - 1).trimEnd() + "…" : text;
+  };
   return [
     `⭐ EXCEPTIONAL PhD MATCH — ${position.overall_score}/100`,
     "",
-    `🎓 ${position.title}`,
+    `🎓 ${short(position.title, 220)}`,
     "",
-    `🏛️ ${position.university}`,
+    `🏛️ ${short(position.university, 180)}`,
     `🌍 ${position.country}${position.city ? ` · ${position.city}` : ""}`,
     `🤖 Found by: ${foundBy.filter(Boolean).join(" + ") || "Unknown"}`,
     languageLine,
-    `📚 IELTS: ${position.ielts_requirement || "Not specified"}`,
+    `📚 IELTS: ${short(position.ielts_requirement || "Not specified", 180)}`,
     `📅 Deadline: ${position.deadline || (position.deadline_type === "rolling" ? "Rolling / open until filled" : (position.deadline_type === "unknown" ? "Not stated on page" : "Not specified"))}`,
     "",
     "💰 Funding:",
-    position.funding || "Not specified",
+    short(position.funding || "Not specified", 300),
     "",
     "🎯 Why it matches:",
-    position.why_it_matches || "Strong match with your research profile.",
+    short(position.why_it_matches || "Strong match with your research profile.", 1100),
     "",
     "🧭 Strategic fit:",
-    position.strategic_fit || "Strong alignment with your research trajectory.",
+    short(position.strategic_fit || "Strong alignment with your research trajectory.", 850),
     "",
     groundingLine + "🔗 Apply:",
     position.url
-  ].join("\n");
+  ].join("\n").slice(0, 3900);
 }
 
 async function notifyExceptionalMatches(results) {
   const notified = loadJSON(NOTIFIED_FILE, {});
-  let changed = false;
-
+  let changed = false, sent = 0, alreadyNotified = 0;
   const byURL = new Map();
-  // Only notify for grounded results — hallucinated URLs should never hit Telegram.
-  for (const position of results.filter(x => Number(x.overall_score) >= 90 && x.url_grounded === true)) {
+  const exceptional = results.filter(x => Number(x.overall_score) >= 90 && x.url_grounded === true);
+  for (const position of exceptional) {
     const url = normalizeURL(position.url);
     const entry = byURL.get(url) || { best: position, providers: [] };
     if (Number(position.overall_score) > Number(entry.best.overall_score)) entry.best = position;
-    if (!entry.providers.includes(position.ai_provider)) entry.providers.push(position.ai_provider);
+    if (position.ai_provider && !entry.providers.includes(position.ai_provider)) entry.providers.push(position.ai_provider);
     byURL.set(url, entry);
   }
 
   for (const [url, { best, providers }] of byURL) {
     const previousScore = Number(notified[url]?.score || 0);
-    // re-notify only on a clear improvement (+5), so a re-scoring of the same vacancy does not spam Telegram
-    if (previousScore > 0 && Number(best.overall_score) < previousScore + 5) continue;
-    if (previousScore >= Number(best.overall_score)) continue;
+    // Avoid repeat alerts unless the same opportunity improves by at least five points.
+    if (previousScore > 0 && Number(best.overall_score) < previousScore + 5) {
+      alreadyNotified++;
+      continue;
+    }
+    if (previousScore >= Number(best.overall_score)) {
+      alreadyNotified++;
+      continue;
+    }
     if (await sendTelegramMessage(formatTelegramMessage(best, providers))) {
       notified[url] = { score: Number(best.overall_score), notified_at: new Date().toISOString() };
       changed = true;
+      sent++;
     }
   }
   if (changed) saveJSON(NOTIFIED_FILE, notified);
+  console.log(`Telegram alerts: ${sent} sent; ${alreadyNotified} already notified; ${byURL.size} exceptional grounded matches (90+).`);
 }
 
 let alertSent = false;
 async function sendRunAlert(problems, runs) {
-  alertSent = true;
   const s = runs.map(r => r.stats || {})[0] || {};
   const lines = [
     "⚠️ PhD Radar — run had problems",
@@ -2129,7 +2146,8 @@ async function sendRunAlert(problems, runs) {
     `Pages read: ${s.pages_read ?? "-"} · sent to AI: ${s.sent_to_ai ?? "-"} · queued for next run: ${s.queued_for_next_run ?? "-"}`,
     "Pages that failed are kept and retried automatically on the next run."
   ];
-  await sendTelegramMessage(lines.join("\n"));
+  alertSent = await sendTelegramMessage(lines.join("\n"));
+  return alertSent;
 }
 
 // ============================================================================
@@ -2160,7 +2178,8 @@ async function main() {
 
   console.log(`Budgets: pages≤${MAX_PAGES} (+${TIER3_MAX_PAGES} tier3), ai_review≤${CFG.AI_REVIEW_BUDGET} (+${CFG.AI_REVIEW_BUDGET_TIER3} tier3), queries≤${CFG.QUERIES_EU} (+${CFG.QUERIES_TIER3} tier3), ielts=${CFG.IELTS_LOOKUP_ENABLED ? `on (max ${CFG.IELTS_LOOKUP_MAX_PER_RUN})` : "off"}`);
 
-  const existingResults = loadExisting();
+  const existingResults = CLEAR_PREVIOUS_RESULTS ? [] : loadExisting();
+  if (CLEAR_PREVIOUS_RESULTS) console.log("CLEAR_PREVIOUS_RESULTS=true: previous active results will be replaced by this run's results; caches and notification history are preserved.");
   console.log(`Existing active positions: ${existingResults.length}`);
 
   let runs;
