@@ -25,3 +25,7 @@ jobs:
           node-version: 22
       - name: Check search.mjs syntax
         run: node --check search.mjs
+      - name: Run offline regression tests
+        env:
+          SELF_TEST: "true"
+        run: node search.mjs
