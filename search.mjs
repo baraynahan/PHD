@@ -823,6 +823,11 @@ async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = fa
       return { ...out, model };
     } catch (error) {
       lastError = error;
+      if (Number(error.status) >= 400 && Number(error.status) < 500 && ![408, 429].includes(Number(error.status))) {
+        failedThisRun.add(provider.prefix);
+        console.error(`[${provider.name}] non-retryable HTTP ${error.status}; provider disabled for this run.`);
+        break;
+      }
       if (isQuotaError(error)) {
         deadModels.add(`${provider.prefix}::${model}`);
         console.error(`[${provider.name}] ${model}: hard quota reached — model disabled for this run.`);
@@ -875,7 +880,9 @@ async function geminiFormatGenerate(provider, prompt, useSearch, allowEmpty, jso
   if (!response.ok) {
     const msg = data?.error?.message || `${provider.name} HTTP ${response.status}`;
     const retryAfter = Number(response.headers.get("retry-after") || 0);
-    throw apiError(msg, isRetryableStatus(response.status), retryAfter > 0 ? retryAfter * 1000 : 0);
+    const error = apiError(msg, isRetryableStatus(response.status), retryAfter > 0 ? retryAfter * 1000 : 0);
+    error.status = response.status;
+    throw error;
   }
   const text = (data?.candidates || []).flatMap(c => c?.content?.parts || []).map(p => p?.text || "").join("\n").trim();
   if (!text && !allowEmpty) {
@@ -900,7 +907,9 @@ async function openaiFormatGenerate(provider, prompt, allowEmpty) {
   if (!response.ok) {
     const msg = data?.error?.message || `${provider.name} HTTP ${response.status}`;
     const retryAfter = Number(response.headers.get("retry-after") || 0);
-    throw apiError(msg, isRetryableStatus(response.status), retryAfter > 0 ? retryAfter * 1000 : 0);
+    const error = apiError(msg, isRetryableStatus(response.status), retryAfter > 0 ? retryAfter * 1000 : 0);
+    error.status = response.status;
+    throw error;
   }
   const text = data?.choices?.[0]?.message?.content || "";
   if (!text && !allowEmpty) {
