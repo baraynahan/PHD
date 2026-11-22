@@ -186,7 +186,7 @@ jobs:
 
       # Make a broken search visible (red run) after results were committed and the site deployed.
       - name: Fail the run if the search step failed
-        if: steps.search.outcome == 'failure' || steps.syntax.outcome == 'failure' || steps.self_test.outcome == 'failure'
+        if: always() && (steps.search.outcome == 'failure' || steps.syntax.outcome == 'failure' || steps.self_test.outcome == 'failure')
         run: |
           echo "The syntax check, regression tests, or search step failed - see its log."
           exit 1
