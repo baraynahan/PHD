@@ -1,5 +1,5 @@
 {
-  "searched_at": "2026-11-22T13:59:43.893Z",
+  "searched_at": "2026-11-22T14:01:54.306Z",
   "budgets": {
     "MAX_PAGES": 120,
     "TIER3_MAX_PAGES": 40,
@@ -34,40 +34,38 @@
       "model": "openai/gpt-oss-120b (search: Tavily 1)",
       "status": "ok",
       "error": "",
-      "returned": 2,
+      "returned": 3,
       "valid": 2,
-      "detail": "83 pages read, 9 sent to AI",
-      "sources": 83,
+      "detail": "85 pages read, 11 sent to AI",
+      "sources": 85,
       "stats": {
-        "hits_total": 184,
+        "hits_total": 192,
         "backlog_requeued": 0,
-        "pages_read": 83,
+        "pages_read": 85,
         "fetch_skipped": {
           "clearly expired deadline": 17,
-          "not a specific doctoral vacancy page": 46,
-          "This operation was aborted": 1,
+          "not a specific doctoral vacancy page": 55,
           "HTTP 403 / text/html": 2,
-          "page too short": 5,
+          "page too short": 6,
           "HTTP 404 / text/html; charset=utf-8": 1,
-          "HTTP 403 / text/html; charset=UTF-8": 11,
+          "HTTP 403 / text/html; charset=UTF-8": 10,
           "HTTP 405 / text/html; charset=UTF-8": 1,
-          "fetch failed": 1,
-          "host blocks automated fetches (circuit open)": 8,
-          "HTTP 410 / text/html; charset=UTF-8": 1
+          "host blocks automated fetches (circuit open)": 8
         },
         "skipped_recently_failed": 6,
-        "pages_from_search_text": 60,
+        "pages_from_search_text": 64,
         "fetch_circuit_skips": 8,
         "duplicates_skipped": 0,
-        "already_reviewed_skipped": 38,
-        "prescreen_off_theme": 36,
-        "sent_to_ai": 9,
+        "already_reviewed_skipped": 39,
+        "prescreen_off_theme": 35,
+        "sent_to_ai": 11,
         "queued_for_next_run": 0,
         "extraction_batches": 3,
         "batches_failed": 0,
         "empty_batches": 1,
-        "ai_returned": 2,
+        "ai_returned": 3,
         "rejected": {
+          "score 11 is below 50": 1,
           "passes": 2
         }
       }
@@ -77,6 +75,10 @@
     {
       "title": "SUSMAT - Post-Doctoral Fellow Positions in Recycling Plastic Waste - Academic Positions",
       "url": "https://academicpositions.com/ad/mohammed-vi-polytechnic-university/2026/susmat-post-doctoral-fellow-positions-in-recycling-plastic-waste/251475"
+    },
+    {
+      "title": "TERRA-MED Predoctoral Programme: 2 PhD Positions at ICIQ, Spain - Researchersjob",
+      "url": "https://researchersjob.com/terra-med-predoctoral-programme"
     },
     {
       "title": "FSE PhD President's Doctoral Scholarship: Business Model Innovation and Strategic Coordination in Circular Critical Material Value Chains: An Evolutionary and Agent-Based Modelling of Electric Vehicle Batteries at The University of Manchester",
@@ -203,6 +205,10 @@
       "url": "https://www.ru.nl/en/about-us/news/vacancy-phd-position-on-slavery-and-colonial-forced-labor"
     },
     {
+      "title": "Vacancy for a PhD Student in the iCARE Project - Benny Akesson",
+      "url": "https://akesson.nl/2026/11/12/vacancy-for-a-phd-student-in-the-icare-project"
+    },
+    {
       "title": "PhD position in organisational science and cybersecurity - Academic Positions",
       "url": "https://academicpositions.com/ad/leiden-university/2026/phd-position-in-organisational-science-and-cybersecurity/255123"
     },
@@ -241,10 +247,6 @@
     {
       "title": "Post-Doctoral Researcher in Biology - Kildare, Ireland | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/post-doctoral-researcher-biology-kildare-ireland"
-    },
-    {
-      "title": "10 Urban Design jobs - Academic Positions",
-      "url": "https://academicpositions.com/gb/jobs/field/urban-design"
     },
     {
       "title": "Doctoral (PhD) position in Human Evolution and Developmental Gene Regulation - Academic Positions",
@@ -355,10 +357,6 @@
       "url": "https://www.jobs.ac.uk/job/DTO389/2-phd-positions-in-business-administration-entrepreneurship"
     },
     {
-      "title": "Industry-sponsored research scholarships | UniSC | University of the Sunshine Coast, Queensland, Australia",
-      "url": "https://www.unisc.edu.au/research/phd-and-master-of-philosophy-at-unisc/higher-degree-by-research-hdr/hdr-industry-partnerships/industry-sponsored-research-scholarships"
-    },
-    {
       "title": "18 and Up — PhD Pathway | Sax Institute",
       "url": "https://www.saxinstitute.org.au/solutions/18-and-up-study/18-and-up-phd-pathway"
     },
@@ -371,12 +369,12 @@
       "url": "https://scholarlabs.ai/scholarship"
     },
     {
-      "title": "Investigating help-seeking for mental health problems | UniSC | University of the Sunshine Coast, Queensland, Australia",
-      "url": "https://www.unisc.edu.au/research/phd-and-master-of-philosophy-at-unisc/higher-degree-by-research-hdr/hdr-scholarships/investigating-help-seeking-for-mental-health-problems"
+      "title": "Fully Funded NEPS PhD Scholarship Opportunities at USTED | USTED",
+      "url": "https://usted.edu.gh/fully-funded-neps-phd-scholarship-opportunities-at-usted"
     },
     {
-      "title": "University of Otago Doctoral Scholarship 2026 | Funded PhD in New Zealand | Global Admissions",
-      "url": "https://www.globaladmissions.com/scholarship/university-of-otago-doctoral-scholarship-2026"
+      "title": "Fully Funded PhD Scholarship in the UK 2027 with a Monthly…",
+      "url": "https://www.for9a.com/en/opportunity/fully-funded-phd-scholarship-in-the-uk-2027-with-a-monthly-stipend-of-2253"
     },
     {
       "title": "Simon Fraser University Scholarship 2027: Fully Funded Master’s and PhD Study in Canada - NextGenScholarship",
@@ -395,6 +393,10 @@
       "url": "https://agristok.net/2026/11/15/bocconi-university-phd-scholarship-2027-2028"
     },
     {
+      "title": "Fully Funded Scholarships in New Zealand: Bachelors, Masters, PhD",
+      "url": "https://www.upgrad.com/study-abroad/articles/fully-funded-scholarships-in-new-zealand"
+    },
+    {
       "title": "University of Canberra Research Scholarships 2026: Fully Funded PhD for Domestic and International Students in Australia – Always Never Home",
       "url": "https://jobs.iammagnus.com/university-of-canberra-research-scholarships-2026-fully-funded-phd-for-domestic-and-international-students-in-australia"
     },
@@ -405,6 +407,10 @@
     {
       "title": "MFA, MA, and PhD Programs to Apply for by Early 2027",
       "url": "https://hyperallergic.com/mfa-ma-and-phd-programs-to-apply-for-by-early-2027"
+    },
+    {
+      "title": "Fully funded PhD in Europe: schemes, rules, pay and dates",
+      "url": "https://www.discoverphds.com/advice/funding/phd-funding-europe"
     }
   ]
 }
