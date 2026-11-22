@@ -47,6 +47,9 @@ const CFG = {
   AI_REVIEW_BUDGET_TIER3:  envInt("AI_REVIEW_BUDGET_TIER3", 8),
   QUERIES_EU:              envInt("QUERIES_EU", 24),
   QUERIES_TIER3:           envInt("QUERIES_TIER3", 8),
+  // Extra discovery calls widen coverage without increasing the AI review budget.
+  EXTRA_QUERIES_EU:        envInt("EXTRA_QUERIES_EU", 8),
+  EXTRA_QUERIES_TIER3:     envInt("EXTRA_QUERIES_TIER3", 4),
   EXTRACTION_BATCH_SIZE:   Math.max(1, envInt("EXTRACTION_BATCH_SIZE", 4)),
   PAGE_TEXT_CHARS:         envInt("PAGE_TEXT_CHARS", 3200),
   SEARCH_RESULTS_PER_QUERY: Math.max(1, envInt("SEARCH_RESULTS_PER_QUERY", 8)),
@@ -655,6 +658,8 @@ const THEME_WEIGHTS = [
   [/transition design|social design|design justice|co-?design|participatory design|service design|product-?service system|design fiction|speculative design|more-than-human|pluriverse|systemic design/gi, 5],
   [/commons|sharing econom|access-?based|ownership model|collaborative consumption|platform cooperativ/gi, 4],
   [/socio-?technical transition|transition studies|sustainability transition|just transition|social practice theor|political ecolog|political econom/gi, 4],
+  // Adjacent social-science disciplines: relevant projects need not mention design.
+  [/sociology of consumption|consumer culture|consumer research|practice theory|social practices|science and technology studies|human geography|economic anthropology|political ecology|innovation studies|alternative economies|commons-based|collective ownership|access-based/gi, 3],
   // local-language equivalents (Nordic, DACH, NL, IT, FR)
   [/postwachstum|wachstumskritik|suffizienz|nachhaltige[nr]? konsum|degroei|duurzame consumptie|hållbar konsumtion|bærekraftig forbruk|bæredygtigt forbrug|kestävä kulutus|consumo sostenibile|decrescita|consommation durable|décroissance/gi, 6],
   [/transformationsdesign|nachhaltigkeitstransformation|sozial-ökologische transformation|politische ökonomie|transitieontwerp|politieke economie|omställning|omstilling|kestävyysmurros|politisk økonomi|politisk ekonomi/gi, 4],
@@ -722,13 +727,13 @@ const FRAMES = [
 // Local-language vacancy words: many Tier-1 ads are not written in English.
 const LOCAL = {
   de: { jobs: ["Promotionsstelle", "Doktorand*in wissenschaftliche Mitarbeit"], themes: ["Postwachstum nachhaltiger Konsum", "Transformationsdesign Nachhaltigkeit", "Suffizienz politische Ökonomie"] },
-  nl: { jobs: ["promovendus PhD-positie"], themes: ["duurzame consumptie", "transitie ontwerp duurzaamheid", "degroei"] },
-  sv: { jobs: ["doktorand doktorandtjänst"], themes: ["hållbar konsumtion", "design omställning hållbarhet"] },
-  da: { jobs: ["ph.d.-stipendiat"], themes: ["bæredygtigt forbrug", "design bæredygtig omstilling"] },
-  no: { jobs: ["stipendiat doktorgrad"], themes: ["bærekraftig forbruk", "design bærekraft omstilling"] },
-  fi: { jobs: ["tohtorikoulutettava väitöskirjatutkija"], themes: ["kestävä kulutus", "muotoilu kestävyysmurros"] },
-  it: { jobs: ["borsa di dottorato"], themes: ["consumo sostenibile", "design sostenibilità transizione"] },
-  fr: { jobs: ["contrat doctoral doctorant"], themes: ["consommation durable", "design transition écologique"] }
+  nl: { jobs: ["promovendus PhD-positie", "doctoraatsonderzoeker", "doctoraatsbursaal"], themes: ["duurzame consumptie", "transitie ontwerp duurzaamheid", "degroei", "consumptiepraktijken gedeeld eigendom"] },
+  sv: { jobs: ["doktorand doktorandtjänst"], themes: ["hållbar konsumtion", "design omställning hållbarhet", "delningsekonomi konsumtionspraktiker"] },
+  da: { jobs: ["ph.d.-stipendiat"], themes: ["bæredygtigt forbrug", "design bæredygtig omstilling", "fælles ejerskab forbrugspraksis"] },
+  no: { jobs: ["stipendiat doktorgrad"], themes: ["bærekraftig forbruk", "design bærekraft omstilling", "deling felles eierskap"] },
+  fi: { jobs: ["tohtorikoulutettava väitöskirjatutkija"], themes: ["kestävä kulutus", "muotoilu kestävyysmurros", "yhteisomistus jakamistalous"] },
+  it: { jobs: ["borsa di dottorato", "dottorato di ricerca"], themes: ["consumo sostenibile", "design sostenibilità transizione", "pratiche di consumo proprietà collettiva"] },
+  fr: { jobs: ["contrat doctoral doctorant"], themes: ["consommation durable", "design transition écologique", "pratiques de consommation propriété collective"] }
 };
 
 // Always-on core queries (job boards only, last month) so the best themes are covered every run.
@@ -737,6 +742,38 @@ const CORE_QUERIES = [
   { q: "PhD doctoral sustainable consumption product longevity repair circular economy design", domains: AGGREGATORS, time_range: "month" },
   { q: "PhD doctoral transition design social design service design systemic design participatory", domains: AGGREGATORS, time_range: "month" },
   { q: "PhD doctoral sustainability transitions social practices governance policy design justice", domains: AGGREGATORS, time_range: "month" }
+];
+
+// Fixed adjacent-discipline searches deliberately do not require the word "design".
+const DISCIPLINE_QUERIES = [
+  { q: "PhD doctoral researcher sociology of consumption consumer culture practice theory sustainable consumption" },
+  { q: "PhD doctoral researcher science and technology studies STS political ecology degrowth post-growth" },
+  { q: "PhD doctoral researcher human geography alternative economies commons sharing ownership access" },
+  { q: "PhD doctoral researcher innovation studies socio-technical transitions sufficiency" },
+  { q: "PhD doctoral researcher economic anthropology consumer research circular economy social practices" },
+  { q: "PhD doctoral researcher political economy consumption governance public policy sustainability" },
+  { q: "PhD doctoral researcher product longevity repair maintenance reuse consumption practices" },
+  { q: "PhD doctoral researcher collective ownership access-based services sharing systems" }
+];
+
+// Rotating official-university sweep. Domains constrain results to institutional vacancy pages.
+const UNIVERSITY_SWEEP = [
+  { q: "PhD vacancy sustainable consumption design transition", domains: ["tudelft.nl"] },
+  { q: "PhD doctoral researcher social design circular economy consumption", domains: ["tue.nl"] },
+  { q: "PhD vacancy design for sustainability socio-technical transitions", domains: ["utwente.nl"] },
+  { q: "PhD doctoral researcher sustainable consumption food systems governance", domains: ["wur.nl"] },
+  { q: "PhD vacancy design justice social innovation sustainability", domains: ["kuleuven.be"] },
+  { q: "PhD doctoral researcher consumption practices political ecology", domains: ["ugent.be"] },
+  { q: "PhD vacancy design transitions sufficiency post-growth", domains: ["aalto.fi"] },
+  { q: "PhD doctoral researcher sustainable consumption social practices", domains: ["lu.se"] },
+  { q: "PhD vacancy design for sustainability circular transitions", domains: ["chalmers.se"] },
+  { q: "PhD doctoral researcher sustainable consumption governance", domains: ["kth.se"] },
+  { q: "PhD vacancy design systems sharing economy sustainability", domains: ["dtu.dk"] },
+  { q: "PhD doctoral researcher degrowth political economy consumption", domains: ["au.dk"] },
+  { q: "PhD vacancy social innovation transition studies consumption", domains: ["uva.nl"] },
+  { q: "PhD doctoral researcher sustainability transitions commons", domains: ["leidenuniv.nl"] },
+  { q: "PhD vacancy design research product longevity repair", domains: ["kcl.ac.uk"] },
+  { q: "PhD doctoral researcher post-growth political ecology consumption", domains: ["ethz.ch"] }
 ];
 
 // Rotate the query pool once per weekly Saturday search.
@@ -763,7 +800,15 @@ function mainQueryPool() {
 }
 
 function queriesForRun(count) {
-  return [...CORE_QUERIES, ...rotate(mainQueryPool(), Math.max(0, count - CORE_QUERIES.length))];
+  const fixed = [...CORE_QUERIES, ...DISCIPLINE_QUERIES];
+  if (count <= fixed.length) return fixed.slice(0, count);
+  const universityCount = Math.min(4, count - fixed.length);
+  const generalCount = count - fixed.length - universityCount;
+  return [
+    ...fixed,
+    ...rotate(UNIVERSITY_SWEEP, universityCount),
+    ...rotate(mainQueryPool(), generalCount)
+  ];
 }
 
 function tier3QueriesForRun(count) {
@@ -999,7 +1044,7 @@ Only identify real vacancy pages. Do not invent URLs. Return a concise list of r
       const retryAfter = Number(response.headers.get("retry-after") || 0);
       const error = apiError(message, isRetryableStatus(response.status), retryAfter > 0 ? retryAfter * 1000 : 0);
       error.status = response.status;
-      if (response.status === 429 && attempt < 3) {
+      if (response.status === 429 && !isQuotaError(error) && attempt < 3) {
         await sleep(Math.min(Number(error.retryAfterMs) || 5000 * attempt, 30000));
         return searchWithProvider(spec, provider, attempt + 1);
       }
@@ -1921,8 +1966,10 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
 // PIPELINES
 // ============================================================================
 async function callSearchThenReviewProvider(blocked, stats) {
-  const mainQueries = queriesForRun(CFG.QUERIES_EU);
-  const tier3Queries = tier3QueriesForRun(CFG.QUERIES_TIER3);
+  const mainQueryBudget = CFG.QUERIES_EU + CFG.EXTRA_QUERIES_EU;
+  const tier3QueryBudget = CFG.QUERIES_TIER3 + CFG.EXTRA_QUERIES_TIER3;
+  const mainQueries = queriesForRun(mainQueryBudget);
+  const tier3Queries = tier3QueriesForRun(tier3QueryBudget);
   const mainHits = await searchDiscover(mainQueries, "Europe-first");
   const tier3Hits = await searchDiscover(tier3Queries, "Canada/Australia/NZ");
   if (!mainHits.length && !tier3Hits.length) throw new Error("All search engines failed or returned no vacancy sources.");
@@ -2180,7 +2227,7 @@ async function main() {
   const blocked = loadBlocked();
   BLOCKED_CACHE = blocked;
 
-  console.log(`Budgets: pages≤${MAX_PAGES} (+${TIER3_MAX_PAGES} tier3), ai_review≤${CFG.AI_REVIEW_BUDGET} (+${CFG.AI_REVIEW_BUDGET_TIER3} tier3), queries≤${CFG.QUERIES_EU} (+${CFG.QUERIES_TIER3} tier3), ielts=${CFG.IELTS_LOOKUP_ENABLED ? `on (max ${CFG.IELTS_LOOKUP_MAX_PER_RUN})` : "off"}`);
+  console.log(`Budgets: pages≤${MAX_PAGES} (+${TIER3_MAX_PAGES} tier3), ai_review≤${CFG.AI_REVIEW_BUDGET} (+${CFG.AI_REVIEW_BUDGET_TIER3} tier3), queries≤${CFG.QUERIES_EU + CFG.EXTRA_QUERIES_EU} (+${CFG.QUERIES_TIER3 + CFG.EXTRA_QUERIES_TIER3} tier3), ielts=${CFG.IELTS_LOOKUP_ENABLED ? `on (max ${CFG.IELTS_LOOKUP_MAX_PER_RUN})` : "off"}`);
 
   const existingResults = CLEAR_PREVIOUS_RESULTS ? [] : loadExisting();
   if (CLEAR_PREVIOUS_RESULTS) console.log("CLEAR_PREVIOUS_RESULTS=true: previous active results will be replaced by this run's results; caches and notification history are preserved.");
@@ -2313,6 +2360,10 @@ async function main() {
 function runSelfTests() {
   assert.equal(SEARCH_PROVIDERS.map(p => p.prefix).join(","), "SEARCH_1,SEARCH_2,SEARCH_3");
   assert.equal(REVIEW_PROVIDERS.map(p => p.prefix).join(","), "REVIEW_1,REVIEW_2,REVIEW_3");
+  assert.equal(queriesForRun(32).length, 32, "expanded Europe query plan should honour its budget");
+  assert.equal(tier3QueriesForRun(12).length, 12, "expanded Tier 3 query plan should honour its budget");
+  assert.equal(queriesForRun(32).filter(q => q.domains?.length).length >= 8, true, "query plan should include targeted university/aggregator domains");
+  assert.equal(prescreen({ title: "PhD in sociology of consumption", fullText: "consumer culture and practice theory" }) >= CFG.PRESCREEN_MIN_THEME, true, "adjacent social-science topics should pass pre-screen");
 
   const longTelegramMessage = formatTelegramMessage({
     overall_score: 99, title: "T".repeat(5000), university: "Test University",
