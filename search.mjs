@@ -2110,7 +2110,7 @@ async function notifyExceptionalMatches(results) {
   const notified = loadJSON(NOTIFIED_FILE, {});
   let changed = false, sent = 0, alreadyNotified = 0;
   const byURL = new Map();
-  const exceptional = results.filter(x => Number(x.overall_score) >= 90 && x.url_grounded === true);
+  const exceptional = results.filter(x => Number(x.overall_score) >= 80 && x.url_grounded === true);
   for (const position of exceptional) {
     const url = normalizeURL(position.url);
     const entry = byURL.get(url) || { best: position, providers: [] };
@@ -2137,7 +2137,7 @@ async function notifyExceptionalMatches(results) {
     }
   }
   if (changed) saveJSON(NOTIFIED_FILE, notified);
-  console.log(`Telegram alerts: ${sent} sent; ${alreadyNotified} already notified; ${byURL.size} exceptional grounded matches (90+).`);
+  console.log(`Telegram alerts: ${sent} sent; ${alreadyNotified} already notified; ${byURL.size} grounded matches eligible for Telegram (80+).`);
 }
 
 let alertSent = false;
