@@ -47,6 +47,9 @@ jobs:
         with:
           node-version: 22
 
+      - name: Validate JavaScript syntax
+        run: node --check search.mjs
+
       - name: Run PhD search
         id: search
         continue-on-error: true
