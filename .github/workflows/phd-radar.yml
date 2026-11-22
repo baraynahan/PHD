@@ -51,6 +51,12 @@ jobs:
         id: syntax
         run: node --check search.mjs
 
+      - name: Run offline regression tests
+        id: self_test
+        env:
+          SELF_TEST: "true"
+        run: node search.mjs
+
       - name: Run PhD search
         id: search
         continue-on-error: true
@@ -180,7 +186,7 @@ jobs:
 
       # Make a broken search visible (red run) after results were committed and the site deployed.
       - name: Fail the run if the search step failed
-        if: steps.search.outcome == 'failure' || steps.syntax.outcome == 'failure'
+        if: steps.search.outcome == 'failure' || steps.syntax.outcome == 'failure' || steps.self_test.outcome == 'failure'
         run: |
-          echo "The syntax check or search step failed - see its log."
+          echo "The syntax check, regression tests, or search step failed - see its log."
           exit 1
