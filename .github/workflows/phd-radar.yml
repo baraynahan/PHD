@@ -192,11 +192,11 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from "node:fs";
           const workflow = fs.readFileSync(".github/workflows/phd-radar.yml", "utf8");
-          const scheduleBlock = workflow.match(/schedule:\\s*([\\s\\S]*?)(?=\\n\\S|$)/);
-          const cron = scheduleBlock?.[1]?.match(/cron:\\s*["']([^"']+)["']/)?.[1];
+          const scheduleBlock = workflow.match(/schedule:\s*([\s\S]*?)(?=\n\S|$)/);
+          const cron = scheduleBlock?.[1]?.match(/cron:\s*["']([^"']+)["']/)?.[1];
           if (!cron) throw new Error("Could not read schedule cron from workflow.");
-          const fields = cron.trim().split(/\\s+/);
-          if (fields.length !== 5 || !/^\\d+$/.test(fields[0]) || !/^\\d+$/.test(fields[1]) || !/^\\d+$/.test(fields[4])) {
+          const fields = cron.trim().split(/\s+/);
+          if (fields.length !== 5 || !/^\d+$/.test(fields[0]) || !/^\d+$/.test(fields[1]) || !/^\d+$/.test(fields[4])) {
             throw new Error("Schedule display currently requires numeric minute, hour and weekday fields.");
           }
           const [minute, hour, , , weekday] = fields.map(Number);
@@ -213,7 +213,7 @@ jobs:
             time,
             label: `Automatic search: every ${value.weekday} at ${time} (Tehran time).`
           };
-          fs.writeFileSync("_site/schedule.json", JSON.stringify(data, null, 2) + "\\n");
+          fs.writeFileSync("_site/schedule.json", JSON.stringify(data, null, 2) + "\n");
           console.log(data.label + ` [workflow cron: ${cron}]`);
           NODE
 
