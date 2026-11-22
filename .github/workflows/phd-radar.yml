@@ -225,6 +225,11 @@ jobs:
         with:
           path: "_site"
 
+      # GitHub's artifact listing can briefly lag behind a successful upload.
+      - name: Wait for Pages artifact metadata
+        if: always()
+        run: sleep 15
+
       - name: Deploy to GitHub Pages
         if: always()
         id: deployment
