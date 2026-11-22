@@ -1024,7 +1024,7 @@ async function webSearch(spec) {
 async function searchDiscover(queries, tag = "Europe-first") {
   if (!SEARCH_PROVIDERS.some(p => p.configured)) throw new Error("No search engine is configured.");
   const searchOrder = SEARCH_PROVIDERS.filter(p => p.configured).map(p => p.name).join(" → ");
-  console.log(`[${REVIEW_PRIMARY.name}] search discovery starting (${tag}, ${queries.length} queries, engines: ${searchOrder}, depth=${CFG.SEARCH_DEPTH}, range=${CFG.SEARCH_TIME_RANGE})...`);
+  console.log(`[SEARCH: ${SEARCH_PRIMARY.name}] ${tag} discovery starting (${queries.length} queries, fallback engines: ${searchOrder}, depth=${CFG.SEARCH_DEPTH}, range=${CFG.SEARCH_TIME_RANGE})...`);
   const byKey = new Map();
   for (let i = 0; i < queries.length; i++) {
     if (SEARCH_QUOTA_HIT) { console.warn("All search engines unavailable; skipping remaining queries."); break; }
@@ -1037,7 +1037,7 @@ async function searchDiscover(queries, tag = "Europe-first") {
       if (prev) { if (!prev.raw && item.raw) prev.raw = item.raw; continue; }
       byKey.set(key, { title: String(item.title || url).trim(), url, raw: item.raw || "", snippet: item.snippet || "", search_provider: item.search_provider || "" });
     }
-    if ((i + 1) % 10 === 0) console.log(`[${REVIEW_PRIMARY.name}] ${tag} query ${i + 1}/${queries.length}: ${byKey.size} unique hits so far`);
+    if ((i + 1) % 10 === 0) console.log(`[SEARCH: ${SEARCH_PRIMARY.name}] ${tag} query ${i + 1}/${queries.length}: ${byKey.size} unique hits so far`);
   }
   return [...byKey.values()];
 }
@@ -1099,7 +1099,7 @@ async function extractWithFallback(primary, fallback, pages) {
       }
       if (!Array.isArray(parsed)) throw new Error(`${provider.name} extraction response was not an array.`);
       // An empty array is a valid answer ("no vacancy among these pages"): never pay for a second call.
-      if (parsed.length === 0) console.log(`[${provider.name}] batch contained no vacancies.`);
+      if (parsed.length === 0) console.log(`[REVIEW: ${provider.name}] batch contained no vacancies.`);
       return { items: parsed, provider: { ...provider, model: model || provider.model } };
     } catch (error) {
       lastError = error;
@@ -1881,7 +1881,7 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
       const extractedBy = Array.isArray(extracted) ? label : extracted.provider?.name || label;
       const extractedModel = Array.isArray(extracted) ? providerModelForLabel(label) : (extracted.provider?.model || "");
       if (raw.length === 0) emptyBatches++;
-      else console.log(`[${label}] ${batchLabel}: ${raw.length} opportunities returned by ${extractedBy} (${extractedModel || "model not reported"}).`);
+      else console.log(`[REVIEW: ${extractedBy}${extractedModel ? " / " + extractedModel : ""}] ${batchLabel}: ${raw.length} opportunities returned.`);
       const attached = attachPageData(raw, batch);
       const incompleteKeys = new Set(attached
         .filter(item => !String(item.title || "").trim() || !String(item.country || "").trim() || item.university_confidence === "unknown")
