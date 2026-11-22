@@ -1617,7 +1617,7 @@ async function verifyPosition(position) {
       };
     }
 
-    if (response.ok && phdSignal && vacancySignal && titleSignal) {
+    if (response.ok && phdSignal && vacancySignal && titleSignal && position.university_confidence !== "unknown") {
       return {
         verification_status: "Verified",
         verification_checked_at: checkedAt,
@@ -1629,7 +1629,9 @@ async function verifyPosition(position) {
       verification_status: "Not verified",
       verification_checked_at: checkedAt,
       verification_note: response.ok
-        ? "Page reachable, but automated content check could not confirm a PhD vacancy."
+        ? (position.university_confidence === "unknown"
+          ? "Page reachable and vacancy signals present, but the university could not be identified."
+          : "Page reachable, but automated content check could not confirm a PhD vacancy.")
         : `HTTP ${response.status}`,
       verification_url: finalURL
     };
