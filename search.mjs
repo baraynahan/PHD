@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import {
   existsSync,
   readFileSync,
@@ -41,11 +42,11 @@ const CFG = {
   AI_REVIEW_BUDGET_TIER3:  envInt("AI_REVIEW_BUDGET_TIER3", 8),
   QUERIES_EU:              envInt("QUERIES_EU", 24),
   QUERIES_TIER3:           envInt("QUERIES_TIER3", 8),
-  EXTRACTION_BATCH_SIZE:   Math.max(1, envInt("EXTRACTION_BATCH_SIZE", 6)),
+  EXTRACTION_BATCH_SIZE:   Math.max(1, envInt("EXTRACTION_BATCH_SIZE", 4)),
   PAGE_TEXT_CHARS:         envInt("PAGE_TEXT_CHARS", 3200),
   SEARCH_RESULTS_PER_QUERY: Math.max(1, envInt("SEARCH_RESULTS_PER_QUERY", 8)),
   FETCH_CONCURRENCY:       Math.max(1, envInt("FETCH_CONCURRENCY", 6)),
-  AI_CALL_GAP_MS:          envInt("AI_CALL_GAP_MS", 8000),
+  AI_CALL_GAP_MS:          envInt("AI_CALL_GAP_MS", 25000),
   AI_MAX_ATTEMPTS:         Math.max(1, envInt("AI_MAX_ATTEMPTS", 4)),
   AI_RETRY_BASE_DELAY_MS:  envInt("AI_RETRY_BASE_DELAY_MS", 20000),
   IELTS_LOOKUP_ENABLED:    envBool("IELTS_LOOKUP_ENABLED", false),
@@ -84,27 +85,19 @@ function detectFormat(baseUrl, kind) {
 function readProviderConfig(prefix, { kind = "ai", defaultName }) {
   const baseUrl = envValue(`${prefix}_BASE_URL`);
   const apiKey = envValue(`${prefix}_API_KEY`);
-  // *_MODEL may be a comma-separated list: calls are spread round-robin across the models,
-  // so per-model rate limits are shared instead of exhausted one by one.
   const models = envValue(`${prefix}_MODEL`).split(",").map(s => s.trim()).filter(Boolean);
   const model = models[0] || "";
+  const format = (envValue(`${prefix}_FORMAT`) || detectFormat(baseUrl, kind)).toLowerCase();
   const missing = [];
   if (!baseUrl) missing.push(`${prefix}_BASE_URL (variable)`);
-  if (kind === "ai" && !model) missing.push(`${prefix}_MODEL (variable)`);
+  if ((kind === "ai" || format === "gemini") && !model) missing.push(`${prefix}_MODEL (variable)`);
   if (!apiKey) missing.push(`${prefix}_API_KEY (secret)`);
-  return {
-    prefix, kind,
-    name: envValue(`${prefix}_NAME`) || defaultName,
-    baseUrl, apiKey, model, models,
-    format: (envValue(`${prefix}_FORMAT`) || detectFormat(baseUrl, kind)).toLowerCase(),
-    missing,
-    configured: missing.length === 0
-  };
+  return { prefix, kind, name: envValue(`${prefix}_NAME`) || defaultName, baseUrl, apiKey, model, models, format, missing, configured: missing.length === 0 };
 }
-
-const SEARCH_REVIEW = readProviderConfig("SEARCH_REVIEW", { kind: "ai", defaultName: "Search+Review AI" });
-const SEARCH = readProviderConfig("SEARCH", { kind: "search", defaultName: "Search API" });
-const REVIEW = readProviderConfig("REVIEW", { kind: "ai", defaultName: "Review AI" });
+const SEARCH_PROVIDERS = [1, 2, 3].map(n => readProviderConfig(`SEARCH_${n}`, { kind: "search", defaultName: `Search engine ${n}` }));
+const REVIEW_PROVIDERS = [1, 2, 3].map(n => readProviderConfig(`REVIEW_${n}`, { kind: "ai", defaultName: `Reviewer ${n}` }));
+const SEARCH_PRIMARY = SEARCH_PROVIDERS[0];
+const REVIEW_PRIMARY = REVIEW_PROVIDERS[0];
 
 function endpointURL(baseUrl, path) {
   const base = baseUrl.replace(/\/+$/, "");
@@ -121,18 +114,17 @@ ${THIS_YEAR} or ${THIS_YEAR + 1}. Ignore anything that closed before ${TODAY}.
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-if (!SEARCH.configured || !REVIEW.configured) {
+if (process.env.SELF_TEST !== "true" && !CLEANUP_ONLY && (!SEARCH_PRIMARY.configured || !REVIEW_PRIMARY.configured)) {
   throw new Error(
-    "The primary free pipeline requires SEARCH_* (search API) and REVIEW_* (AI reviewer). " +
-    "SEARCH_REVIEW_* is optional and is used only as an AI extraction fallback.\n" +
-    `Missing for SEARCH: ${SEARCH.missing.join(", ") || "nothing"}\n` +
-    `Missing for REVIEW: ${REVIEW.missing.join(", ") || "nothing"}`
+    "The primary pipeline requires SEARCH_1_* and REVIEW_1_*. SEARCH_2/3 and REVIEW_2/3 are optional fallbacks.\n" +
+    `Missing for SEARCH_1: ${SEARCH_PRIMARY.missing.join(", ") || "nothing"}\n` +
+    `Missing for REVIEW_1: ${REVIEW_PRIMARY.missing.join(", ") || "nothing"}`
   );
 }
 
 function safeErrorMessage(error) {
   let message = String(error?.message || error || "Unknown error");
-  for (const secret of [SEARCH_REVIEW.apiKey, SEARCH.apiKey, REVIEW.apiKey, TELEGRAM_BOT_TOKEN]) {
+  for (const secret of [...SEARCH_PROVIDERS, ...REVIEW_PROVIDERS].map(p => p.apiKey).concat(TELEGRAM_BOT_TOKEN)) {
     if (secret) message = message.split(secret).join("***");
   }
   return message.length > 300 ? `${message.slice(0, 300)}…` : message;
@@ -558,6 +550,30 @@ async function loadPage(hit) {
   }
 }
 
+const NON_VACANCY_TITLE_RE = /\b(what is|how to apply|abstract book|conference abstracts?|conference programme|programme catalogue|catalog(?:ue)?|search results?|scholarships? for|funding opportunities|lecturer|postdoc(?:toral)?|professor|senior research lead|career opportunities|jobs and career opportunities|how to)\b/i;
+const GENERIC_PAGE_TITLE_RE = /^(about|news|search results?|careers?|jobs and career opportunities|scholarships for international students|funding opportunities)\b/i;
+
+function isLikelyVacancyPage(page) {
+  const title = String(page.jobPosting?.title || page.title || "").trim();
+  const early = String(page.fullText || page.text || "").slice(0, 1400);
+  const combined = title + " " + early;
+  if (NON_VACANCY_TITLE_RE.test(title) || GENERIC_PAGE_TITLE_RE.test(title)) return false;
+  if (page.jobPosting) return DOCTORAL_RE.test(String(page.jobPosting.title || "") + " " + early);
+  const titleIsDoctoral = DOCTORAL_RE.test(title);
+  const earlyIsDoctoral = DOCTORAL_RE.test(early);
+  const hasVacancySignal = /\b(position|vacancy|studentship|doctoral researcher|research fellow|phd candidate|funded phd|stipendiat|promovend|doktorand|doctorant)\b/i.test(combined);
+  const isPdf = /\.pdf(?:$|[?#])/i.test(page.url) || /\.pdf$/i.test(title);
+  if (isPdf) return titleIsDoctoral && hasVacancySignal && FUNDING_RE.test(combined);
+  return titleIsDoctoral || (earlyIsDoctoral && hasVacancySignal);
+}
+
+function isClearlyExpiredPage(page) {
+  const structured = normalizeDeadline(page.jobPosting?.validThrough || "");
+  if (structured && structured < TODAY) return true;
+  const inferred = inferDeadlineFromText(String(page.fullText || "").slice(0, 6000));
+  return Boolean(inferred.deadline && inferred.deadline < TODAY);
+}
+
 async function fetchHitPages(hits, maxPages, seen, tier3 = false) {
   const unique = [];
   const keys = new Set();
@@ -599,8 +615,12 @@ async function fetchHitPages(hits, maxPages, seen, tier3 = false) {
       skipped.push({ ...p, reason: p.reason || "page too short" });
       continue;
     }
-    if (!DOCTORAL_RE.test(p.fullText) && !p.jobPosting) {
-      skipped.push({ ...p, reason: "not obviously doctoral" });
+    if (!isLikelyVacancyPage(p)) {
+      skipped.push({ ...p, reason: "not a specific doctoral vacancy page" });
+      continue;
+    }
+    if (isClearlyExpiredPage(p)) {
+      skipped.push({ ...p, reason: "clearly expired deadline" });
       continue;
     }
     pages.push({ ...p, isTier3: tier3 });
@@ -773,7 +793,10 @@ function pickModel(provider) {
   return models[i % models.length];
 }
 function backoffMs(error, attempt) {
-  if (Number(error.retryAfterMs) > 0) return Math.min(Number(error.retryAfterMs) + 1000, 180000);
+  if (Number(error.retryAfterMs) > 0) return Math.min(Number(error.retryAfterMs) + 1500, 180000);
+  const message = String(error?.message || error || "");
+  const retryIn = message.match(/(?:try again|retry|wait)\s+(?:in|after)\s+(\d+(?:\.\d+)?)\s*(seconds?|secs?|s)\b/i);
+  if (retryIn) return Math.min(Math.ceil(Number(retryIn[1]) * 1000) + 1500, 180000);
   const base = CFG.AI_RETRY_BASE_DELAY_MS * 2 ** (attempt - 1);
   return Math.min(base + Math.floor(Math.random() * 0.25 * base), 180000);
 }
@@ -793,13 +816,18 @@ async function aiGenerate(provider, prompt, { useSearch = false, allowEmpty = fa
       : p.format === "openai"
       ? () => openaiFormatGenerate(p, prompt, allowEmpty)
       : null;
-    if (!call) throw new Error(`${provider.prefix}_FORMAT "${provider.format}" is not supported.`);
+    if (!call) { failedThisRun.add(provider.prefix); throw new Error(`${provider.prefix}_FORMAT "${provider.format}" is not supported.`); }
     try {
       const out = await call();
       failStreak.set(provider.prefix, 0);
       return { ...out, model };
     } catch (error) {
       lastError = error;
+      if (Number(error.status) >= 400 && Number(error.status) < 500 && ![408, 429].includes(Number(error.status))) {
+        failedThisRun.add(provider.prefix);
+        console.error(`[${provider.name}] non-retryable HTTP ${error.status}; provider disabled for this run.`);
+        break;
+      }
       if (isQuotaError(error)) {
         deadModels.add(`${provider.prefix}::${model}`);
         console.error(`[${provider.name}] ${model}: hard quota reached — model disabled for this run.`);
@@ -852,7 +880,9 @@ async function geminiFormatGenerate(provider, prompt, useSearch, allowEmpty, jso
   if (!response.ok) {
     const msg = data?.error?.message || `${provider.name} HTTP ${response.status}`;
     const retryAfter = Number(response.headers.get("retry-after") || 0);
-    throw apiError(msg, isRetryableStatus(response.status), retryAfter > 0 ? retryAfter * 1000 : 0);
+    const error = apiError(msg, isRetryableStatus(response.status), retryAfter > 0 ? retryAfter * 1000 : 0);
+    error.status = response.status;
+    throw error;
   }
   const text = (data?.candidates || []).flatMap(c => c?.content?.parts || []).map(p => p?.text || "").join("\n").trim();
   if (!text && !allowEmpty) {
@@ -877,7 +907,9 @@ async function openaiFormatGenerate(provider, prompt, allowEmpty) {
   if (!response.ok) {
     const msg = data?.error?.message || `${provider.name} HTTP ${response.status}`;
     const retryAfter = Number(response.headers.get("retry-after") || 0);
-    throw apiError(msg, isRetryableStatus(response.status), retryAfter > 0 ? retryAfter * 1000 : 0);
+    const error = apiError(msg, isRetryableStatus(response.status), retryAfter > 0 ? retryAfter * 1000 : 0);
+    error.status = response.status;
+    throw error;
   }
   const text = data?.choices?.[0]?.message?.content || "";
   if (!text && !allowEmpty) {
@@ -904,34 +936,6 @@ function collectGroundingHits(data) {
 // ============================================================================
 // DISCOVERY
 // ============================================================================
-const SEARCH_REVIEW_ANGLES = [
-  `Find currently open, funded PhD/doctoral vacancies (Europe first) matching this profile:
-${CANDIDATE_PROFILE}
-Search broadly across ALL of these themes in one comprehensive Google Search pass:
-degrowth, post-growth, post-consumerism, political economy, sustainable consumption,
-product longevity, repair/reuse, circular economy, sustainable lifestyles, social practices,
-consumption systems, alternative ownership/access, commons, sharing systems, sufficiency,
-service systems, product-service systems, transition design, social design, design justice,
-participatory/co-design, systemic design, critical design, alternative futures, governance,
-public policy, transition studies, sustainability science, STS, sociology, political science
-and environmental humanities where relevant. ${GEOGRAPHY}
-Prioritise official university vacancy pages. Exclude generic programmes and expired positions.`
-];
-
-const SEARCH_REVIEW_TIER3_ANGLES = [
-  `Find currently open, funded PhD/doctoral projects or project-linked PhD scholarships in
-CANADA, AUSTRALIA and NEW ZEALAND only (never the United States) matching this profile:
-${CANDIDATE_PROFILE}
-Themes: degrowth, post-growth, sustainable consumption, sufficiency, circular economy,
-product longevity, repair/reuse, sharing/access-based consumption, commons, social practices,
-transition design, social/service/systemic design, design justice, co-design, governance,
-public policy, sustainability transitions, STS, sociology, political economy.
-In Australia look for HDR / Research Training Program funded projects; in Canada look for
-funded supervisor-advertised PhD projects and studentships.`
-];
-
-const SEARCH_REVIEW_MAX_PAGES = MAX_PAGES;
-const SEARCH_REVIEW_CALL_GAP_MS = 4000;
 const SEARCH_MAX_RESULTS_PER_QUERY = CFG.SEARCH_RESULTS_PER_QUERY;
 const SEARCH_CALL_GAP_MS = 400;
 const REVIEW_MAX_PAGES = MAX_PAGES;
@@ -939,130 +943,101 @@ const REVIEW_CALL_GAP_MS = CFG.AI_CALL_GAP_MS;
 const EXTRACTION_BATCH_SIZE = CFG.EXTRACTION_BATCH_SIZE;
 const AI_REVIEW_BUDGET = CFG.AI_REVIEW_BUDGET;
 
-async function searchReviewDiscover(angles, tag = "Europe-first") {
-  console.log(`[${SEARCH_REVIEW.name}] web search discovery starting (${tag})...`);
-  const allHits = [], seenURLs = new Set();
-  for (let i = 0; i < angles.length; i++) {
-    if (i > 0) await sleep(SEARCH_REVIEW_CALL_GAP_MS);
-    if (failedThisRun.has(SEARCH_REVIEW.prefix)) {
-      console.warn(`[${SEARCH_REVIEW.name}] skipping remaining ${tag} angles — provider already dead.`);
-      break;
-    }
-    const prompt = `You are the discovery stage of a PhD vacancy radar.
-${angles[i]}
-${SEARCH_STRATEGY}
-${RULES}
-${DATE_CONTEXT}
-Return a list of at least 20 relevant, CURRENTLY OPEN vacancy pages you found. Do not invent URLs.
-The program will take URLs only from your web search tool's source metadata, not from your text.`;
-    let data;
-    try {
-      ({ data } = await aiGenerate(SEARCH_REVIEW, prompt, { useSearch: true, allowEmpty: true }));
-    } catch (error) {
-      console.warn(`[${SEARCH_REVIEW.name}] ${tag} angle ${i + 1}/${angles.length} failed: ${safeErrorMessage(error)}`);
-      if (failedThisRun.has(SEARCH_REVIEW.prefix)) break;
-      continue;
-    }
-    for (const hit of collectGroundingHits(data)) {
-      const url = normalizeURL(hit.url);
-      if (!url || seenURLs.has(url)) continue;
-      if (/vertexaisearch\.cloud\.google\.com|grounding-api-redirect/.test(url)) continue;
-      seenURLs.add(url);
-      allHits.push({ ...hit, url });
-    }
-    console.log(`[${SEARCH_REVIEW.name}] ${tag} angle ${i + 1}/${angles.length}: ${allHits.length} unique hits so far`);
-  }
-  return allHits;
-}
-
 let BLOCKED_CACHE = { domains: [], urls: [] };
 const ALWAYS_EXCLUDE = ["facebook.com", "instagram.com", "linkedin.com", "youtube.com", "google.com", "tiktok.com", "x.com", "twitter.com", "pinterest.com"];
 let SEARCH_QUOTA_HIT = false;
 
-async function webSearch(spec, attempt = 1) {
+async function searchWithProvider(spec, provider, attempt = 1) {
   const { q: query, domains = [], time_range: timeRange } = typeof spec === "string" ? { q: spec } : spec;
   const range = (timeRange || CFG.SEARCH_TIME_RANGE || "").toLowerCase();
+  const n = SEARCH_MAX_RESULTS_PER_QUERY;
+  if (provider.format === "gemini") {
+    const prompt = `Use Google Search to find current, specific funded PhD/doctoral vacancy pages for this query: ${query}
+${domains.length ? `Prioritise these domains: ${domains.join(", ")}.` : ""}
+Candidate profile: ${CANDIDATE_PROFILE}
+${GEOGRAPHY}
+Only identify real vacancy pages. Do not invent URLs. Return a concise list of relevant vacancies.`;
+    const { data } = await aiGenerate(provider, prompt, { useSearch: true, allowEmpty: true });
+    return collectGroundingHits(data).map(hit => ({ title: hit.title, url: hit.url, raw: "", snippet: "", search_provider: provider.name })).filter(hit => hit.url);
+  }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
-  const n = SEARCH_MAX_RESULTS_PER_QUERY;
   try {
     let response, pick;
-    if (SEARCH.format === "tavily") {
-      const body = {
-        query, search_depth: CFG.SEARCH_DEPTH, max_results: n, include_answer: false,
+    if (provider.format === "tavily") {
+      const body = { query, search_depth: CFG.SEARCH_DEPTH, max_results: n, include_answer: false,
         include_raw_content: CFG.SEARCH_RAW_CONTENT ? "markdown" : false,
-        exclude_domains: [...new Set([...ALWAYS_EXCLUDE, ...BLOCKED_CACHE.domains])].slice(0, 140)
-      };
+        exclude_domains: [...new Set([...ALWAYS_EXCLUDE, ...BLOCKED_CACHE.domains])].slice(0, 140) };
       if (range && range !== "none") body.time_range = range;
       if (domains.length) body.include_domains = domains;
-      response = await fetch(endpointURL(SEARCH.baseUrl, "/search"), {
-        method: "POST", signal: controller.signal,
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SEARCH.apiKey}` },
-        body: JSON.stringify(body)
-      });
+      response = await fetch(endpointURL(provider.baseUrl, "/search"), { method: "POST", signal: controller.signal,
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${provider.apiKey}` }, body: JSON.stringify(body) });
       pick = d => (d.results || []).map(r => ({ title: r.title, url: r.url, raw: r.raw_content || "", snippet: r.content || "" }));
-    } else if (SEARCH.format === "serper") {
+    } else if (provider.format === "serper") {
       const q = domains.length ? `(${domains.map(d => `site:${d}`).join(" OR ")}) ${query}` : query;
       const tbs = { day: "qdr:d", week: "qdr:w", month: "qdr:m", year: "qdr:y" }[range];
-      response = await fetch(endpointURL(SEARCH.baseUrl, "/search"), {
-        method: "POST", signal: controller.signal,
-        headers: { "Content-Type": "application/json", "X-API-KEY": SEARCH.apiKey },
-        body: JSON.stringify({ q, num: n, ...(tbs ? { tbs } : {}) })
-      });
+      response = await fetch(endpointURL(provider.baseUrl, "/search"), { method: "POST", signal: controller.signal,
+        headers: { "Content-Type": "application/json", "X-API-KEY": provider.apiKey }, body: JSON.stringify({ q, num: n, ...(tbs ? { tbs } : {}) }) });
       pick = d => (d.organic || []).map(r => ({ title: r.title, url: r.link }));
-    } else if (SEARCH.format === "brave") {
-      const url = new URL(endpointURL(SEARCH.baseUrl, "/res/v1/web/search"));
+    } else if (provider.format === "brave") {
+      const url = new URL(endpointURL(provider.baseUrl, "/res/v1/web/search"));
       url.searchParams.set("q", domains.length ? `(${domains.map(d => `site:${d}`).join(" OR ")}) ${query}` : query);
       url.searchParams.set("count", String(Math.min(n, 20)));
       const fresh = { day: "pd", week: "pw", month: "pm", year: "py" }[range];
       if (fresh) url.searchParams.set("freshness", fresh);
-      response = await fetch(url, { signal: controller.signal, headers: { "Accept": "application/json", "X-Subscription-Token": SEARCH.apiKey } });
+      response = await fetch(url, { signal: controller.signal, headers: { "Accept": "application/json", "X-Subscription-Token": provider.apiKey } });
       pick = d => (d.web?.results || []).map(r => ({ title: r.title, url: r.url }));
-    } else {
-      throw new Error(`SEARCH_FORMAT "${SEARCH.format}" is not supported. Use "tavily", "serper" or "brave".`);
-    }
+    } else throw new Error(`${provider.prefix}_FORMAT "${provider.format}" is not supported. Use tavily, gemini, serper or brave.`);
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      if ([432, 433].includes(response.status)) {            // Tavily: plan / pay-as-you-go limit exhausted
-        SEARCH_QUOTA_HIT = true;
-        console.error(`[${SEARCH.name}] plan limit reached (HTTP ${response.status}) — stopping further searches this run.`);
-        return [];
-      }
+      const message = data?.error?.message || data?.message || `${provider.name} HTTP ${response.status}`;
+      const retryAfter = Number(response.headers.get("retry-after") || 0);
+      const error = apiError(message, isRetryableStatus(response.status), retryAfter > 0 ? retryAfter * 1000 : 0);
+      error.status = response.status;
       if (response.status === 429 && attempt < 3) {
-        const wait = Number(response.headers.get("retry-after") || 0) * 1000 || 5000 * attempt;
-        await sleep(Math.min(wait, 30000));
-        return webSearch(spec, attempt + 1);
+        await sleep(Math.min(Number(error.retryAfterMs) || 5000 * attempt, 30000));
+        return searchWithProvider(spec, provider, attempt + 1);
       }
-      console.warn(`[${SEARCH.name}] error for query "${query}": ${response.status} ${safeErrorMessage(JSON.stringify(data))}`);
-      return [];
+      throw error;
     }
-    return pick(data).filter(r => r.url);
-  } catch (error) {
-    if (String(error?.message || "").includes("SEARCH_FORMAT")) throw error;
-    console.warn(`[${SEARCH.name}] request failed for query "${query}": ${safeErrorMessage(error)}`);
-    return [];
-  } finally {
-    clearTimeout(timeout);
-  }
+    return pick(data).filter(r => r.url).map(r => ({ ...r, search_provider: provider.name }));
+  } finally { clearTimeout(timeout); }
 }
-
+async function webSearch(spec) {
+  const { q: query } = typeof spec === "string" ? { q: spec } : spec;
+  for (const provider of SEARCH_PROVIDERS.filter(p => p.configured)) {
+    if (failedThisRun.has(provider.prefix)) continue;
+    try {
+      const results = await searchWithProvider(spec, provider);
+      console.log(`[${provider.name}] returned ${results.length} results for: ${String(query).slice(0, 100)}`);
+      return results;
+    } catch (error) {
+      if ([400, 422].includes(Number(error.status))) throw error;
+      failedThisRun.add(provider.prefix);
+      console.warn(`[${provider.name}] unavailable; switching to next search engine: ${safeErrorMessage(error)}`);
+    }
+  }
+  SEARCH_QUOTA_HIT = true;
+  console.error("All configured search engines are unavailable for this run.");
+  return [];
+}
 async function searchDiscover(queries, tag = "Europe-first") {
-  if (!SEARCH.configured) throw new Error(`${SEARCH.name} is not configured (missing: ${SEARCH.missing.join(", ")}).`);
-  console.log(`[${REVIEW.name}] ${SEARCH.name} search discovery starting (${tag}, ${queries.length} queries, depth=${CFG.SEARCH_DEPTH}, range=${CFG.SEARCH_TIME_RANGE})...`);
+  if (!SEARCH_PROVIDERS.some(p => p.configured)) throw new Error("No search engine is configured.");
+  const searchOrder = SEARCH_PROVIDERS.filter(p => p.configured).map(p => p.name).join(" → ");
+  console.log(`[${REVIEW_PRIMARY.name}] search discovery starting (${tag}, ${queries.length} queries, engines: ${searchOrder}, depth=${CFG.SEARCH_DEPTH}, range=${CFG.SEARCH_TIME_RANGE})...`);
   const byKey = new Map();
   for (let i = 0; i < queries.length; i++) {
-    if (SEARCH_QUOTA_HIT) { console.warn(`[${SEARCH.name}] skipping remaining ${tag} queries (plan limit).`); break; }
+    if (SEARCH_QUOTA_HIT) { console.warn("All search engines unavailable; skipping remaining queries."); break; }
     if (i > 0) await sleep(SEARCH_CALL_GAP_MS);
     const results = await webSearch(queries[i]);
     for (const item of results) {
       const url = normalizeURL(item.url);
       if (!url) continue;
-      const key = urlKey(url);
-      const prev = byKey.get(key);
+      const key = urlKey(url), prev = byKey.get(key);
       if (prev) { if (!prev.raw && item.raw) prev.raw = item.raw; continue; }
-      byKey.set(key, { title: String(item.title || url).trim(), url, raw: item.raw || "", snippet: item.snippet || "" });
+      byKey.set(key, { title: String(item.title || url).trim(), url, raw: item.raw || "", snippet: item.snippet || "", search_provider: item.search_provider || "" });
     }
-    if ((i + 1) % 10 === 0) console.log(`[${REVIEW.name}] ${tag} query ${i + 1}/${queries.length}: ${byKey.size} unique hits so far`);
+    if ((i + 1) % 10 === 0) console.log(`[${REVIEW_PRIMARY.name}] ${tag} query ${i + 1}/${queries.length}: ${byKey.size} unique hits so far`);
   }
   return [...byKey.values()];
 }
@@ -1102,27 +1077,13 @@ Never turn a generic programme, news item, lab page or directory into a vacancy.
 ${pageBlocks}`;
 }
 
-async function extractBatch(pages) {
-  const { text } = await aiGenerate(SEARCH_REVIEW, buildExtractionPrompt(pages));
-  const parsed = extractJSON(text);
-  if (!Array.isArray(parsed)) throw new Error(`${SEARCH_REVIEW.name} extraction response was not an array.`);
-  return parsed;
-}
-
-async function extractReviewBatch(pages) {
-  const { text } = await aiGenerate(REVIEW, buildExtractionPrompt(pages));
-  const parsed = extractJSON(text);
-  if (!Array.isArray(parsed)) throw new Error(`${REVIEW.name} extraction response was not an array.`);
-  return parsed;
-}
 
 function extractionResponseExcerpt(value, maxChars = 420) {
   return String(value || "").replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, maxChars);
 }
 
 async function extractWithFallback(primary, fallback, pages) {
-  const attempts = [primary];
-  if (fallback && fallback.configured && fallback.prefix !== primary.prefix) attempts.push(fallback);
+  const attempts = [primary, ...(Array.isArray(fallback) ? fallback : [fallback]).filter(p => p && p.configured && p.prefix !== primary.prefix)];
   let lastError;
   for (const provider of attempts) {
     if (failedThisRun.has(provider.prefix)) {
@@ -1163,11 +1124,7 @@ function saveUniversitiesCache() {
 }
 
 function bestSearchAI() {
-  const candidates = [SEARCH_REVIEW, REVIEW];
-  for (const p of candidates) {
-    if (p.configured && p.format === "gemini" && !failedThisRun.has(p.prefix)) return p;
-  }
-  return null;
+  return REVIEW_PROVIDERS.find(p => p.configured && p.format === "gemini" && !failedThisRun.has(p.prefix)) || null;
 }
 
 async function lookupIelts(university, country) {
@@ -1358,13 +1315,20 @@ function normalizeIdentityText(value) {
     .replace(/\s+/g, " ");
 }
 
+function normalizeUniversity(value) {
+  return [...new Set(normalizeIdentityText(value)
+    .split(" ")
+    .filter(word => !["university", "of", "the", "technology", "technical", "institute", "college", "school", "tu"].includes(word)))]
+    .join(" ");
+}
+
 function resultIdentity(item) {
+  const url = normalizeURL(item.url);
+  if (url) return "url:" + urlKey(url);
   const title = normalizeIdentityText(item.title);
-  const university = normalizeIdentityText(item.university);
+  const university = normalizeUniversity(item.university);
   const deadline = normalizeDeadline(item.deadline);
-  return title && university && deadline
-    ? `${university}|${title}|${deadline}`
-    : normalizeURL(item.url);
+  return title && university && deadline ? university + "|" + title + "|" + deadline : "";
 }
 
 function chooseBetterResult(a, b) {
@@ -1393,6 +1357,13 @@ function mergeResultRecords(a, b) {
     url_grounded: Boolean(a.url_grounded || b.url_grounded),
     verification_status: a.verification_status === "Verified" || b.verification_status === "Verified" ? "Verified" : "Not verified"
   };
+  const knownUniversity = [a, b].find(x => x.university && x.university !== "Unknown institution" && x.university_confidence !== "unknown");
+  if (knownUniversity) {
+    merged.university = knownUniversity.university;
+    merged.university_confidence = knownUniversity.university_confidence || "source";
+  }
+  const knownCountry = [a, b].find(x => x.country && x.country !== "Unknown");
+  if (knownCountry) merged.country = knownCountry.country;
   if (!String(merged.verification_note || "").trim()) merged.verification_note = String(other.verification_note || "").trim();
   if (!String(merged.verification_url || "").trim()) merged.verification_url = normalizeURL(other.verification_url);
   if (!String(merged.ielts_source_url || "").trim()) merged.ielts_source_url = normalizeURL(other.ielts_source_url);
@@ -1407,7 +1378,11 @@ function acronymsOf(t) {
 }
 // Same university + near-identical title (or shared project acronym + overlapping title) = same vacancy.
 function sameJob(a, b) {
-  if (normalizeIdentityText(a.university) !== normalizeIdentityText(b.university)) return false;
+  const urlA = normalizeURL(a.url), urlB = normalizeURL(b.url);
+  if (urlA && urlB && urlKey(urlA) === urlKey(urlB)) return true;
+  const uniA = normalizeUniversity(a.university), uniB = normalizeUniversity(b.university);
+  if (!uniA || !uniB || uniA === "unknown institution" || uniB === "unknown institution") return false;
+  if (uniA !== uniB) return false;
   if (a.deadline && b.deadline && a.deadline !== b.deadline) return false;
   const ta = titleTokens(a.title), tb = titleTokens(b.title);
   const inter = [...ta].filter(w => tb.has(w)).length;
@@ -1453,7 +1428,7 @@ function cleanResults(results) {
     const provider = providerLabelsOf(item._extracted_by || item.ai_provider).join(" + ") || "Unknown";
 
     const candidate = {
-      title, university, country, city, url,
+      title, university, university_confidence: item.university_confidence === "unknown" ? "unknown" : "source", country, city, url,
       deadline: dinfo.stored,
       deadline_type: dinfo.kind,
       start_date: String(item.start_date || "").trim(),
@@ -1482,7 +1457,7 @@ function cleanResults(results) {
       ai_model: String(item.ai_model || item._ai_model || "").trim(),
       url_grounded: item.url_grounded === true,
       first_seen: String(item.first_seen || new Date().toISOString()),
-      verification_status: ["Verified", "Not verified", "Closed"].includes(String(item.verification_status || "")) ? String(item.verification_status) : "Not verified",
+      verification_status: item.university_confidence === "unknown" ? "Not verified" : (["Verified", "Not verified", "Closed"].includes(String(item.verification_status || "")) ? String(item.verification_status) : "Not verified"),
       verification_checked_at: String(item.verification_checked_at || "").trim(),
       verification_note: String(item.verification_note || "").trim(),
       verification_url: normalizeURL(item.verification_url)
@@ -1567,7 +1542,7 @@ async function verifyPosition(position) {
       };
     }
 
-    if (response.ok && phdSignal && vacancySignal && titleSignal) {
+    if (response.ok && phdSignal && vacancySignal && titleSignal && position.university_confidence !== "unknown") {
       return {
         verification_status: "Verified",
         verification_checked_at: checkedAt,
@@ -1579,7 +1554,9 @@ async function verifyPosition(position) {
       verification_status: "Not verified",
       verification_checked_at: checkedAt,
       verification_note: response.ok
-        ? "Page reachable, but automated content check could not confirm a PhD vacancy."
+        ? (position.university_confidence === "unknown"
+          ? "Page reachable and vacancy signals present, but the university could not be identified."
+          : "Page reachable, but automated content check could not confirm a PhD vacancy.")
         : `HTTP ${response.status}`,
       verification_url: finalURL
     };
@@ -1647,8 +1624,19 @@ function attachPageData(items, batch) {
     const page = byId || byURL;
     if (!page) return { ...item, url_grounded: false };
     const lang = detectLanguage(page.fullText || page.text);
+    const structuredUniversity = String(page.jobPosting?.organization || "").trim();
+    const university = String(item.university || structuredUniversity).trim();
+    const country = String(item.country || page.jobPosting?.country || "").trim();
     return {
-      ...item, url: page.url, original_text: page.text, url_grounded: true,
+      ...item,
+      url: page.url,
+      university: university || "Unknown institution",
+      university_confidence: university ? "source" : "unknown",
+      country: country || "Unknown",
+      city: String(item.city || page.jobPosting?.city || "").trim(),
+      original_text: page.text,
+      _source_page_key: page.key || seenKey(page.url),
+      url_grounded: true,
       ...(lang !== "Unknown" ? { application_language: lang } : {})
     };
   });
@@ -1681,7 +1669,7 @@ function knownTitleIndex() {
   }
   const add = r => {
     if (!r || !r.title) return;
-    idx.push({ tokens: fpTokens(r.title), key: seenKey(r.url || ""), uni: String(r.university || "").toLowerCase().replace(/\(.*?\)/g, "").trim() });
+    idx.push({ tokens: fpTokens(r.title), key: seenKey(r.url || ""), uni: normalizeUniversity(r.university) });
   };
   for (const r of loadJSON(RESULTS_FILE, [])) add(r);
   for (const r of Object.values(loadJSON(ARCHIVE_FILE, {}) || {})) add(r);
@@ -1694,7 +1682,7 @@ function findDuplicate(page, idx) {
     if (k.key === page.key) continue;                    // same URL = an update of the same page, handled by the content hash
     if (!fpSimilar(tokens, k.tokens)) continue;
     // for known results we also know the university: the page must mention it, otherwise it is another institution's post
-    if (k.uni.length > 3 && !String(page.fullText || "").toLowerCase().includes(k.uni)) continue;
+    if (k.uni.length > 2 && !normalizeUniversity(String(page.title || "") + " " + String(page.fullText || "")).includes(k.uni)) continue;
     return k;
   }
   return null;
@@ -1810,9 +1798,7 @@ function tally(items) {
 }
 
 function providerModelForLabel(label) {
-  if (label === SEARCH_REVIEW.name) return SEARCH_REVIEW.model || "";
-  if (label === REVIEW.name) return REVIEW.model || "";
-  return "";
+  return REVIEW_PROVIDERS.find(p => p.name === label)?.model || "";
 }
 
 async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract, hitsLabel, blocked, stats }) {
@@ -1883,7 +1869,7 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
     const batchLabel = `batch ${batches}/${totalBatches}`;
     console.log(`[${label}] ${batchLabel}: sending ${batch.length} pages to extraction:`);
     for (const page of batch) console.log(`  PAGE ${page.id} | ${String(page.title || "(untitled)").slice(0, 120)} | ${page.url}`);
-    if (failedThisRun.has(REVIEW.prefix) && failedThisRun.has(SEARCH_REVIEW.prefix)) {
+    if (REVIEW_PROVIDERS.every(p => failedThisRun.has(p.prefix) || !p.configured)) {
       // Every AI provider is dead: keep the remaining pages for the next run instead of burning attempts.
       failedBatches++;
       failedPages.push(...batch);
@@ -1896,8 +1882,15 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
       const extractedModel = Array.isArray(extracted) ? providerModelForLabel(label) : (extracted.provider?.model || "");
       if (raw.length === 0) emptyBatches++;
       else console.log(`[${label}] ${batchLabel}: ${raw.length} opportunities returned by ${extractedBy} (${extractedModel || "model not reported"}).`);
-      reviewedOK.push(...batch);
-      results.push(...attachPageData(raw, batch).map(item => ({ ...item, _extracted_by: extractedBy, _ai_model: extractedModel })));
+      const attached = attachPageData(raw, batch);
+      const incompleteKeys = new Set(attached
+        .filter(item => !String(item.title || "").trim() || !String(item.country || "").trim() || item.university_confidence === "unknown")
+        .map(item => item._source_page_key).filter(Boolean));
+      for (const page of batch) {
+        if (incompleteKeys.has(page.key || seenKey(page.url))) failedPages.push(page);
+        else reviewedOK.push(page);
+      }
+      results.push(...attached.map(item => ({ ...item, _extracted_by: extractedBy, _ai_model: extractedModel })));
     } catch (error) {
       failedBatches++;
       failedPages.push(...batch);
@@ -1922,45 +1915,26 @@ async function reviewPages({ label, mainHits, tier3Hits, mainMax, gapMs, extract
 // ============================================================================
 // PIPELINES
 // ============================================================================
-async function callSearchReviewProvider(blocked, stats) {
-  const mainHits = await searchReviewDiscover(SEARCH_REVIEW_ANGLES, "Europe-first");
-  await sleep(SEARCH_REVIEW_CALL_GAP_MS);
-  const tier3Hits = await searchReviewDiscover(SEARCH_REVIEW_TIER3_ANGLES, "Canada/Australia/NZ");
-  if (!mainHits.length && !tier3Hits.length) {
-    throw new Error(`${SEARCH_REVIEW.name} returned no web sources.`);
-  }
-  return reviewPages({
-    label: SEARCH_REVIEW.name, mainHits, tier3Hits, mainMax: SEARCH_REVIEW_MAX_PAGES,
-    gapMs: SEARCH_REVIEW_CALL_GAP_MS,
-    extract: pages => extractWithFallback(SEARCH_REVIEW, REVIEW, pages),
-    hitsLabel: "search hits", blocked, stats
-  });
-}
-
 async function callSearchThenReviewProvider(blocked, stats) {
   const mainQueries = queriesForRun(CFG.QUERIES_EU);
   const tier3Queries = tier3QueriesForRun(CFG.QUERIES_TIER3);
   const mainHits = await searchDiscover(mainQueries, "Europe-first");
   const tier3Hits = await searchDiscover(tier3Queries, "Canada/Australia/NZ");
-  if (!mainHits.length && !tier3Hits.length) throw new Error(`${SEARCH.name} search returned no results.`);
+  if (!mainHits.length && !tier3Hits.length) throw new Error("All search engines failed or returned no vacancy sources.");
   return reviewPages({
-    label: REVIEW.name, mainHits, tier3Hits, mainMax: REVIEW_MAX_PAGES,
+    label: REVIEW_PRIMARY.name, mainHits, tier3Hits, mainMax: REVIEW_MAX_PAGES,
     gapMs: REVIEW_CALL_GAP_MS,
-    extract: pages => extractWithFallback(REVIEW, SEARCH_REVIEW, pages),
-    hitsLabel: `${SEARCH.name} hits`, blocked, stats
+    extract: pages => extractWithFallback(REVIEW_PRIMARY, REVIEW_PROVIDERS.slice(1), pages),
+    hitsLabel: "search results", blocked, stats
   });
 }
-
-const PROVIDERS = [
-  {
-    id: "tavily_review",
-    label: REVIEW.name,
-    model: `${REVIEW.model || "?"} (search: ${SEARCH.name})`,
-    configured: SEARCH.configured && REVIEW.configured,
-    missing: [...SEARCH.missing, ...REVIEW.missing],
-    call: callSearchThenReviewProvider
-  }
-];
+const PROVIDERS = [{
+  id: "multi_search_review", label: REVIEW_PRIMARY.name,
+  model: `${REVIEW_PRIMARY.model || "?"} (search: ${SEARCH_PRIMARY.name})`,
+  configured: SEARCH_PRIMARY.configured && REVIEW_PRIMARY.configured,
+  missing: [...SEARCH_PRIMARY.missing, ...REVIEW_PRIMARY.missing],
+  call: callSearchThenReviewProvider
+}];
 
 async function runProvider(provider, blocked) {
   const run = {
@@ -2048,10 +2022,10 @@ async function runProvider(provider, blocked) {
 }
 
 async function callAllProviders(blocked) {
-  console.log(`Single discovery pipeline: ${SEARCH.name}; primary reviewer: ${REVIEW.name}; optional AI fallback: ${SEARCH_REVIEW.configured ? SEARCH_REVIEW.name : "not configured"}`);
-  // A failed run no longer aborts early: existing results are still re-verified and saved, and an alert is sent.
+  console.log("Search fallback order: " + SEARCH_PROVIDERS.filter(p => p.configured).map(p => p.name).join(" → "));
+  console.log("Review fallback order: " + REVIEW_PROVIDERS.filter(p => p.configured).map(p => p.name).join(" → "));
   const run = await runProvider(PROVIDERS[0], blocked);
-  if (run.status !== "ok") console.warn("Primary search pipeline failed: " + (run.error || run.status));
+  if (run.status !== "ok") console.warn("Primary pipeline failed: " + (run.error || run.status));
   return [run];
 }
 
@@ -2198,7 +2172,7 @@ async function main() {
       results: [], sources: [], stats: {}
     }];
   } else {
-    console.log(`Running one discovery pipeline: ${SEARCH.name} search → ${REVIEW.name} review (optional extraction fallback: ${SEARCH_REVIEW.configured ? SEARCH_REVIEW.name : "off"}).`);
+    console.log("Running discovery with search fallback: " + SEARCH_PROVIDERS.filter(p => p.configured).map(p => p.name).join(" → ") + " | review fallback: " + REVIEW_PROVIDERS.filter(p => p.configured).map(p => p.name).join(" → "));
     runs = await callAllProviders(blocked);
   }
 
@@ -2313,7 +2287,89 @@ async function main() {
   }
 }
 
-main().catch(async error => {
+function runSelfTests() {
+  assert.equal(SEARCH_PROVIDERS.map(p => p.prefix).join(","), "SEARCH_1,SEARCH_2,SEARCH_3");
+  assert.equal(REVIEW_PROVIDERS.map(p => p.prefix).join(","), "REVIEW_1,REVIEW_2,REVIEW_3");
+
+  assert.equal(
+    normalizeUniversity("Delft University of Technology (TU Delft)"),
+    normalizeUniversity("TU Delft"),
+    "university aliases should normalize to the same key"
+  );
+
+  assert.equal(
+    isLikelyVacancyPage({ title: "PhD Studentship — Sustainable Consumption", url: "https://example.org/job.pdf", fullText: "Fully funded PhD position with stipend." }),
+    true,
+    "a doctoral vacancy PDF should be retained"
+  );
+  for (const title of [
+    "What Is Speculative Design? Definition and Origins",
+    "Postdoctoral Research Associate in Design",
+    "Lecturer in Law x6",
+    "Scholarships for International Students by Country",
+    "Abstract Book — 2026 Conference"
+  ]) {
+    assert.equal(isLikelyVacancyPage({ title, url: "https://example.org/page", fullText: "PhD research and sustainability." }), false, title + " should be filtered");
+  }
+
+  assert.equal(isClearlyExpiredPage({ url: "https://example.org/job", jobPosting: { validThrough: "2020-01-01" }, fullText: "" }), true);
+  assert.equal(isClearlyExpiredPage({ url: "https://example.org/job", jobPosting: { validThrough: "2099-01-01" }, fullText: "" }), false);
+  assert.ok(backoffMs({ message: "Rate limit reached. Please try again in 22.05s." }, 1) >= 23550);
+
+  const structured = attachPageData(
+    [{ page_id: 1 }],
+    [{ id: 1, key: "source-key", url: "https://example.org/phd", jobPosting: { organization: "University of Zurich", country: "Switzerland" }, fullText: "doctoral vacancy", text: "doctoral vacancy" }]
+  )[0];
+  assert.equal(structured.university, "University of Zurich");
+  assert.equal(structured.university_confidence, "source");
+
+  const unknown = attachPageData(
+    [{ page_id: 2 }],
+    [{ id: 2, key: "unknown-key", url: "https://example.org/phd2", jobPosting: null, fullText: "doctoral vacancy", text: "doctoral vacancy" }]
+  )[0];
+  assert.equal(unknown.university, "Unknown institution");
+  assert.equal(unknown.university_confidence, "unknown");
+
+  const merged = dedupeSimilar([
+    { title: "PhD position Participatory Data Governance", university: "TU Delft", url: "https://example.org/position", deadline: "2027-01-01", overall_score: 82 },
+    { title: "PhD position Participatory Data Governance", university: "Delft University of Technology (TU Delft)", url: "https://example.org/position", deadline: "2027-01-01", overall_score: 74 }
+  ]);
+  assert.equal(merged.length, 1, "same URL should always deduplicate");
+  assert.equal(
+    sameJob(
+      { title: "PhD position Participatory Data Governance", university: "TU Delft", url: "https://mirror.example/job-a", deadline: "2027-01-01" },
+      { title: "PhD position Participatory Data Governance", university: "Delft University of Technology (TU Delft)", url: "https://mirror.example/job-b", deadline: "2027-01-01" }
+    ),
+    true,
+    "Delft university aliases should deduplicate across mirrors"
+  );
+  assert.equal(
+    sameJob(
+      { title: "PhD position Social Design", university: "Unknown institution", url: "https://mirror.example/job-c" },
+      { title: "PhD position Social Design", university: "Unknown institution", url: "https://mirror.example/job-d" }
+    ),
+    false,
+    "unknown institutions must not cause unrelated vacancies to merge"
+  );
+  const unknownInstitutionResult = cleanResults([{
+    title: "PhD position in socio-ecological transition",
+    university: "Unknown institution",
+    university_confidence: "unknown",
+    country: "Unknown",
+    url: "https://example.org/unknown-university-phd",
+    overall_score: 80,
+    deadline: "2099-01-01"
+  }]);
+  assert.equal(unknownInstitutionResult.length, 1, "a relevant vacancy must survive a missing university field");
+  assert.equal(unknownInstitutionResult[0].verification_status, "Not verified");
+  assert.equal(unknownInstitutionResult[0].university_confidence, "unknown");
+  console.log("Radar regression self-tests passed.");
+}
+
+if (process.env.SELF_TEST === "true") {
+  runSelfTests();
+} else {
+  main().catch(async error => {
   console.error("RADAR FAILED");
   console.error(error?.stack || error);
   process.exitCode = 1;
@@ -2321,3 +2377,5 @@ main().catch(async error => {
     try { await sendRunAlert([`fatal: ${safeErrorMessage(error)}`], []); } catch {}
   }
 });
+
+}

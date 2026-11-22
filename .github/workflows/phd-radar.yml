@@ -47,26 +47,55 @@ jobs:
         with:
           node-version: 22
 
+      - name: Validate JavaScript syntax
+        id: syntax
+        run: node --check search.mjs
+
+      - name: Run offline regression tests
+        id: self_test
+        env:
+          SELF_TEST: "true"
+        run: node search.mjs
+
       - name: Run PhD search
         id: search
         continue-on-error: true
         env:
-          SEARCH_REVIEW_NAME: ${{ vars.SEARCH_REVIEW_NAME }}
-          SEARCH_REVIEW_BASE_URL: ${{ vars.SEARCH_REVIEW_BASE_URL }}
-          SEARCH_REVIEW_MODEL: ${{ vars.SEARCH_REVIEW_MODEL }}
-          SEARCH_REVIEW_FORMAT: ${{ vars.SEARCH_REVIEW_FORMAT }}
-          SEARCH_REVIEW_API_KEY: ${{ secrets.SEARCH_REVIEW_API_KEY }}
+          SEARCH_1_NAME: ${{ vars.SEARCH_1_NAME }}
+          SEARCH_1_BASE_URL: ${{ vars.SEARCH_1_BASE_URL }}
+          SEARCH_1_FORMAT: ${{ vars.SEARCH_1_FORMAT }}
+          SEARCH_1_MODEL: ${{ vars.SEARCH_1_MODEL }}
+          SEARCH_1_API_KEY: ${{ secrets.SEARCH_1_API_KEY }}
 
-          SEARCH_NAME: ${{ vars.SEARCH_NAME }}
-          SEARCH_BASE_URL: ${{ vars.SEARCH_BASE_URL }}
-          SEARCH_FORMAT: ${{ vars.SEARCH_FORMAT }}
-          SEARCH_API_KEY: ${{ secrets.SEARCH_API_KEY }}
+          SEARCH_2_NAME: ${{ vars.SEARCH_2_NAME }}
+          SEARCH_2_BASE_URL: ${{ vars.SEARCH_2_BASE_URL }}
+          SEARCH_2_FORMAT: ${{ vars.SEARCH_2_FORMAT }}
+          SEARCH_2_MODEL: ${{ vars.SEARCH_2_MODEL }}
+          SEARCH_2_API_KEY: ${{ secrets.SEARCH_2_API_KEY }}
 
-          REVIEW_NAME: ${{ vars.REVIEW_NAME }}
-          REVIEW_BASE_URL: ${{ vars.REVIEW_BASE_URL }}
-          REVIEW_MODEL: ${{ vars.REVIEW_MODEL }}
-          REVIEW_FORMAT: ${{ vars.REVIEW_FORMAT }}
-          REVIEW_API_KEY: ${{ secrets.REVIEW_API_KEY }}
+          SEARCH_3_NAME: ${{ vars.SEARCH_3_NAME }}
+          SEARCH_3_BASE_URL: ${{ vars.SEARCH_3_BASE_URL }}
+          SEARCH_3_FORMAT: ${{ vars.SEARCH_3_FORMAT }}
+          SEARCH_3_MODEL: ${{ vars.SEARCH_3_MODEL }}
+          SEARCH_3_API_KEY: ${{ secrets.SEARCH_3_API_KEY }}
+
+          REVIEW_1_NAME: ${{ vars.REVIEW_1_NAME }}
+          REVIEW_1_BASE_URL: ${{ vars.REVIEW_1_BASE_URL }}
+          REVIEW_1_MODEL: ${{ vars.REVIEW_1_MODEL }}
+          REVIEW_1_FORMAT: ${{ vars.REVIEW_1_FORMAT }}
+          REVIEW_1_API_KEY: ${{ secrets.REVIEW_1_API_KEY }}
+
+          REVIEW_2_NAME: ${{ vars.REVIEW_2_NAME }}
+          REVIEW_2_BASE_URL: ${{ vars.REVIEW_2_BASE_URL }}
+          REVIEW_2_MODEL: ${{ vars.REVIEW_2_MODEL }}
+          REVIEW_2_FORMAT: ${{ vars.REVIEW_2_FORMAT }}
+          REVIEW_2_API_KEY: ${{ secrets.REVIEW_2_API_KEY }}
+
+          REVIEW_3_NAME: ${{ vars.REVIEW_3_NAME }}
+          REVIEW_3_BASE_URL: ${{ vars.REVIEW_3_BASE_URL }}
+          REVIEW_3_MODEL: ${{ vars.REVIEW_3_MODEL }}
+          REVIEW_3_FORMAT: ${{ vars.REVIEW_3_FORMAT }}
+          REVIEW_3_API_KEY: ${{ secrets.REVIEW_3_API_KEY }}
 
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -171,7 +200,7 @@ jobs:
 
       # Make a broken search visible (red run) after results were committed and the site deployed.
       - name: Fail the run if the search step failed
-        if: steps.search.outcome == 'failure'
+        if: always() && (steps.search.outcome == 'failure' || steps.syntax.outcome == 'failure' || steps.self_test.outcome == 'failure')
         run: |
-          echo "The search step failed - see its log (a Telegram alert was sent if configured)."
+          echo "The syntax check, regression tests, or search step failed - see its log."
           exit 1

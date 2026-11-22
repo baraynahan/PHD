@@ -1,0 +1,31 @@
+name: Validate PhD Radar
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "search.mjs"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    name: JavaScript syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check search.mjs syntax
+        run: node --check search.mjs
+      - name: Run offline regression tests
+        env:
+          SELF_TEST: "true"
+        run: node search.mjs
