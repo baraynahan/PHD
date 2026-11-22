@@ -19,6 +19,10 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const CLEANUP_ONLY = String(process.env.CLEANUP_ONLY || "").toLowerCase() === "true";
 const CLEAR_PREVIOUS_RESULTS = String(process.env.CLEAR_PREVIOUS_RESULTS || "").toLowerCase() === "true";
 
+if (CLEAR_PREVIOUS_RESULTS && CLEANUP_ONLY && process.env.SELF_TEST !== "true") {
+  throw new Error("CLEAR_PREVIOUS_RESULTS requires a full search run; do not combine it with CLEANUP_ONLY.");
+}
+
 // ============================================================================
 // TUNABLE BUDGETS
 // ============================================================================
@@ -2309,6 +2313,12 @@ async function main() {
 function runSelfTests() {
   assert.equal(SEARCH_PROVIDERS.map(p => p.prefix).join(","), "SEARCH_1,SEARCH_2,SEARCH_3");
   assert.equal(REVIEW_PROVIDERS.map(p => p.prefix).join(","), "REVIEW_1,REVIEW_2,REVIEW_3");
+
+  const longTelegramMessage = formatTelegramMessage({
+    overall_score: 99, title: "T".repeat(5000), university: "Test University",
+    country: "Netherlands", application_language: "English", url: "https://example.org/phd"
+  }, []);
+  assert.ok(longTelegramMessage.length <= 3900, "Telegram alerts must stay below Telegram's message limit");
 
   assert.equal(
     normalizeUniversity("Delft University of Technology (TU Delft)"),
