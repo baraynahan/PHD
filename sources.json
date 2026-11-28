@@ -1,5 +1,5 @@
 {
-  "searched_at": "2026-11-22T15:09:26.699Z",
+  "searched_at": "2026-11-28T13:33:15.890Z",
   "budgets": {
     "MAX_PAGES": 120,
     "TIER3_MAX_PAGES": 40,
@@ -36,131 +36,212 @@
       "model": "openai/gpt-oss-120b (search: Tavily 1)",
       "status": "ok",
       "error": "",
-      "returned": 2,
-      "valid": 1,
-      "detail": "102 pages read, 6 sent to AI",
-      "sources": 102,
+      "returned": 5,
+      "valid": 4,
+      "detail": "89 pages read, 17 sent to AI",
+      "sources": 89,
       "stats": {
-        "hits_total": 251,
+        "hits_total": 292,
         "backlog_requeued": 0,
-        "pages_read": 102,
+        "pages_read": 89,
         "fetch_skipped": {
-          "HTTP 403 / text/html; charset=UTF-8": 8,
-          "not a specific doctoral vacancy page": 94,
-          "page too short": 6,
-          "HTTP 403 / text/html": 2,
-          "clearly expired deadline": 14,
-          "HTTP 410 / text/html; charset=utf-8": 1,
-          "host blocks automated fetches (circuit open)": 5,
-          "HTTP 410 / text/html; charset=UTF-8": 1
+          "not a specific doctoral vacancy page": 116,
+          "HTTP 403 / application/xml": 1,
+          "page too short": 9,
+          "HTTP 403 / text/html; charset=UTF-8": 16,
+          "HTTP 410 / text/html; charset=UTF-8": 1,
+          "clearly expired deadline": 11,
+          "host blocks automated fetches (circuit open)": 14,
+          "fetch failed": 1,
+          "HTTP 404 / text/html; charset=utf-8": 1,
+          "This operation was aborted": 1,
+          "HTTP 200 / application/pdf": 2,
+          "HTTP 402 / text/html; charset=utf-8": 1,
+          "HTTP 429 / text/html; charset=utf-8": 1
         },
-        "skipped_recently_failed": 18,
-        "pages_from_search_text": 65,
-        "fetch_circuit_skips": 5,
-        "duplicates_skipped": 0,
-        "already_reviewed_skipped": 74,
-        "prescreen_off_theme": 22,
-        "sent_to_ai": 6,
+        "skipped_recently_failed": 27,
+        "pages_from_search_text": 78,
+        "fetch_circuit_skips": 14,
+        "duplicates_skipped": 1,
+        "already_reviewed_skipped": 9,
+        "prescreen_off_theme": 62,
+        "sent_to_ai": 17,
         "queued_for_next_run": 0,
-        "extraction_batches": 2,
+        "extraction_batches": 5,
         "batches_failed": 0,
-        "empty_batches": 0,
-        "ai_returned": 2,
+        "empty_batches": 1,
+        "ai_returned": 5,
         "rejected": {
-          "score 48 is below 50": 1,
-          "passes": 1
+          "passes": 4,
+          "score 37 is below 50": 1
         }
       }
     }
   ],
   "sources": [
     {
-      "title": "Decoding The Cornell STS PhD: A Comprehensive Guide To Science And Technology Studies - EscapeSF",
-      "url": "https://escapesf.net/phd-comprehensive-guide-science-technology-77yn.html"
+      "title": "Doctoral Researcher in Differential Geometry - Academic Positions",
+      "url": "https://academicpositions.com/ad/university-of-luxembourg/2026/doctoral-researcher-in-differential-geometry/254041"
     },
     {
-      "title": "PhD in Geography | Petr Jehlička",
-      "url": "https://www.phdingeography.com/phd-studies/supervisors/petr-jehlick"
+      "title": "Programme specifications – Doctoral and Researcher College",
+      "url": "https://www.reading.ac.uk/doctoral-researcher-college/student-policies-procedures/programme-specifications"
     },
     {
-      "title": "Doctoral College Archives - Page 5 of 14 - Doctoral College",
-      "url": "https://sites.exeter.ac.uk/doctoralcollege/category/doctoral-college/page/5"
+      "title": "PhD: Urban provisioning systems, sufficiency behaviour, and well-being Job Details | EPFL",
+      "url": "https://careers.epfl.ch/job/Lausanne-PhD-Urban-provisioning-systems%2C-sufficiency-behaviour%2C-and-well-being/1165557355"
     },
     {
-      "title": "New website and 10 PhD positions available for the SUNSET Doctoral Network — KU Leuven Urban Studies Institute",
-      "url": "https://www.kuleuven.be/lusi/news-and-events/new-website-and-no-less-than-10-phd-positions-available-for-the-sunset-doctoral-network"
+      "title": "PhD Position Understanding Incentives for Software Reuse Job Details | TU Delft",
+      "url": "https://careers.tudelft.nl/job/Delft-PhD-Position-Understanding-Incentives-for-Software-Reuse-2628-CD/1377715857"
     },
     {
-      "title": "Doctoral Researcher (PhD Student), Finite Element Technology for Smooth Problems",
-      "url": "https://uef.varbi.com/en/what:job/jobID:978702/type:job/where:4/apply:1"
+      "title": "Doctoral Researcher in Food Literacy and Sustainable Behaviour job with University of Luxembourg | 12865435",
+      "url": "https://www.nature.com/naturecareers/job/12865435/doctoral-researcher-in-food-literacy-and-sustainable-behaviour"
     },
     {
-      "title": "Doctoral Researcher (PhD Student), Finite Element Technology for Smooth Problems",
-      "url": "https://uef.varbi.com/what:job/jobID:978702"
+      "title": "What to Expect in the PhD in Biomedical and Health Informatics | College of Applied Health Sciences | University of Illinois Chicago",
+      "url": "https://ahs.uic.edu/academics/biomedical-and-health-information-sciences/phd-in-biomedical-and-health-informatics/what-to-expect-in-phd-in-biomedical-and-health-informatics"
     },
     {
-      "title": "Doctoral Researcher: Anthropology, University of Oulu, Finland | Oulu",
-      "url": "https://www.jobleads.com/fi/job/doctoral-researcher-anthropology-university-of-oulu-finland--oulu--e179393c736964713ccd6ffd0b294583a"
+      "title": "PhD Mentoring | American Accounting Association",
+      "url": "https://aaahq.org/FARS/Awards/PhD-Mentoring"
     },
     {
-      "title": "Doctoral Researcher in Anthropology (Marie-Curie Doctoral Network MITIME)",
-      "url": "https://oulunyliopisto.varbi.com/en/what:job/jobID:977989"
+      "title": "Research Assistant (Doctoral Researcher/PhD) - akademische-jobs.de",
+      "url": "https://akademische-jobs.de/job/research-assistant-doctoral-researcher-phd-9"
     },
     {
-      "title": "KTH | Doctoral student in hormone sensing between biophysics and biotechnology",
-      "url": "https://www.kth.se/lediga-jobb/981104?l=en"
+      "title": "Doctoral Researcher / PhD Position in Hematology / Oncology Research (m/f/d)",
+      "url": "https://karriere.uniklinik-freiburg.de/prj/shw/5378994ff1a37f318e37851371d8809c_0/65195/Doctoral_Researcher_PhD_Position_in_Hematology_Oncology_Research_m_f_d.htm?b=0&lang=de_DE"
     },
     {
-      "title": "KTH | Doctoral student in fusion plasma physics and nuclear engineering",
-      "url": "https://www.kth.se/lediga-jobb/985374?l=en"
+      "title": "PhD Position in Computational Nano-Electrochemistry | Work at the University of Amsterdam",
+      "url": "https://werkenbij.uva.nl/en/vacancies/phd-position-in-computational-nano-electrochemistry-netherlands-15628"
     },
     {
-      "title": "PhD Thesis: End-of-life of wind turbine blades – Value chain, recycling and composite materials - Publications - Welcome to DTU Research Database",
-      "url": "https://orbit.dtu.dk/en/projects/phd-thesis-end-of-life-of-wind-turbine-blades-value-chain-recycli/publications/?type=%2Fdk%2Fatira%2Fpure%2Fresearchoutput%2Fresearchoutputtypes%2Fbookanthology%2Fphddissertation"
+      "title": "Physics: Research in Physics, Casimir pre-PhD (Master 2018-2019) - Studiegids - Universiteit Leiden",
+      "url": "https://studiegids-archief.leidenuniv.nl/studies/6919/physics-research-in-physics-casimir-pre-phd"
     },
     {
-      "title": "PhD defence Ignasi Ventura Nadal",
-      "url": "https://wind.dtu.dk/news-events/calendar-events/phd-defence-ignasi-ventura-nadal?id=ed708ea0-9b32-43bc-8423-07ded8a7b6f6"
+      "title": "Sciences and Engineering Research, joint PhD with the University of Pretoria MPhil/PhD | King's College London",
+      "url": "https://www.kcl.ac.uk/study/postgraduate-research/areas/sciences-and-engineering-research-with-the-university-of-pretoria"
     },
     {
-      "title": "10 funded STEM PhD Studentships to explore for 2027 entry |…",
-      "url": "https://www.postgrad.com/blog/10-funded-stem-phd-studentships-to-explore-for-2027-entry"
+      "title": "Research environment - Cancer & Pharmaceutical Sciences MDRes/PhD | King's College London",
+      "url": "https://www.kcl.ac.uk/study/postgraduate-research/areas/cancer-and-pharmaceutical-sciences-mphil-phd/research-environment"
     },
     {
-      "title": "The Hub | Industrial PhD - Picosecond Pulse Sources for Quantum-Dot Excitation (PULSE-Q) | Phanofi",
-      "url": "https://thehub.io/jobs/6af6cb7290c0310c02d499d6"
+      "title": "Management Research PhD | King's College London",
+      "url": "https://www.kcl.ac.uk/study/postgraduate-research/areas/management-research-phd"
     },
     {
-      "title": "Marie Curie PhD Positions 2026–27: All 141 Networks",
-      "url": "https://codanics.com/all-marie-curie-phd-positions-2026-27"
+      "title": "Supervision - Management Research PhD | King's College London",
+      "url": "https://www.kcl.ac.uk/study/postgraduate-research/areas/management-research-phd/supervision"
     },
     {
-      "title": "2027 Internships",
-      "url": "https://stattrak.amstat.org/2026/11/06/2027-internships"
+      "title": "Research environment - Brazilian Studies Research PhD | King's College London",
+      "url": "https://www.kcl.ac.uk/study/postgraduate-research/areas/brazilian-studies-research-phd/research-environment"
     },
     {
-      "title": "MSCA PhD vacancy INTELLASE (DC4) “Physics-based laser ablation modeling of dielectric materials” - Academic Positions",
-      "url": "https://academicpositions.com/ad/ku-leuven/2026/msca-phd-vacancy-intellase-dc4-physics-based-laser-ablation-modeling-of-dielectric-materials/255033"
+      "title": "Post-Doctoral Position In Travel Behavior And Demand Modelling",
+      "url": "https://jobs.ethz.ch/job/view/JOPG_ethz_50SdFJcnHtKejMb5Am"
     },
     {
-      "title": "379 offres de Doctorat - Academic Positions",
-      "url": "https://academicpositions.com/be/jobs/position/phd?page=3&rs=HUsuseyuaTXB&locale=fr"
+      "title": "Doctoral Position in Groundwater Microbial and Viral Ecology and Environmental Bioinformatics",
+      "url": "https://jobs.ethz.ch/job/view/JOPG_ethz_SbmISbke8WdGnkbzJk"
     },
     {
-      "title": "PhD Opportunity: MSCA Doctoral Researcher on Russia’s Role in Promoting Illiberal Governance – University of Helsinki | Program | ServiceSetu",
-      "url": "https://www.servicesetu.org/university-helsinki-msca-doctoral-researcher-russia-illiberal-governance-5250"
+      "title": "Doctoral Researcher in Energy Systems Modelling, Artificial Intelligence and Digitalization",
+      "url": "https://jobs.ethz.ch/job/view/JOPG_ethz_9IsXaApO43zfSPqD2k"
     },
     {
-      "title": "KTH | Doctoral student (Licentiate) in evaluation and policy for nature-based solutions",
-      "url": "https://www.kth.se/lediga-jobb/981025?l=en"
+      "title": "Post-doctoral Position in Machine Learning for Engineering Design",
+      "url": "https://jobs.ethz.ch/job/view/JOPG_ethz_naXzBmUenFKHA5p3aB"
     },
     {
-      "title": "PhD Studentship: Operationalising Artificial Intelligence in Elite Sport Organisations: Readiness, Governance and Integration Pathways at Manchester Metropolitan University",
-      "url": "https://www.jobs.ac.uk/job/DTL952/phd-studentship-operationalising-artificial-intelligence-in-elite-sport-organisations-readiness-governance-and-integration-pathways"
+      "title": "Doctoral Student in Quantum Error Correction",
+      "url": "https://jobs.ethz.ch/job/view/JOPG_ethz_yAAtbZbymFGeRxTPco"
     },
     {
-      "title": "PhD position: ‘Action research into learning about knowledge in policy practice’ — Vrije Universiteit Amsterdam (VU) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/nl/jobs/365664/phd-position-action-research-into-learning-about-knowledge-in-policy-practice"
+      "title": "Google PhD Fellowships awarded to three doctoral students – Department of Computer Science | ETH Zurich",
+      "url": "https://inf.ethz.ch/news-and-events/spotlights/infk-news-channel/2026/11/google-phd-fellowships-awarded-to-three-doctoral-students.html"
+    },
+    {
+      "title": "Political Economy Research PhD | King's College London",
+      "url": "https://www.kcl.ac.uk/study/postgraduate-research/areas/political-economy-research"
+    },
+    {
+      "title": "PhD Scholarship in Economics 2027 - IEB 2026",
+      "url": "https://ieb.ub.edu/en/phd-scholarship-in-economics-2027"
+    },
+    {
+      "title": "Advanced Topics in Political Economy: Comparing Societies (PhD) | Harris School of Public Policy | The University of Chicago",
+      "url": "https://harris.uchicago.edu/academics/programs-degrees/courses/fall-2026/41150/1"
+    },
+    {
+      "title": "Job search — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/?q=doctoral+candidate+MSCA+ANA-KIN"
+    },
+    {
+      "title": "Funded 4-Year PhD Position in Southeast Asian Studies at Trinity College Dublin, The University of Dublin | jobs.ac.uk",
+      "url": "https://www.jobs.ac.uk/job/DTL181/funded-4-year-phd-position-in-southeast-asian-studies"
+    },
+    {
+      "title": "EMS | Jobs | Fully Funded PhD Positions in Mathematics",
+      "url": "https://euromathsoc.org/jobs/fully-funded-phd-positions-in-mathematics-1882"
+    },
+    {
+      "title": "Fully Funded PhD Programs in Education | ProFellow",
+      "url": "https://www.profellow.com/fellowships/fully-funded-phd-programs-in-education"
+    },
+    {
+      "title": "IAHR Water Jobs",
+      "url": "https://www.iahr.org/index/detail/1302"
+    },
+    {
+      "title": "PhDScanner - Find Your Ideal PhD Position Worldwide | Doctoral Programs & Research Opportunities",
+      "url": "https://www.phdscanner.com/phd-vacancies/standard"
+    },
+    {
+      "title": "PhD position AI-driven RAN management schemes for resilient & sustainable 6G — University of Twente (UT) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/365915/phd-position-ai-driven-ran-management-schemes-for-resilient-sustainable-6g"
+    },
+    {
+      "title": "PhD Research Fellowship in Conflict Prediction and Early Warning (100%) - Academic Positions",
+      "url": "https://academicpositions.com/ad/ku-leuven/2026/phd-research-fellowship-in-conflict-prediction-and-early-warning-100/255221"
+    },
+    {
+      "title": "MCML - Call for Fully Funded PhD Positions 2027",
+      "url": "https://mcml.ai/opportunities/for-phd-applicants/phd2027"
+    },
+    {
+      "title": "PhDScanner - Find Your Ideal PhD Position Worldwide | Doctoral Programs & Research Opportunities",
+      "url": "https://www.phdscanner.com/opportunities/phd-vacancies-nord-university-norway-phd-research-fellow-in-social-science-technology-and-new-forms-of-organization-and-leadership-476e15c3-076b-4b74-b417-2d4558a5e3b1"
+    },
+    {
+      "title": "Doctoral INPhINIT Fellowships 2027 - Academic Positions",
+      "url": "https://academicpositions.com/ad/la-caixa-foundation/2026/doctoral-inphinit-fellowships-2027/254927"
+    },
+    {
+      "title": "Vacancy: PhD Position in nuclear STS — Life Sciences & Society Lab",
+      "url": "https://soc.kuleuven.be/ceso/life-sciences-society-lab/news/vacancy-phd-position-in-nuclear-sts"
+    },
+    {
+      "title": "Germany: 3 Fully Funded PhD Positions Available in the MSCA TRAIN-FAST Doctoral Network | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/worldwide/india/news/germany-3-fully-funded-phd-positions-available-msca-train-fast-doctoral"
+    },
+    {
+      "title": "Doctoral student in Organizational Implications of Artificial Intelligence - Academic Positions",
+      "url": "https://academicpositions.com/ad/kth-royal-institute-of-technology/2026/doctoral-student-in-organizational-implications-of-artificial-intelligence/254863"
+    },
+    {
+      "title": "PhD Position in Computational Nano-Electrochemistry — University of Amsterdam (UvA) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/365387/phd-position-in-computational-nano-electrochemistry"
+    },
+    {
+      "title": "Doctoral fellow - Department of Green Chemistry and Technology - Academic Positions",
+      "url": "https://academicpositions.com/ad/ghent-university/2026/doctoral-fellow-department-of-green-chemistry-and-technology/255250"
     },
     {
       "title": "Europe: 15 Fully Funded PhD Positions Available under the MSCA Sustain Vitis Project | EURAXESS",
@@ -179,135 +260,31 @@
       "url": "https://www.academictransfer.com/en/jobs/365288/phd-position-participatory-data-governance-for-a-just-energy-transition"
     },
     {
-      "title": "KIT - ITAS - Young academics and teaching - Doctoral studies at ITAS",
-      "url": "https://www.itas.kit.edu/english/doctoral_studies.php"
+      "title": "Closed: Doctoral Researcher (PhD) in Protein Synthesis - World Wide",
+      "url": "https://world-wide.org/job/doctoral-researcher-phd-protein-zdyy12wn"
     },
     {
-      "title": "30 Fully Funded PhD Positions at the University of Helsinki Doctoral School, Finland | Apply with Mentors, Applications, Job Finding, Positions, CV",
-      "url": "https://applywithmentors.com/30-fully-funded-phd-positions-at-the-university-of-helsinki-doctoral-school-finland"
+      "title": "PhD in Business Administration - GEM",
+      "url": "https://www.grenoble-em.com/en/programs/phd-in-business-administration"
     },
     {
-      "title": "KTH | PhD student in Agentic & Embodied AI for Adaptive Manufacturing Systems",
-      "url": "https://www.kth.se/lediga-jobb/978857?l=en"
+      "title": "From knowledge production to career preparation: does doctoral education in Taiwan sufficiently support doctoral students future development? | Higher Education | Springer Nature Link",
+      "url": "https://link.springer.com/article/10.1007/s10734-026-01799-8"
     },
     {
-      "title": "Gorm Harste earns higher doctoral degree in philosophy",
-      "url": "https://ps.medarbejdere.au.dk/en/internal-news/news-article/artikel/gorm-harste-earns-higher-doctoral-degree-in-philosophy"
+      "title": "Marcelo Gantier-Mita",
+      "url": "https://marcelogantier.github.io"
     },
     {
-      "title": "346 PhD-Positionen - Academic Positions",
-      "url": "https://academicpositions.com/at/jobs/position/phd?rs=gtA1xBX4HrNH&page=3"
+      "title": "Doctoral Researcher (PhD student),Pathomechanisms and Novel Drug Optimization for AMD (MSCA-DN) - Academic Positions",
+      "url": "https://academicpositions.com/ad/university-of-eastern-finland/2026/doctoral-researcher-phd-studentpathomechanisms-and-novel-drug-optimization-for-amd-msca-dn/255073"
     },
     {
-      "title": "PhD Engineering Internship 2027 (Quantum Error Correction) | Hirify",
-      "url": "https://hirify.me/jobs/1289174-phd-engineering-internship-qec"
+      "title": "FSE PhD President's Doctoral Scholarship: Business Model Innovation and Strategic Coordination in Circular Critical Material Value Chains: An Evolutionary and Agent-Based Modelling of Electric Vehicle Batteries at The University of Manchester | jobs.ac.uk",
+      "url": "https://www.jobs.ac.uk/job/DTP467/fse-phd-presidents-doctoral-scholarship-business-model-innovation-and-strategic-coordination-in-circular-critical-material-value-chains-an-evolutionary-and-agent-based-modelling-of-electric-vehicle-batteries"
     },
     {
-      "title": "Funded PhD Positions in Social Sciences (2026) · EveryPhD",
-      "url": "https://everyphd.com/phds/field/social-sciences"
-    },
-    {
-      "title": "PhD in System Dynamics modelling for resilience in pharmaceutical supply chains | WUR",
-      "url": "https://www.wur.nl/en/vacancy/phd-system-dynamics-modelling-resilience-pharmaceutical-supply-chains"
-    },
-    {
-      "title": "PhD Candidate in Robotics and Intelligent Mechatronic Systems for Automated In Vitro Platforms",
-      "url": "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/308534"
-    },
-    {
-      "title": "Job Application for PhD Intern, Security Engineer (2027) at Figma",
-      "url": "https://job-boards.greenhouse.io/figma/jobs/6238015004?gh_jid=6238015004"
-    },
-    {
-      "title": "PhD Intern, Security Engineer (2027) at Figma | GRC Careers",
-      "url": "https://www.ai-governance-jobs.com/jobs/phd-intern-security-engineer-2027-figma-san-francisco-ca"
-    },
-    {
-      "title": "PhD Studentship: In Silico Directed Evolution of Biological Qubits: Rational Design of Nanoscale Quantum Transducers at University of Exeter",
-      "url": "https://www.jobs.ac.uk/job/DTL162/phd-studentship-in-silico-directed-evolution-of-biological-qubits-rational-design-of-nanoscale-quantum-transducers"
-    },
-    {
-      "title": "APPLICATIONS NOW OPEN: LERU Doctoral Summer School 2027 (deadline: 04 Dec) – Early Career Researcher Noticeboard",
-      "url": "https://blogs.imperial.ac.uk/early-career-researcher-noticeboard/2026/11/12/applications-now-open-leru-doctoral-summer-school-2027"
-    },
-    {
-      "title": "Call for Applications: LERU Doctoral Summer School 2027 — Doctoral School Humanities & Social Sciences",
-      "url": "https://ghum.kuleuven.be/phd/webpage-doctoral-school-hss/calls/call-for-applications-leru-doctoral-summer-school-2027"
-    },
-    {
-      "title": "Fully Funded Ph.D. in Sustainable Development at University of Notre Dame 2027 - Scholarships.af",
-      "url": "https://scholarships.af/opportunity/university-of-notre-dame-phd-sustainable-development-united-states"
-    },
-    {
-      "title": "Sustainability Ph.D. | RIT",
-      "url": "https://www.rit.edu/study/sustainability-phd"
-    },
-    {
-      "title": "Fully Funded PhD Opportunities in Environment and Sustainability at the University of Michigan | Research and Innovation Directorate",
-      "url": "https://rid.ug.edu.gh/node/619"
-    },
-    {
-      "title": "Closed: PhD Scholarship in Development of Cement-Free Living Building Materials for Sustainable Construction - World Wide",
-      "url": "https://world-wide.org/job/phd-scholarship-development-cement-7nqmpdy5"
-    },
-    {
-      "title": "PhD/Master student positions | ESB",
-      "url": "https://esbiomech.org/category/job-opportunities/phdmaster-student-positions"
-    },
-    {
-      "title": "Funded PhD Positions in Human–Computer Interaction (2026) · EveryPhD",
-      "url": "https://everyphd.com/phds/field/human-computer-interaction"
-    },
-    {
-      "title": "Two Doctoral Positions in the SNSF Research Project \"From Homes to Habitat – Swiss Housing Cooperatives as Agents of Socio-Ecological Transition\" - Academic Positions",
-      "url": "https://academicpositions.com/ad/eth-zurich/2026/two-doctoral-positions-in-the-snsf-research-project-from-homes-to-habitat-swiss-housing-cooperatives-as-agents-of-socio-ecological-transition/254961"
-    },
-    {
-      "title": "PhD position: developing a genuine multi-scale rational design strategy for soft electronics — Leiden University — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/365500/phd-position-developing-a-genuine-multi-scale-rational-design-strategy-for-soft-electronics"
-    },
-    {
-      "title": "PhD Position in Computational Design and Fabrication of Adaptive 3D-Printed Structures — Delft University of Technology (TU Delft) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/365574/phd-position-in-computational-design-and-fabrication-of-adaptive-3d-printed-structures"
-    },
-    {
-      "title": "Admissions for PhD in Design 2027",
-      "url": "https://nid.edu/getNewsevents/admissions-for-phd-in-design-2027.html"
-    },
-    {
-      "title": "Vacancy: PhD Position on Slavery and Colonial Forced Labor | Radboud University",
-      "url": "https://www.ru.nl/en/about-us/news/vacancy-phd-position-on-slavery-and-colonial-forced-labor"
-    },
-    {
-      "title": "Vacancy for a PhD Student in the iCARE Project - Benny Akesson",
-      "url": "https://akesson.nl/2026/11/12/vacancy-for-a-phd-student-in-the-icare-project"
-    },
-    {
-      "title": "Faculty Position in Transdisciplinary Design at American University of Sharjah",
-      "url": "https://www.jobs.ac.uk/job/DTR872/faculty-position-in-transdisciplinary-design"
-    },
-    {
-      "title": "Doctoral Programs | Harvard Business School",
-      "url": "https://www.hbs.edu/doctoral"
-    },
-    {
-      "title": "International PhD Program in Microbiology Fully funded PhD positions job with Max Planck Institute for Terrestrial Microbiology | 12866903",
-      "url": "https://www.nature.com/naturecareers/job/12866903/international-phd-program-in-microbiology-fully-funded-phd-positions"
-    },
-    {
-      "title": "Post-Doctoral Researcher in Wind Assisted Ship Propulsion (UK National Clean Maritime Hub) - Fixed-term contract role until March 2028 at Birmingham City University",
-      "url": "https://www.jobs.ac.uk/job/DTG089/post-doctoral-researcher-in-wind-assisted-ship-propulsion-uk-national-clean-maritime-hub-fixed-term-contract-role-until-march-2028"
-    },
-    {
-      "title": "Post-Doctoral Researcher in Biology - Kildare, Ireland | EURAXESS",
-      "url": "https://euraxess.ec.europa.eu/worldwide/south-korea/news/post-doctoral-researcher-biology-kildare-ireland"
-    },
-    {
-      "title": "10 Urban Design jobs - Academic Positions",
-      "url": "https://academicpositions.com/gb/jobs/field/urban-design"
-    },
-    {
-      "title": "348 PhD positions - Academic Positions",
+      "title": "397 PhD positions - Academic Positions",
       "url": "https://academicpositions.com/gb/jobs/position/phd?page=8&rs=GgXsE5r6c510"
     },
     {
@@ -315,168 +292,144 @@
       "url": "https://academicpositions.com/be/ad/karolinska-institutet/2026/doctoral-phd-position-in-human-evolution-and-developmental-gene-regulation/255210"
     },
     {
-      "title": "348 PhD positions - Academic Positions",
+      "title": "2027 Open Call for PhD Student Circle Champions - SMS",
+      "url": "https://www.strategicmanagement.net/publications-resources/strategic-management-explorer/2027-open-call-for-phd-student-circle-champions"
+    },
+    {
+      "title": "388 PhD positions - Academic Positions",
       "url": "https://academicpositions.com/fr/jobs/position/phd?page=7&rs=CcaBgw6zCd2F&locale=en"
-    },
-    {
-      "title": "16 PhD jobs in Finland - Academic Positions",
-      "url": "https://academicpositions.com/ad/university-of-oulu/2026/doctoral-researcher-smartspaces-project-centre-for-wireless-communications/254438"
-    },
-    {
-      "title": "PhD Studentship: Beyond Pilots: De-Risking the Scale-Up of Artificial Intelligence in Digitally Enabled Circular Supply Chains at University of Exeter",
-      "url": "https://www.jobs.ac.uk/job/DTK939/phd-studentship-beyond-pilots-de-risking-the-scale-up-of-artificial-intelligence-in-digitally-enabled-circular-supply-chains"
     },
     {
       "title": "Sweden: 15 Fully Funded PhD Positions Available Under the MSCA MINARET Doctoral Network | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/worldwide/india/news/sweden-15-fully-funded-phd-positions-available-under-msca-minaret-doctoral"
     },
     {
-      "title": "PhD Position: Prospective Environmental Assessment of Technological Innovations — Radboud University — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/365621/phd-position-prospective-environmental-assessment-of-technological-innovations"
-    },
-    {
-      "title": "2 PhD: Process intensification and Electrification in the Chemical Industry — Utrecht University — AcademicTransfer",
-      "url": "https://www.academictransfer.com/en/jobs/365554/2-phd-process-intensification-and-electrification-in-the-chemical-industry"
-    },
-    {
-      "title": "Doctoral Researcher in Anthropology (Marie-Curie Doctoral Network MITIME) - Academic Positions",
-      "url": "https://academicpositions.com/ad/university-of-oulu/2026/doctoral-researcher-in-anthropology-marie-curie-doctoral-network-mitime/254447"
-    },
-    {
-      "title": "Post-Doctoral Researcher Fatigue of Composite Materials — Delft University of Technology (TU Delft) — AcademicTransfer",
-      "url": "https://www.academictransfer.com/nl/jobs/365470/post-doctoral-researcher-fatigue-of-composite-materials"
+      "title": "16 PhD jobs in Finland - Academic Positions",
+      "url": "https://academicpositions.com/ad/university-of-jyvaskyla/2026/doctoral-researcher-in-psychology/254682"
     },
     {
       "title": "Doctoral Researcher in Gender and Sexualities - Academic Positions",
       "url": "https://academicpositions.com/ad/university-of-luxembourg/2026/doctoral-researcher-in-gender-and-sexualities/254672"
     },
     {
-      "title": "Doctoral Researcher in Psychology - Academic Positions",
-      "url": "https://academicpositions.com/ad/university-of-jyvaskyla/2026/doctoral-researcher-in-psychology/254682"
+      "title": "Doctoral Researcher (Railway wheel friction estimation and control) - Academic Positions",
+      "url": "https://academicpositions.com/ad/tampere-university/2026/doctoral-researcher-railway-wheel-friction-estimation-and-control/254938"
+    },
+    {
+      "title": "Doctoral Researcher in Applied Cryptography - Academic Positions",
+      "url": "https://academicpositions.com/ad/university-of-turku/2026/doctoral-researcher-in-applied-cryptography/254359"
     },
     {
       "title": "Cyprus: 3 Fully Funded PhD Positions Available Under the MSCA CPEC Doctoral Network | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/worldwide/india/news/cyprus-3-fully-funded-phd-positions-available-under-msca-cpec-doctoral-network"
     },
     {
-      "title": "Three Doctoral Positions in History and Theory of Urban Design and Architecture - Academic Positions",
-      "url": "https://academicpositions.com/ad/eth-zurich/2026/three-doctoral-positions-in-history-and-theory-of-urban-design-and-architecture/254410"
-    },
-    {
-      "title": "PhD Studentship: The AD[A]PT (Architectural Design And Humanities Promoting Transformation) Consortium AHRC Doctoral Focal Award - Hosted at Oxford Brookes School of Architecture at Oxford Brookes University",
-      "url": "https://www.jobs.ac.uk/job/DTI221/phd-studentship-the-adapt-architectural-design-and-humanities-promoting-transformation-consortium-ahrc-doctoral-focal-award-hosted-at-oxford-brookes-school-of-architecture"
-    },
-    {
       "title": "Denmark: 15 Funded PhD Positions Available in Sustainable Computing and Energy Systems under the AEGIS MSCA Doctoral Network | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/worldwide/india/news/denmark-15-funded-phd-positions-available-sustainable-computing-and-energy"
     },
     {
-      "title": "Doctoral students in vehicle energy estimation - Academic Positions",
-      "url": "https://academicpositions.com/ad/chalmers-university-of-technology/2026/doctoral-students-in-vehicle-energy-estimation/254857"
+      "title": "PhD Studentship: The AD[A]PT (Architectural Design And Humanities Promoting Transformation) Consortium AHRC Doctoral Focal Award - Hosted at Oxford Brookes School of Architecture at Oxford Brookes University | jobs.ac.uk",
+      "url": "https://www.jobs.ac.uk/job/DTI221/phd-studentship-the-adapt-architectural-design-and-humanities-promoting-transformation-consortium-ahrc-doctoral-focal-award-hosted-at-oxford-brookes-school-of-architecture"
+    },
+    {
+      "title": "68 PhD jobs in Switzerland - Academic Positions",
+      "url": "https://academicpositions.com/ad/eth-zurich/2026/three-doctoral-positions-in-history-and-theory-of-urban-design-and-architecture/254410"
     },
     {
       "title": "Doctoral (PhD) student position in Brain Circuits in Health and Disease - Academic Positions",
       "url": "https://academicpositions.com/ad/karolinska-institutet/2026/doctoral-phd-student-position-in-brain-circuits-in-health-and-disease/255376"
     },
     {
-      "title": "68 PhD jobs in Artificial Intelligence - Academic Positions",
+      "title": "75 PhD jobs in Artificial Intelligence - Academic Positions",
       "url": "https://academicpositions.com/gb/jobs/position/phd/field/artificial-intelligence?page=2&rs=GEWqO8A63z1h"
     },
     {
-      "title": "Fully Funded PhD Programs in History | ProFellow",
-      "url": "https://www.profellow.com/fellowships/fully-funded-phd-programs-in-history"
+      "title": "PhD position Societal entrepreneurship in equitable global health innovation — Vrije Universiteit Amsterdam (VU) — AcademicTransfer",
+      "url": "https://www.academictransfer.com/en/jobs/365665/phd-position-societal-entrepreneurship-in-equitable-global-health-innovation"
     },
     {
-      "title": "PhD candidate in Bridging Adaptive Planning and Human-Centred Design for Vulnerable Contexts",
-      "url": "https://www.jobbnorge.no/en/available-jobs/joblisting/pdf/307613"
+      "title": "Europe: 15 Fully Funded PhD Positions Available under the MSCA INSIGHT Doctoral Network | EURAXESS",
+      "url": "https://euraxess.ec.europa.eu/worldwide/india/news/europe-15-fully-funded-phd-positions-available-under-msca-insight-doctoral"
+    },
+    {
+      "title": "Educational Data Science, PhD - Graduate School of Education - University at Buffalo",
+      "url": "https://ed.buffalo.edu/academics/doctorate/ed-data.html"
+    },
+    {
+      "title": "PhD Studentship in Finance at University of Reading | jobs.ac.uk",
+      "url": "https://www.jobs.ac.uk/job/DTP311/phd-studentship-in-finance"
     },
     {
       "title": "United Kingdom: 4 Fully Funded PhD Positions in Circular Power Electronics (CPEC) MSCA Doctoral Network | EURAXESS",
       "url": "https://euraxess.ec.europa.eu/worldwide/india/news/united-kingdom-4-fully-funded-phd-positions-circular-power-electronics-cpec"
     },
     {
-      "title": "PhD Studentship: Responsible innovation in metamaterials for circular economy and sustainability: building the evidence base for inclusive and sustainable applications at University of Exeter",
-      "url": "https://www.jobs.ac.uk/job/DTK929/phd-studentship-responsible-innovation-in-metamaterials-for-circular-economy-and-sustainability-building-the-evidence-base-for-inclusive-and-sustainable-applications"
-    },
-    {
       "title": "Dual career PhD programme | United Nations University",
       "url": "https://unu.edu/merit/doctorate-degree/dual-career-phd-programme"
     },
     {
-      "title": "Marie Curie PhD vacancy (DC7) for PhD research titled \"Laser Power Bed Fusion of novel high temperature-resistant multi-metal combinations for small-scale turbomachinery\" - Academic Positions",
-      "url": "https://academicpositions.com/ad/ku-leuven/2026/marie-curie-phd-vacancy-dc7-for-phd-research-titled-laser-power-bed-fusion-of-novel-high-temperature-resistant-multi-metal-combinations-for-small-scale-turbomachinery/253211"
+      "title": "Doctoral Researcher: Islamic Finance, Governance and Constitutional Legitimacy at UWE, Bristol",
+      "url": "https://www.jobs.ac.uk/job/DTL573/doctoral-researcher-islamic-finance-governance-and-constitutional-legitimacy"
     },
     {
-      "title": "Centre for Health Law and Policy | UWA",
-      "url": "https://www.uwa.edu.au/about/schools/research-entities/centre-for-health-law-and-policy"
+      "title": "PhD Positions Available under the MSCA INSIGHT Doctoral Network | EURAXESS - Academic Positions",
+      "url": "https://academicpositions.com/ad/tampere-university/2026/phd-positions-available-under-the-msca-insight-doctoral-network-euraxess/254950"
     },
     {
-      "title": "Fully Funded PhD Scholarships in New Zealand 2026: Earn NZ$45,000 Annual Stipend Through the Ag Emissions Centre - Global South Opportunities",
-      "url": "https://www.globalsouthopportunities.com/2026/11/09/scholarship-105"
+      "title": "Find an available PhD, MPhil project - The University of Queensland",
+      "url": "https://study.uq.edu.au/study-options/phd-mphil-professional-doctorate/projects?study-level%5B4558%5D=4558&page=9"
     },
     {
-      "title": "Junior Researcher (1 funded PhD position) Arctic Transitions, Energy…",
-      "url": "https://bebee.com/fi/jobs/junior-researcher-1-funded-phd-position-arctic-transitions-energy-and-climate-governance-horizons-in--t7xk-868357209"
+      "title": "Green Fellow PhD Scholarships in Sustainable Finance Law & Regulation",
+      "url": "https://www.unsw.edu.au/research/hdr/our-projects/green-fellow-PhD-scholarships-in-sustainable-finance-law"
     },
     {
-      "title": "32 PhD Scholarships at Monash University, Australia - Scholar Idea",
-      "url": "https://scholaridea.com/2026/11/12/32-phd-scholarships-at-monash-university-australia"
+      "title": "Investigating help-seeking for mental health problems | UniSC | University of the Sunshine Coast, Queensland, Australia",
+      "url": "https://www.unisc.edu.au/research/phd-and-master-of-philosophy-at-unisc/higher-degree-by-research-hdr/hdr-scholarships/investigating-help-seeking-for-mental-health-problems"
     },
     {
-      "title": "PhDScanner - Find Your Ideal PhD Position Worldwide | Doctoral Programs & Research Opportunities",
-      "url": "https://www.phdscanner.com/opportunities/phd-vacancies-university-of-waikato-new-zealand-logistics-and-supply-chain-management-phd-scholarship-e5bf1557-cdc6-456c-9e77-d3cab9ab5bfb"
+      "title": "Doctoral Scholarships - AUT",
+      "url": "https://www.aut.ac.nz/study/fees-and-scholarships/scholarships-and-awards-at-aut/doctoral-scholarships"
     },
     {
-      "title": "UniSC Research Scholarship conditions | UniSC | University of the Sunshine Coast, Queensland, Australia",
-      "url": "https://www.unisc.edu.au/research/phd-and-master-of-philosophy-at-unisc/higher-degree-by-research-hdr/hdr-scholarships/hdr-scholarship-conditions/unisc-research-scholarship-conditions"
+      "title": "PhD in Infant and Early Childhood Development – Fielding Graduate University",
+      "url": "https://www.fielding.edu/school-of-psychology/phd-in-infant-and-early-childhood-development"
+    },
+    {
+      "title": "US-Pakistan Knowledge Corridor PhD Scholarship 2027",
+      "url": "https://studywithscholar.com/scholarships/us-pakistan-knowledge-corridor-phd-scholarship-2026"
+    },
+    {
+      "title": "Dongbei University of Finance and Economics DUFE CSC Scholarship 2027-2028 | Fully Funded Master’s and PhD – CSC Guide Official",
+      "url": "https://cscguideofficials.com/dongbei-university-of-finance-and-economics-dufe-csc-scholarship-update"
+    },
+    {
+      "title": "Global Canadians, Invisible at Home - University Affairs",
+      "url": "https://universityaffairs.ca/opinion/global-canadians-invisible-at-home"
     },
     {
       "title": "Community-Powered Cities - Unlocking local renewable energy in Greater Newcastle to deliver a more affordable, resilient and sustainable future / PhD Scholarships / PhD scholarships and opportunities / Research / Study / The University of Newcastle, Australia",
       "url": "https://www.newcastle.edu.au/study/research/phd-scholarships/phd-scholarships/community-powered-cities-unlocking-local-renewable-energy-in-greater-newcastle-to-deliver-a-more-affordable-resilient-and-sustainable-future"
     },
     {
-      "title": "ANU International PhD Scholarship: Cultures of the Cryosphere | Study",
-      "url": "https://study.anu.edu.au/scholarships/find-scholarship/anu-international-phd-scholarship-cultures-cryosphere"
+      "title": "Fully Funded PhD Scholarships in New Zealand 2026: Earn NZ$45,000 Annual Stipend Through the Ag Emissions Centre - Global South Opportunities",
+      "url": "https://www.globalsouthopportunities.com/2026/11/09/scholarship-105"
     },
     {
       "title": "PhD - Doctor of Philosophy",
       "url": "https://study.auckland.ac.nz/ords/r/uoa/catalogue/Program?p5_code=PhD&session=13507011511096"
     },
     {
-      "title": "University of Western Australia (UWA) Scholarships 2027…",
-      "url": "https://www.for9a.com/en/opportunity/university-of-western-australia-uwa-scholarships-2027-for-masters-and-phd-students-with-an-annual-stipend-of-aud-38110"
+      "title": "Wellington Doctoral Scholarship 2027 | Fully Funded PhD",
+      "url": "https://mindshipglobal.com/opportunities/wellington-doctoral-scholarship-2027"
     },
     {
-      "title": "University of Queensland PhD Scholarship 2026: Fully Funded Research Opportunity in Critical Minerals Processing - Global South Opportunities",
-      "url": "https://www.globalsouthopportunities.com/2026/11/11/scholarship-106"
-    },
-    {
-      "title": "PhD scholarship in Ventilating future cities: advancing urban flow science for heat resilience - RMIT University",
-      "url": "https://www.rmit.edu.au/scholarships/research/phd-scholarship-in-ventilating-future-cities-advancing-urban-flow-science-for-heat-resilience"
-    },
-    {
-      "title": "PhD Scholarship at the University of Guelph in Canada with…",
-      "url": "https://www.for9a.com/en/opportunity/phd-scholarship-the-university-guelph-canada-annual-funding"
-    },
-    {
-      "title": "Simon Fraser University Scholarship 2027: Fully Funded Master’s and PhD Study in Canada - NextGenScholarship",
-      "url": "https://nextgenscholarship.com/simon-fraser-university-scholarship-2027-fully-funded-masters-and-phd-study-in-canada"
-    },
-    {
-      "title": "Funded PhD Scholarship in China 2027 at the University of…",
-      "url": "https://www.for9a.com/en/opportunity/funded-phd-scholarship-china-the-university-of-nottingham-ningbo-with-funding"
-    },
-    {
-      "title": "Bocconi University PhD Scholarship 2027–2028 in Italy",
-      "url": "https://agristok.net/2026/11/15/bocconi-university-phd-scholarship-2027-2028"
+      "title": "Apply for one of 50 fully funded PhD scholarships - RMIT University",
+      "url": "https://www.rmit.edu.vn/events/infosessions/apply-for-one-of-50-fully-funded-phd-scholarships"
     },
     {
       "title": "Fully Funded Scholarships in New Zealand: Bachelors, Masters, PhD",
       "url": "https://www.upgrad.com/study-abroad/articles/fully-funded-scholarships-in-new-zealand"
-    },
-    {
-      "title": "University of Canberra Research Scholarships 2026: Fully Funded PhD for Domestic and International Students in Australia – Always Never Home",
-      "url": "https://jobs.iammagnus.com/university-of-canberra-research-scholarships-2026-fully-funded-phd-for-domestic-and-international-students-in-australia"
     },
     {
       "title": "PhD Scholarship Statement in Australia - GradPilot",
